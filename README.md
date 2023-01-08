@@ -60,19 +60,19 @@ Ports used
 
 ## Testing
 
-### Test the DNS
+### DNS
 
 ```
 dig @127.0.0.1 -p 5353 asl.am.
 ```
 
-### Test the web server
+### Web
 
 ```
 curl http://localhost:8080
 ```
 
-### Test the email
+### Email
 
 ```
 telnet localhost 1025
@@ -97,7 +97,9 @@ yo dude
 quit
 ```
 
-### Mail
+## Storage
+
+### Email
 
 Email is stored in `$HOME/.aslam/mail`. Each email is a unix nano timestamped file with `.txt` extension.
 
