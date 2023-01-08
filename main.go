@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/armon/go-socks5"
 	"github.com/emersion/go-smtp"
 	"github.com/miekg/dns"
 )
@@ -34,6 +35,11 @@ type Session struct {
 
 // The HTTP server handler
 type HTTP struct{}
+
+// The SOCKS proxy server
+type SOCKS struct {
+	config *socks5.Config
+}
 
 var (
 	Domain  = os.Getenv("DOMAIN")
@@ -219,6 +225,20 @@ func smtpServer() {
 	}
 }
 
+func socksServer() {
+	conf := &socks5.Config{}
+
+	server, err := socks5.New(conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Starting SOCKS server at", 1080)
+	if err := server.ListenAndServe("tcp", ":1080"); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	if len(Domain) == 0 {
 		log.Fatal("require DOMAIN value e.g asl.am.")
@@ -236,9 +256,10 @@ func main() {
 		Home = dirname
 	}
 
-	go smtpServer()
-	go httpServer()
 	go dnsServer()
+	go httpServer()
+	go smtpServer()
+	go socksServer()
 
 	// catch kill signal
 	sigChan := make(chan os.Signal, 1)

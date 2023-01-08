@@ -16,6 +16,7 @@ is to buy a domain name, start this server and point the nameserver to it, then 
 - [ ] File server (FTP)
 - [ ] Web server (HTTP)
 - [ ] Chat server (XMPP)
+- [ ] Socks proxy (SOCKS5)
 - [ ] Virtual network (VPN)
 
 ## Stretch Goals
@@ -55,6 +56,7 @@ DOMAIN=asl.am ADDRESS=1.2.3.4 ./aslam
 Ports used
 
 - 1025 - for SMTP
+- 1080 - for SOCK5
 - 5353 - for DNS
 - 8080 - for HTTP
 
