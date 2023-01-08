@@ -16,6 +16,7 @@ is to buy a domain name, start this server and point the nameserver to it, then 
 - [ ] File server (FTP)
 - [ ] Web server (HTTP)
 - [ ] Chat server (XMPP)
+- [ ] Virtual network (VPN)
 
 ## Stretch Goals
 
