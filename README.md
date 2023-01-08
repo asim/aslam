@@ -28,9 +28,13 @@ is to buy a domain name, start this server and point the nameserver to it, then 
 
 It's a Go binary and everything is currently just configured via env vars.
 
+### Install
+
 ```
 go build -o aslam main.go
 ```
+
+### Env vars
 
 There's a few env vars to specify
 
@@ -38,11 +42,15 @@ There's a few env vars to specify
 - `ADDRESS` - The public ip address of the server
 - `HOME` - The home directory used for storage
 
+### Start
+
 Run the server
 
 ```
 DOMAIN=asl.am ADDRESS=1.2.3.4 ./aslam
 ```
+
+### Port usage
 
 Ports used
 
