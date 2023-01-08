@@ -58,19 +58,21 @@ Ports used
 - 5353 - for DNS
 - 8080 - for HTTP
 
-Test the DNS
+## Testing
+
+### Test the DNS
 
 ```
 dig @127.0.0.1 -p 5353 asl.am.
 ```
 
-Test the web server
+### Test the web server
 
 ```
 curl http://localhost:8080
 ```
 
-Test the email
+### Test the email
 
 ```
 telnet localhost 1025
