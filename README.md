@@ -17,6 +17,12 @@ is to buy a domain name, start this server and point the nameserver to it, then 
 - [ ] Web server (HTTP)
 - [ ] Chat server (XMPP)
 
+## Stretch Goals
+
+- [ ] DigitalOcean Deployment
+- [ ] Raspberry Pi Bootloader
+- [ ] Android APK Image
+
 ## Usage
 
 It's a Go binary and everything is currently just configured via env vars.
