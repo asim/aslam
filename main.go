@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -26,6 +27,10 @@ type Session struct {
 	data     []byte
 }
 
+// The HTTP server
+type HTTP struct {
+}
+
 var (
 	Domain  = os.Getenv("DOMAIN")
 	Address = os.Getenv("ADDRESS")
@@ -34,6 +39,13 @@ var (
 
 var records = map[string]string{
 	Domain + ".": Address,
+}
+
+func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// set server header
+	w.Header().Set("Server", "aslam")
+	// handle request
+	http.DefaultServeMux.ServeHTTP(w, r)
 }
 
 func (bkd *SMTP) NewSession(_ *smtp.Conn) (smtp.Session, error) {
@@ -156,6 +168,30 @@ func dnsServer() {
 	}
 }
 
+func httpServer() {
+	srv := &HTTP{}
+
+	// write a file
+	err := os.MkdirAll(Home+"/.aslam/web", 0755)
+	if err != nil && !os.IsExist(err) {
+		log.Println(err)
+	} else if err == nil {
+		// made a dir, add an index file
+		os.WriteFile(Home+"/.aslam/web/index.html", []byte(`<html>
+		<body><head><title>Aslam Web Server</title></head>
+		<h1>Hello world!</h1></body>
+		</html>`), 0644)
+	}
+
+	fs := http.FileServer(http.Dir(Home + "/.aslam/web"))
+	http.Handle("/", fs)
+	log.Printf("Starting HTTP server at %d\n", 8080)
+	err = http.ListenAndServe(":8080", srv)
+	if err != nil {
+		log.Fatal("Failed to start HTTP server: %s\n", err.Error())
+	}
+}
+
 func smtpServer() {
 	srv := &SMTP{}
 
@@ -193,5 +229,6 @@ func main() {
 	}
 
 	go smtpServer()
+	go httpServer()
 	dnsServer()
 }

@@ -41,11 +41,18 @@ Ports used
 
 - 1025 - for SMTP
 - 5353 - for DNS
+- 8080 - for HTTP
 
 Test the DNS
 
 ```
 dig @127.0.0.1 -p 5353 asl.am.
+```
+
+Test the web server
+
+```
+curl http://localhost:8080
 ```
 
 Test the email
@@ -72,3 +79,14 @@ yo dude
 250 2.0.0 OK: queued
 quit
 ```
+
+### Mail
+
+Email is stored in `$HOME/.aslam/mail`. Each email is a unix nano timestamped file with `.txt` extension.
+
+Mail reader coming soon.
+
+### Web
+
+The HTTP server is a static web server that reads from `$HOME/.aslam/web`. A template index.html file is 
+created on startup if no previous directory is found.
