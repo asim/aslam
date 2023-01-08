@@ -34,7 +34,7 @@ There's a few env vars to specify
 Run the server
 
 ```
-./aslam
+DOMAIN=asl.am ADDRESS=1.2.3.4 ./aslam
 ```
 
 Ports used
