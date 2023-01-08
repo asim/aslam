@@ -7,7 +7,7 @@ personal server
 What if you could run everything yourself? DNS, email, storage, etc. Would it be worth it? Let's find out.
 
 I'm going to start hacking on a personal server that's built from scratch. The ideal bootstrapping scenario 
-is to buy a DNS record, start this server and point the nameserver to it, then leave it to do it's thing.
+is to buy a domain name, start this server and point the nameserver to it, then leave it to do it's thing.
 
 ## Features
 
