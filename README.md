@@ -11,10 +11,11 @@ is to buy a DNS record, start this server and point the nameserver to it, then l
 
 ## Features
 
-- [ ] DNS server
-- [ ] Email server
-- [ ] File server
-- [ ] Web server
+- [ ] DNS server (DNS)
+- [ ] Email server (SMTP)
+- [ ] File server (FTP)
+- [ ] Web server (HTTP)
+- [ ] Chat server (XMPP)
 
 ## Usage
 
