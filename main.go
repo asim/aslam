@@ -16,6 +16,9 @@ import (
 	"github.com/miekg/dns"
 )
 
+// DNS server handler
+type DNS struct{}
+
 // The SMTP implements SMTP server methods.
 type SMTP struct{}
 
@@ -27,9 +30,8 @@ type Session struct {
 	data     []byte
 }
 
-// The HTTP server
-type HTTP struct {
-}
+// The HTTP server handler
+type HTTP struct{}
 
 var (
 	Domain  = os.Getenv("DOMAIN")
@@ -37,8 +39,47 @@ var (
 	Home    = os.Getenv("HOME")
 )
 
+// DNS records
 var records = map[string]string{
 	Domain + ".": Address,
+}
+
+func (d *DNS) parseQuery(m *dns.Msg) {
+	for _, q := range m.Question {
+		switch q.Qtype {
+		case dns.TypeA:
+			log.Printf("Query for A %s\n", q.Name)
+			ip := records[q.Name]
+			if ip != "" {
+				rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+				}
+			}
+		case dns.TypeMX:
+			log.Printf("Query for MX %s\n", q.Name)
+			ip := records[q.Name]
+			if ip != "" {
+				rr, err := dns.NewRR(fmt.Sprintf("%s MX 10 %s", q.Name, q.Name))
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+				}
+			}
+		}
+	}
+}
+
+func (d *DNS) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+	m := new(dns.Msg)
+	m.SetReply(r)
+	m.Compress = false
+
+	switch r.Opcode {
+	case dns.OpcodeQuery:
+		d.parseQuery(m)
+	}
+
+	w.WriteMsg(m)
 }
 
 func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -119,47 +160,12 @@ func (s *Session) Logout() error {
 	return nil
 }
 
-func parseQuery(m *dns.Msg) {
-	for _, q := range m.Question {
-		switch q.Qtype {
-		case dns.TypeA:
-			log.Printf("Query for A %s\n", q.Name)
-			ip := records[q.Name]
-			if ip != "" {
-				rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, ip))
-				if err == nil {
-					m.Answer = append(m.Answer, rr)
-				}
-			}
-		case dns.TypeMX:
-			log.Printf("Query for MX %s\n", q.Name)
-			ip := records[q.Name]
-			if ip != "" {
-				rr, err := dns.NewRR(fmt.Sprintf("%s MX 10 %s", q.Name, q.Name))
-				if err == nil {
-					m.Answer = append(m.Answer, rr)
-				}
-			}
-		}
-	}
-}
-
-func handleDnsRequest(w dns.ResponseWriter, r *dns.Msg) {
-	m := new(dns.Msg)
-	m.SetReply(r)
-	m.Compress = false
-
-	switch r.Opcode {
-	case dns.OpcodeQuery:
-		parseQuery(m)
-	}
-
-	w.WriteMsg(m)
-}
-
 func dnsServer() {
-	dns.HandleFunc(".", handleDnsRequest)
-	server := &dns.Server{Addr: ":" + strconv.Itoa(5353), Net: "udp"}
+	server := &dns.Server{
+		Addr:    ":" + strconv.Itoa(5353),
+		Net:     "udp",
+		Handler: &DNS{},
+	}
 	log.Printf("Starting DNS server at %d\n", 53)
 	err := server.ListenAndServe()
 	defer server.Shutdown()
@@ -188,7 +194,7 @@ func httpServer() {
 	log.Printf("Starting HTTP server at %d\n", 8080)
 	err = http.ListenAndServe(":8080", srv)
 	if err != nil {
-		log.Fatal("Failed to start HTTP server: %s\n", err.Error())
+		log.Fatalf("Failed to start HTTP server: %s\n", err.Error())
 	}
 }
 
