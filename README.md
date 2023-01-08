@@ -42,7 +42,7 @@ There's a few env vars to specify
 - `ADDRESS` - The public ip address of the server
 - `HOME` - The home directory used for storage
 
-### Start
+### Start server
 
 Run the server
 
