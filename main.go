@@ -8,8 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/emersion/go-smtp"
@@ -236,5 +238,12 @@ func main() {
 
 	go smtpServer()
 	go httpServer()
-	dnsServer()
+	go dnsServer()
+
+	// catch kill signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+	s := <-sigChan
+
+	log.Printf("Received %v, exiting", s)
 }
