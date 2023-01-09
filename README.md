@@ -43,6 +43,19 @@ There's a few env vars to specify
 - `ADDRESS` - The public ip address of the server
 - `HOME` - The home directory used for storage
 
+### Config
+
+There is support for a config file. Config found in `$HOME/.aslam/config.json` will be loaded.
+
+```
+{
+        "domain": "asl.am",
+        "address": "1.2.3.4"
+}
+```
+
+Env vars will continue to override the config file
+
 ### Start server
 
 Run the server

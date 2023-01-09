@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -19,8 +22,16 @@ import (
 	"github.com/miekg/dns"
 )
 
+// The internal config
+type Config struct {
+	Domain  string `json:"domain"`
+	Address string `json:"address"`
+}
+
 // DNS server handler
-type DNS struct{}
+type DNS struct {
+	servers []string
+}
 
 // The SMTP implements SMTP server methods.
 type SMTP struct{}
@@ -45,6 +56,9 @@ var (
 	Domain  = os.Getenv("DOMAIN")
 	Address = os.Getenv("ADDRESS")
 	Home    = os.Getenv("HOME")
+
+	// outbound DNS servers
+	DNSServers = os.Getenv("DNS_SERVERS")
 )
 
 // DNS records
@@ -63,6 +77,13 @@ func (d *DNS) parseQuery(m *dns.Msg) {
 				if err == nil {
 					m.Answer = append(m.Answer, rr)
 				}
+				continue
+			}
+			if len(d.servers) > 0 {
+				log.Printf("External A query to %s for %s", d.servers[0], q.Name)
+				if r, err := dns.Exchange(m, d.servers[0]); err == nil {
+					m.Answer = append(m.Answer, r.Answer...)
+				}
 			}
 		case dns.TypeMX:
 			log.Printf("Query for MX %s\n", q.Name)
@@ -71,6 +92,14 @@ func (d *DNS) parseQuery(m *dns.Msg) {
 				rr, err := dns.NewRR(fmt.Sprintf("%s MX 10 %s", q.Name, q.Name))
 				if err == nil {
 					m.Answer = append(m.Answer, rr)
+				}
+				continue
+			}
+
+			if len(d.servers) > 0 {
+				log.Printf("External MX query to %s for %s", d.servers[0], q.Name)
+				if r, err := dns.Exchange(m, d.servers[0]); err == nil {
+					m.Answer = append(m.Answer, r.Answer...)
 				}
 			}
 		}
@@ -169,10 +198,17 @@ func (s *Session) Logout() error {
 }
 
 func dnsServer() {
+	var servers []string
+	if len(DNSServers) > 0 {
+		servers = strings.Split(DNSServers, ",")
+	}
+
 	server := &dns.Server{
-		Addr:    ":" + strconv.Itoa(5353),
-		Net:     "udp",
-		Handler: &DNS{},
+		Addr: ":" + strconv.Itoa(5353),
+		Net:  "udp",
+		Handler: &DNS{
+			servers: servers,
+		},
 	}
 	log.Printf("Starting DNS server at %d\n", 53)
 	err := server.ListenAndServe()
@@ -239,7 +275,35 @@ func socksServer() {
 	}
 }
 
-func main() {
+func loadConfig() {
+	if len(Home) == 0 {
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+		Home = dirname
+	}
+
+	configPath := filepath.Join(Home, ".aslam", "config.json")
+
+	// read the config file
+	b, err := os.ReadFile(configPath)
+	if err == nil {
+		c := new(Config)
+		if json.Unmarshal(b, &c); err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("Loading config", configPath)
+		if len(Domain) == 0 {
+			Domain = c.Domain
+		}
+		if len(Address) == 0 {
+			Address = c.Address
+		}
+	}
+
+	// load config
 	if len(Domain) == 0 {
 		log.Fatal("require DOMAIN value e.g asl.am.")
 	}
@@ -248,13 +312,13 @@ func main() {
 		log.Fatal("require ADDRESS value e.g 1.2.3.4")
 	}
 
-	if len(Home) == 0 {
-		dirname, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal(err)
-		}
-		Home = dirname
-	}
+	log.Println("Domain:", Domain)
+	log.Println("Address:", Address)
+	log.Println("Home:", Home)
+}
+
+func main() {
+	loadConfig()
 
 	go dnsServer()
 	go httpServer()
