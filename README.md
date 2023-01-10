@@ -51,7 +51,8 @@ There is support for a config file. Config found in `$HOME/.aslam/config.json` w
 ```
 {
         "domain": "asl.am",
-        "address": "1.2.3.4"
+        "address": "1.2.3.4",
+	"dns_servers": ["8.8.8.8:53"]
 }
 ```
 

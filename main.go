@@ -26,6 +26,7 @@ import (
 type Config struct {
 	Domain  string `json:"domain"`
 	Address string `json:"address"`
+	DNSServers []string `json:"dns_servers"`
 }
 
 // DNS server handler
@@ -309,6 +310,9 @@ func loadConfig() {
 		if len(Address) == 0 {
 			Address = c.Address
 		}
+		if len(DNSServers) == 0 && len(c.DNSServers) > 0 {
+			DNSServers = strings.Join(c.DNSServers, ",")
+		}
 	}
 
 	// load config
@@ -323,6 +327,7 @@ func loadConfig() {
 	log.Println("Domain:", Domain)
 	log.Println("Address:", Address)
 	log.Println("Home:", Home)
+	log.Println("DNS Servers:", DNSServers)
 }
 
 func main() {
