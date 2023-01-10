@@ -81,7 +81,11 @@ func (d *DNS) parseQuery(m *dns.Msg) {
 			}
 			if len(d.servers) > 0 {
 				log.Printf("External A query to %s for %s", d.servers[0], q.Name)
-				if r, err := dns.Exchange(m, d.servers[0]); err == nil {
+				mr := new(dns.Msg)
+				mr.SetQuestion(q.Name, dns.TypeA)
+
+				if r, err := dns.Exchange(mr, d.servers[0]); err == nil {
+					log.Printf("Got response %v", r.Answer)
 					m.Answer = append(m.Answer, r.Answer...)
 				}
 			}
@@ -98,7 +102,11 @@ func (d *DNS) parseQuery(m *dns.Msg) {
 
 			if len(d.servers) > 0 {
 				log.Printf("External MX query to %s for %s", d.servers[0], q.Name)
-				if r, err := dns.Exchange(m, d.servers[0]); err == nil {
+				mr := new(dns.Msg)
+				mr.SetQuestion(q.Name, dns.TypeMX)
+
+				if r, err := dns.Exchange(mr, d.servers[0]); err == nil {
+					log.Printf("Got response %v", r.Answer)
 					m.Answer = append(m.Answer, r.Answer...)
 				}
 			}
