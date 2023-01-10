@@ -79,7 +79,11 @@ Ports used
 ### DNS
 
 ```
-dig @127.0.0.1 -p 5353 asl.am.
+# A record
+dig @127.0.0.1 -p 5353 asl.am A
+
+# MX record
+dig @127.0.0.1 -p 5353 asl.am MX
 ```
 
 ### Web
