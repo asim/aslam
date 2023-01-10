@@ -71,7 +71,7 @@ DOMAIN=asl.am ADDRESS=1.2.3.4 ./aslam
 Ports used
 
 - 1025 - for SMTP
-- 1080 - for SOCK5
+- 1080 - for SOCKS5
 - 5353 - for DNS
 - 8080 - for HTTP
 
