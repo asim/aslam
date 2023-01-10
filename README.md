@@ -42,6 +42,7 @@ There's a few env vars to specify
 - `DOMAIN` - The domain you want to administer
 - `ADDRESS` - The public ip address of the server
 - `HOME` - The home directory used for storage
+- `DNS_SERVERS` - To support external DNS queries
 
 ### Config
 
@@ -111,6 +112,18 @@ yo dude
 250 2.0.0 OK: queued
 quit
 ```
+
+## DNS
+
+The DNS server acts as an authoritative nameserver for the domain specified, so it will serve the address 
+specified for the domain name e.g `DOMAIN=asl.am` and `ADDRESS=1.2.3.4` will mean any query for asl.am 
+will return 1.2.3.4. This will occur for `A` and `MX` record queries.
+
+### External DNS
+
+Additionally we can support external DNS queries via a secondary source e.g `1.1.1.1` or `8.8.8.8`.
+
+Set `DNS_SERVERS=1.1.1.1:53` to support non authoritative queries for external DNS records.
 
 ## Storage
 
