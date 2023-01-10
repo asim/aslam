@@ -41,7 +41,6 @@ There's a few env vars to specify
 
 - `DOMAIN` - The domain you want to administer e.g asl.am
 - `ADDRESS` - The public ip address of the server e.g 1.2.3.4
-- `HOME` - The home directory used for storage (optional)
 - `DNS_SERVERS` - To support external DNS queries e.g 8.8.8.8:53
 
 ### Config
