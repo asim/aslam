@@ -142,4 +142,10 @@ Mail reader coming soon.
 The HTTP server is a static web server that reads from `$HOME/.aslam/web`. A template index.html file is 
 created on startup if no previous directory is found.
 
-Simple web editing might be nice.
+## TODO
+
+- [ ] Simple web editing might be nice
+- [ ] Prod flag to switch to live ports
+- [ ] Email sender validation for domain
+- [ ] User accounts and authentication
+- [ ] Multi tenant architecture...???
