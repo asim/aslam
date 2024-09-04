@@ -10,3 +10,4 @@ Things we do:
 - Strategy & planning
 - Startup fundraising
 - Technical due diligence
+- Candidate interviews
