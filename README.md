@@ -1,8 +1,8 @@
 # aslam
 
-A technical advisory for those in need of assistance.
+A technical advisory for those in need of assistance
 
-Contact [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info.
+Contact [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info
 
 Things we do:
 
