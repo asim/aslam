@@ -4,7 +4,7 @@ A technical advisory for those in need of assistance
 
 Contact [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info
 
-## What we cover
+### What we do
 
 - Architecture review
 - Strategy & planning
