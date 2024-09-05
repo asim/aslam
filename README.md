@@ -7,7 +7,7 @@ A technical advisory for those in need of assistance
 - Platform engineering, design and cloud architecture
 - Developer experience, open source strategy and marketing
 - Initial MVP development, go to market and feedback generation
-- Fundraising, VC intros and skills for engineers / solo founders
+- Fundraising, VC intros and guidance for engineers / solo founders
 - Keywords: APIs, microservices, Golang, startups, fundraising, etc.
 
 ### Past Work
