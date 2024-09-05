@@ -2,12 +2,14 @@
 
 A technical advisory for those in need of assistance
 
-Contact [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info
+### What we help with
 
-### What we do
-
-- Architecture review
-- Strategy & planning
 - Startup fundraising
-- Technical due diligence
-- Candidate interviews
+- Developer experience
+- Open source strategy
+- Basic MVP development
+
+### Contact
+
+Email [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info
+
