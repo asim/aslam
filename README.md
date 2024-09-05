@@ -4,7 +4,6 @@ A technical advisory for those in need of assistance
 
 ### What we help with
 
-- Startup fundraising
 - Developer experience
 - Open source strategy
 - Basic MVP development
