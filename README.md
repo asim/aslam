@@ -4,9 +4,10 @@ A technical advisory for those in need of assistance
 
 ### What we help with
 
+- Technical evaluation
 - Developer experience
 - Open source strategy
-- Basic MVP development
+- Initial MVP projects
 
 ### Contact
 
