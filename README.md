@@ -2,18 +2,19 @@
 
 A technical advisory for those in need of assistance
 
-### What we help with
+### Areas of Expertise
 
-- Technical evaluation
-- Developer experience
-- Open source strategy
-- Initial MVP projects
+- Technical evaluation, design and architecture review
+- Developer experience, open source strategy and marketing
+- Initial MVP development, go to market and feedback generation
+- Fundraising, intros and guidelines for engineers / solo founders
+- Keywords: APIs, microservices, Golang, startups, fundraising, etc.
 
 ### Past Work
 
 Asim Aslam, was the founder of [Micro](https://micro.dev), an open source project spanning a decade of work 
 and multiple phases of development. From a small bootstrapped startup to a VC funded company powering 100+ APIs.
-This included the popular [Go Micro](https://go-micro.dev) framework.
+This included the popular [Go Micro](https://go-micro.dev) framework. The project led to $2m in seed funding.
 
 Prior to that Asim worked at [Hailo](https://en.wikipedia.org/wiki/Hailo), on the platform team, helping bring to 
 life v2 of Hailo's ambition of becoming a global ride hailing startup. This included their big rewrite towards a 
