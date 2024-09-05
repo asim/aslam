@@ -4,10 +4,10 @@ A technical advisory for those in need of assistance
 
 ### Areas of Expertise
 
-- Technical evaluation, design and architecture review
+- Platform engineering, design and cloud architecture
 - Developer experience, open source strategy and marketing
 - Initial MVP development, go to market and feedback generation
-- Fundraising, intros and guidelines for engineers / solo founders
+- Fundraising, VC intros and skills for engineers / solo founders
 - Keywords: APIs, microservices, Golang, startups, fundraising, etc.
 
 ### Past Work
