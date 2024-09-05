@@ -16,8 +16,8 @@ Asim Aslam, was the founder of [Micro](https://micro.dev), an open source projec
 and multiple phases of development. From a small bootstrapped startup to a VC funded company powering 100+ APIs.
 This included the popular [Go Micro](https://go-micro.dev) framework. The project led to $2m in seed funding.
 
-Prior to that Asim worked at [Hailo](https://en.wikipedia.org/wiki/Hailo), on the platform team, helping bring to 
-life v2 of Hailo's ambition of becoming a global ride hailing startup. This included their big rewrite towards a 
+Prior to that Asim worked at [Hailo](https://en.wikipedia.org/wiki/Hailo), helping bring to 
+life v2 of Hailo's ambition of becoming a global ride hailing startup. This included their big rewrite towards a Go based
 microservices platform called H2O.
 
 ### Contact
