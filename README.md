@@ -1,6 +1,6 @@
 # aslam
 
-A technical advisory for those in need of assistance
+Technologist for hire
 
 ### Areas of Expertise
 
