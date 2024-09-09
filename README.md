@@ -14,7 +14,7 @@ Technologist for hire
 
 Asim Aslam, was the founder of [Micro](https://micro.dev), an open source project spanning a decade of work 
 and multiple phases of development. From a small bootstrapped startup to a VC funded company powering 100+ APIs.
-This included the popular [Go Micro](https://go-micro.dev) framework. The project led to $2m in seed funding.
+This included the framework [Go Micro](https://go-micro.dev). The popularity of the project led to $2m in seed funding.
 
 Prior to that Asim worked at [Hailo](https://en.wikipedia.org/wiki/Hailo), helping bring to 
 life v2 of Hailo's ambition of becoming a global ride hailing startup. This included their big rewrite towards a Go based
