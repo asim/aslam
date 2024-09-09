@@ -1,6 +1,6 @@
 # aslam
 
-Technologist for hire
+Support for technical founders
 
 ### Areas of Expertise
 
