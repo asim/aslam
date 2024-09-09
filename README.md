@@ -1,4 +1,4 @@
-# aslam & co
+# aslam
 
 As a former startup founder and engineer, I know what it's like to have to get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right one. There's a lot to do and not enough people to do it. I'm here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board, I can help. Reach out, call me, whatever you need.
 
