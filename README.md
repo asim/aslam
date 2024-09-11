@@ -12,8 +12,7 @@ As founders and engineers, we know what it's like to try get a business up and r
 
 ### Background
 
-Asim Aslam, is the founder of [Micro](https://micro.dev), an open source project spanning a decade of work 
-and multiple phases of development. From a small bootstrapped startup to a VC funded company powering 100+ APIs.
+Asim Aslam, is the founder of [Micro](https://micro.dev), an open source project spanning a decade of work. From a small bootstrapped startup to a VC funded company powering 100+ APIs.
 This included the framework [Go Micro](https://go-micro.dev). The popularity of the project led to $2m in seed funding.
 
 Prior to that Asim worked at [Hailo](https://en.wikipedia.org/wiki/Hailo), helping bring to 
