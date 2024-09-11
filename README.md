@@ -1,6 +1,6 @@
 # aslam
 
-As founders and engineers, we know what it's like to try get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right hat! There's a lot to do and not enough people to do it. We are here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board, reach out, call us, whatever you need.
+As founders and engineers, we know what it's like to try get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right hat! There's a lot to do and not enough people to do it. I'm here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board, reach out.
 
 ### Experience 
 
