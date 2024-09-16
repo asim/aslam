@@ -1,6 +1,6 @@
 # aslam
 
-As founders, we know how hard it is to get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right one! We're here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board.
+As founders, we know how hard it is to get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right one! I'm here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board.
 
 ### Experience 
 
@@ -8,7 +8,7 @@ As founders, we know how hard it is to get a business up and running. You need t
 - Developer experience, open source strategy and marketing
 - Initial MVP development, go to market and feedback generation
 - VC fundraising, intros and coaching for engineers / solo founders
-- Keywords: APIs, microservices, Golang, startups, fundraising, etc.
+- Technologies: APIs, microservices, Golang, gRPC, Kubernetes, etc.
 
 ### Background
 
