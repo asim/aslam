@@ -1,6 +1,6 @@
 # aslam
 
-As founders, we know how hard it is to get a business up and running. You need to wear a lot of hats and sometimes you don't even have the right one! I'm here to help. Whether its hacking on code or writing a blog post, doing a fundraising deck or pitching face to face. Even if it's just the need for a sounding board.
+As technical founders, we know what it's like trying to get a startup going. You need to wear a lot of hats and sometimes you don't even have the right one! We're here to help. Whether its hacking on code or writing a blog post, reviewing a pitch deck or chatting face to face. Even if it's just the need for a sounding board.
 
 ### Experience 
 
@@ -19,4 +19,4 @@ life v2 of Hailo's ambition of becoming a global ride hailing startup. This incl
 
 ### Contact
 
-Email [asim [at] aslam [dot] com](mailto:asim@aslam.com) for more info
+Email me [asim [at] aslam [dot] com](mailto:asim@aslam.com) for help
