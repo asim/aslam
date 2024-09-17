@@ -1,6 +1,6 @@
 ## Intro
 
-As founders, we know what it's like trying to get a startup going. You need to wear a lot of hats and sometimes you don't even have the right one! We're here to help. Whether its hacking on code or writing a blog post, reviewing a pitch deck or chatting face to face. Even if it's just the need for a sounding board.
+As founders, we know what it's like trying to get a startup going. You need to wear a lot of hats and sometimes you don't even have the right one! We're here to help. Whether its hacking on code or writing a blog post, reviewing a pitch deck or chatting face to face. Even if it's just to vent over lunch.
 
 ### Experience 
 
