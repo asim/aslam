@@ -24,4 +24,4 @@ life v2 of Hailo's ambition of becoming a global ride hailing startup. This incl
 
 ### Contact
 
-Email me [asim [at] aslam [dot] com](mailto:asim@aslam.com) for help
+Email [asim[at]aslam[dot]com](mailto:asim@aslam.com) or join [Discord](https://discord.gg/FjrMrxNehR).
