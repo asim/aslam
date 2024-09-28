@@ -2,5 +2,5 @@
 title: "Engineering Capital"
 ---
 
-
-[**Email**](mailto:asim@aslam.com) [**Discord**](https://discord.gg/FjrMrxNehR)
+[**Discord**](https://discord.gg/FjrMrxNehR)
+[**Email**](mailto:asim@aslam.com) 
