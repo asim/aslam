@@ -3,10 +3,17 @@
 
 @import "{{ site.theme }}";
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fbfbf8;
+}
 a {
   font-weight: bold;
   color: #333333;
 }
 .markdown-body {
   font-family: "Times New Roman", Times, serif;
+  margin-top: 25px;
 }
