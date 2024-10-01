@@ -1,3 +1,5 @@
 # Aslam & Co.
 
-The website for [aslam.com](https://aslam.com)
+Engineering Capital
+
+[**Discord**](https://discord.gg/FjrMrxNehR)
