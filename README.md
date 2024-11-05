@@ -2,14 +2,18 @@
 
 Engineering Capital
 
-## What we do
+### Who are we
 
-We build stuff in Go
+[Asim](https://github.com/asim) and Company
 
-## Make a request 
+### What we do
+
+We build stuff in [Go](https://go.dev)
+
+### Make a request 
 
 File an [issue](https://github.com/asim/aslam/issues/new) on GitHub
 
-## Come talk to us
+### Come talk to us
 
 Join the [**Discord**](https://discord.gg/FjrMrxNehR)
