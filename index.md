@@ -2,7 +2,7 @@
 title: "Engineering Capital"
 ---
 
-- **Who are we**
+- **Who we are**
   * [Asim](https://github.com/asim) and Company
 - **What we do**
   * We build stuff in [Go](https://go.dev)
