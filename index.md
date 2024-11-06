@@ -12,3 +12,4 @@ title: "Engineering Capital"
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
 - **Read some posts**
   * [The Real MVP](/mvp)
+  * [The Power of Go](/go)
