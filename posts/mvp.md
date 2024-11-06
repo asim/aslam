@@ -18,7 +18,7 @@ knows how to do all that.
 
 
 Joe's starting to feel a bit overwhelmed. What's this going to cost? How's he going to maintain any of it? He doesn't 
-know the first thing about web administration let alone email hosting or domains management. Joe's friend is insistent 
+know the first thing about web administration let alone email hosting or domain management. Joe's friend is insistent 
 though, so he let's him get on with it. A few weeks go by and Joe's no closer to launching his new venture. Apparently 
 there was a need to build a subscription mailing list from scratch because there was no viable alternative and all the 
 web hosting software had "terrible editors" so he chose something called github pages and jekyll instead. 
@@ -38,5 +38,5 @@ benefit from it in the here and now.
 
 When we as engineers are inlisted in helping get a project off the ground we have to take into account the audience who 
 then has to make use of the tools we facilitate for them and what they're going to do next if things work. Sometimes that 
-means leaving behind our creative itch and doing what's most pragmatic, like recommending Wordpress a host of other tools 
+means leaving behind our creative itch and doing what's most pragmatic, like recommending Wordpress instead of a host of other tools 
 we might personally prefer to use.
