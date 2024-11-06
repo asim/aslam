@@ -13,3 +13,4 @@ title: "Engineering Capital"
 - **Read some posts**
   * [The Real MVP](/mvp)
   * [The Power of Go](/go)
+  * [AI is the next platform](/ai)
