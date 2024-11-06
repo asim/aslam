@@ -11,4 +11,4 @@ Engineering Capital
 - **Come talk to us**
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
 - **Read some posts**
-  * [The Real MVP](/mvp)
+  * [The Real MVP](https://aslam.com/mvp)
