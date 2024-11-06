@@ -13,3 +13,4 @@ Engineering Capital
 - **Read some posts**
   * [The Real MVP](https://aslam.com/mvp)
   * [The Power of Go](https://aslam.com/go)
+  * [AI is the next platform](https://aslam.com/ai)
