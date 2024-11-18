@@ -15,3 +15,4 @@ title: "Engineering Capital"
   * [The Power of Go](/go)
   * [AI is the next platform](/ai)
   * [Everything has a purpose](/purpose)
+  * [A reminder to the whole world](/reminder)
