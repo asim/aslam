@@ -15,3 +15,4 @@ Engineering Capital
   * [The Power of Go](https://aslam.com/go)
   * [AI is the next platform](https://aslam.com/ai)
   * [Everything has a purpose](https://aslam.com/purpose)
+  * [A reminder to the whole world](https://aslam.com/reminder)
