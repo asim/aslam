@@ -10,8 +10,8 @@ swipe and dopamine hit from ordering that next Uber Eats. We
 as humans are here for a reason. The [Quran](https://quran.com) 
 was sent as a reminder to the whole world. It was sent to remind 
 us that we're here to worship God. We're here to do what he 
-commanded and were engineered for. A lot of humanity has lost 
-thay understanding or not even begun to understand. While the Quran 
+commanded and we were engineered for. A lot of humanity has lost 
+that understanding or not even begun to understand. While the Quran 
 is 1400 years old, technology has only reached a place now that we 
 can access it in any language instantly. Yet there still seems 
 to be something holding us back from fully embracing it. The Quran
