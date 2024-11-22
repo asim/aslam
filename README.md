@@ -1,6 +1,6 @@
 # Aslam & Co.
 
-Engineering Capital
+Investing in the future
 
 - **Who we are**
   * [Asim](https://github.com/asim) and Company
