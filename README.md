@@ -6,7 +6,7 @@ Investing in the future
   * [Asim](https://github.com/asim) and Company
 - **What we do**
   * We build tools in [Go](https://go.dev)
-- **Come talk to us**
+- **Talk to us**
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
 - **Read some posts**
   * [The Real MVP](https://aslam.com/mvp)
