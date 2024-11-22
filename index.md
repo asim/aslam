@@ -1,5 +1,5 @@
 ---
-title: "Engineering Capital"
+title: "Investing in the Future"
 ---
 
 - **Who we are**
