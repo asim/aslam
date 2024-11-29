@@ -15,3 +15,4 @@ title: "Investing in the Future"
   * [Everything has a purpose](/purpose)
   * [A reminder to the whole world](/reminder)
   * [The pursuit of wealth](/wealth)
+  * [The Search for Knowledge](/knowledge)
