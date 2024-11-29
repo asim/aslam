@@ -15,3 +15,4 @@ Investing in the future
   * [Everything has a purpose](https://aslam.com/purpose)
   * [A reminder to the whole world](https://aslam.com/reminder)
   * [The pursuit of wealth](https://aslam.com/wealth)
+  * [The Search for Knowledge](https://aslam.com/knowledge)
