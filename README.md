@@ -4,8 +4,6 @@ Investing in the future
 
 - **Who we are**
   * [Asim](https://github.com/asim) and Company
-- **What we do**
-  * Build tools in [Go](https://go.dev)
 - **Talk to us**
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
 - **Read some posts**
