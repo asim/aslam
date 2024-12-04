@@ -7,10 +7,10 @@ Investing in the future
 - **Talk to us**
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
 - **Read some posts**
-  * [The Real MVP](https://aslam.com/mvp)
-  * [The Power of Go](https://aslam.com/go)
+  * [The real MVP](https://aslam.com/mvp)
+  * [The power of Go](https://aslam.com/go)
   * [AI is the next platform](https://aslam.com/ai)
   * [Everything has a purpose](https://aslam.com/purpose)
   * [A reminder to the whole world](https://aslam.com/reminder)
   * [The pursuit of wealth](https://aslam.com/wealth)
-  * [The Search for Knowledge](https://aslam.com/knowledge)
+  * [The search for knowledge](https://aslam.com/knowledge)
