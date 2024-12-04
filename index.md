@@ -2,11 +2,11 @@
 title: "Investing in the Future"
 ---
 
-- **Who we are**
+- Who we are
   * [**Asim**](https://github.com/asim) and Company
-- **Talk to us**
+- Talk to us
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
-- **Read some posts**
+- Read some posts
   * [The real MVP](/mvp)
   * [The power of Go](/go)
   * [AI is the next platform](/ai)
