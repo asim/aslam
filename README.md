@@ -2,11 +2,11 @@
 
 Investing in the future
 
-- **Who we are**
+- Who we are
   * [**Asim**](https://github.com/asim) and Company
-- **Talk to us**
+- Talk to us
   * Join the [**Discord**](https://discord.gg/FjrMrxNehR)
-- **Read some posts**
+- Read some posts
   * [The real MVP](https://aslam.com/mvp)
   * [The power of Go](https://aslam.com/go)
   * [AI is the next platform](https://aslam.com/ai)
