@@ -22,3 +22,16 @@ so much of what it means to be human. Perhaps that time spent
 could be put to better use elsewhere but I'd say we are very 
 rapidly going to lose the ability to reason at all and that's 
 scary.
+
+If I look at the history of abstractions or building blocks in science, nature and 
+computing then its only fair to say this is evolution and eventually we'll abstract
+away the hard work for many human heavy labour tasks of today. And so much of that 
+heavy labour is not physical but mental. 
+Knowledge work is to be replaced. Which 
+means reasoning about what we onced reason 
+about is going to disappear. This should 
+concern us to some degree. While it has a
+way of democratising many fields it will 
+also means we need to be more cognisant 
+of that which is an entirely human experience which we're going to hand over
+to the machines.
