@@ -14,3 +14,4 @@ title: "Investing in the Future"
   * [A reminder to the whole world](/reminder)
   * [The pursuit of wealth](/wealth)
   * [The search for knowledge](/knowledge)
+  * [The value of time](/time)

@@ -14,3 +14,4 @@ Investing in the future
   * [A reminder to the whole world](https://aslam.com/reminder)
   * [The pursuit of wealth](https://aslam.com/wealth)
   * [The search for knowledge](https://aslam.com/knowledge)
+  * [The value of time](https://aslam.com/time)
