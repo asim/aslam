@@ -1,6 +1,6 @@
 ---
-title: "Accomplishment"
-permalink: /accomplishment
+title: "Reasoning"
+permalink: /reasoning
 layout: post
 ---
 
