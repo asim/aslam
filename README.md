@@ -1,4 +1,4 @@
-# Aslam & Co.
+# Aslam
 
 Investing in the future
 
