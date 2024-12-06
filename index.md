@@ -15,3 +15,4 @@ title: "Investing in the Future"
   * [The pursuit of wealth](/wealth)
   * [The search for knowledge](/knowledge)
   * [The value of time](/time)
+  * [A sense of accomplishment](/accomplishment)
