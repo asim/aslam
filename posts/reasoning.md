@@ -29,4 +29,4 @@ GPT-4o mini is seen as a reasoning engine. Could this be the beginning of the en
 decline as our intelligence is effectively handed off to supercomputers of our own making. Offloading decisions to the 
 Gods isn't anything new. Humanity used to cast lots, essentially a form of randomness, for decision making. How is 
 asking the AI any different? It draws on a wealth of human knowledge, and yet it's token generator is nothing more 
-than assumed intelligence that could be choosing between two scores for different words. It's entirely random at best. 
+than assumed intelligence that could be choosing between two scores for different words. It's entirely randomness at best. 
