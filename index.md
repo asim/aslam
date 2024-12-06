@@ -15,4 +15,4 @@ title: "Investing in the Future"
   * [Wealth](/wealth)
   * [Knowledge](/knowledge)
   * [Time](/time)
-  * [Accomplishment](/accomplishment)
+  * [Reasoning](/reasoning)
