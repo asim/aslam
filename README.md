@@ -15,4 +15,4 @@ Investing in the future
   * [Wealth](https://aslam.com/wealth)
   * [Knowledge](https://aslam.com/knowledge)
   * [Time](https://aslam.com/time)
-  * [Accomplishment](https://aslam.com/accomplishment)
+  * [Reasoning](https://aslam.com/reasoning)
