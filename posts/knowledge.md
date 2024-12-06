@@ -5,7 +5,7 @@ layout: post
 ---
 
 *This post was written using the [Reminder](https://github.com/asim/reminder). The Quran and Hadiths are used as context for any question posed to the LLM. The index provides the sources that match the question 
-and then feed that into the LLM as context. The output was a post on "The Search for Knowledge". The text and references are included below.*
+and then feed that into the LLM as context. The output was a post on "The Search for Knowledge" is below.
 
 Throughout history, the pursuit of knowledge has been a fundamental aspect of human existence. From the ancient civilizations that adorned their walls with hieroglyphs to the philosophers of Greece who questioned the nature of reality, humanity has always sought to understand the world around them. This quest has led to significant advancements in various fields, including science, medicine, literature, and art. Each discovery and every piece of knowledge built upon the foundation laid by previous generations, showcasing an unending desire to learn and grow.
 
