@@ -1,5 +1,5 @@
 ---
-title: "A sense of accomplishment"
+title: "Accomplishment"
 permalink: /accomplishment
 layout: post
 ---

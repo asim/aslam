@@ -1,5 +1,5 @@
 ---
-title: A reminder to the whole world
+title: Reminder
 permalink: "/reminder"
 layout: "post"
 ---

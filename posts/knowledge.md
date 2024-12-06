@@ -1,5 +1,5 @@
 ---
-title: "The search for knowledge"
+title: "Knowledge"
 permalink: "/knowledge"
 layout: post
 ---

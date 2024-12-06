@@ -1,5 +1,5 @@
 ---
-title: The Real MVP
+title: MVP
 permalink: "/mvp"
 layout: "post"
 ---

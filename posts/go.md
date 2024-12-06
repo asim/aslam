@@ -1,5 +1,5 @@
 ---
-title: The power of Go
+title: Go
 permalink: "/go"
 layout: "post"
 ---

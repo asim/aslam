@@ -1,5 +1,5 @@
 ---
-title: The pursuit of wealth
+title: Wealth
 permalink: "/wealth"
 layout: "post"
 ---

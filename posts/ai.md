@@ -1,5 +1,5 @@
 ---
-title: AI is the next platform
+title: AI
 permalink: "/ai"
 layout: "post"
 ---

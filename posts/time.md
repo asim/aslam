@@ -1,5 +1,5 @@
 ---
-title: The value of time
+title: Time
 permalink: "/time"
 layout: "post"
 ---

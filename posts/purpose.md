@@ -1,5 +1,5 @@
 ---
-title: Everything has a purpose
+title: Purpose
 permalink: "/purpose"
 layout: "post"
 ---
