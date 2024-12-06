@@ -10,9 +10,9 @@ While AI can very rapidly get to a similar place as what
 might take me a couple hours, what I lose out on is far more 
 profound. People say AI is going to improve so many fields in 
 so many ways but I think one place where we're going to fall 
-short is our feeling of accomplishment when performing hard tasks. 
+short is our feeling of accomplishment and deeper understanding of how we got yhere when performing hard tasks. 
 Ofcourse they say this means we'll move on to new forms of work
-that will give us an even greater form of accomplishment but 
+that will give us an even greater form of meaning but 
 I'd be remiss if I didnt say that I feel slightly cheated by the 
 ease of whats outputted. You see if I'm writing a piece of content
 so much of that process isn't the output itself but the time I 
