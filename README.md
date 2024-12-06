@@ -15,3 +15,4 @@ Investing in the future
   * [The pursuit of wealth](https://aslam.com/wealth)
   * [The search for knowledge](https://aslam.com/knowledge)
   * [The value of time](https://aslam.com/time)
+  * [A sense of accomplishment](https://aslam.com/accomplishment)
