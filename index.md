@@ -15,3 +15,4 @@ title: "Engineering Capital"
   * [Everything has a purpose](/purpose)
   * [A reminder to the whole world](/reminder)
   * [The pursuit of wealth](/wealth)
+  * [The value of time](/time)

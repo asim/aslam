@@ -15,3 +15,4 @@ Engineering Capital
   * [Everything has a purpose](https://aslam.com/purpose)
   * [A reminder to the whole world](https://aslam.com/reminder)
   * [The pursuit of wealth](https://aslam.com/wealth)
+  * [The value of time](https://aslam.com/time)
