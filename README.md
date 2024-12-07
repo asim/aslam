@@ -3,9 +3,9 @@
 Investing in the future
 
 - About
-  * [**Asim**](https://github.com/asim)
+  * [Asim](https://github.com/asim)
 - Contact
-  * [**Discord**](https://discord.gg/FjrMrxNehR)
+  * [Discord](https://discord.gg/FjrMrxNehR)
 - Posts
   * [MVP](https://aslam.com/mvp)
   * [Go](https://aslam.com/go)
