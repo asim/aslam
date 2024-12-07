@@ -3,9 +3,9 @@ title: "Investing in the Future"
 ---
 
 - About
-  * [**Asim**](https://github.com/asim)
+  * [Asim](https://github.com/asim)
 - Contact
-  * [**Discord**](https://discord.gg/FjrMrxNehR)
+  * [Discord](https://discord.gg/FjrMrxNehR)
 - Posts
   * [MVP](/mvp)
   * [Go](/go)
