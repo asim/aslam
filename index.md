@@ -16,3 +16,4 @@ title: "Investing in the Future"
   * [Knowledge](/knowledge)
   * [Time](/time)
   * [Reasoning](/reasoning)
+  * [Investing](/investing)
