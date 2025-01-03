@@ -5,7 +5,7 @@ title: "Investing in the Future"
 - About
   * [Asim](https://github.com/asim)
 - Contact
-  * [Email](mailto:salam@aslam.com
+  * [Email](mailto:salam@aslam.com)
 - Posts
   * [MVP](/mvp)
   * [Go](/go)
