@@ -1,5 +1,5 @@
 ---
-title: "Investing in the Future"
+title: "Investing in the future"
 ---
 
 - About
