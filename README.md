@@ -17,5 +17,3 @@ Investing in the future
   * [Time](https://aslam.com/time)
   * [Reasoning](https://aslam.com/reasoning)
   * [Investing](https://aslam.com/investing)
-- Work
-  * [Reminder](https://reminder.dev)
