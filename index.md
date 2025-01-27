@@ -17,5 +17,5 @@ title: "Investing in the future"
   * [Time](/time)
   * [Reasoning](/reasoning)
   * [Investing](/investing)
- - Work
+- Work
   * [Reminder](https://reminder.dev)
