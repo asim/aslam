@@ -69,6 +69,12 @@ export ASLAM_KEY=$(cat ~/.aslam/.key)
 - `instruction` - How to do things
 - `note` - General notes
 
+## Cost Optimization
+
+- **Prompt caching**: System prompt (~600 tokens) is cached for 5 minutes using Anthropic's cache_control
+- **Model**: Using Claude Haiku by default (cheapest, fastest)
+- **Future**: Consider batch processing for non-real-time tasks (50% discount)
+
 ## Future Enhancements
 
 - [ ] Authentication (Google OAuth / magic link)
@@ -79,3 +85,4 @@ export ASLAM_KEY=$(cat ~/.aslam/.key)
 - [ ] Mobile app / PWA
 - [ ] Backup/export functionality
 - [ ] Multi-user family access
+- [ ] Usage monitoring / token tracking
