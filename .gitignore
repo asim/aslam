@@ -1,0 +1,18 @@
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Keys and secrets
+*.key
+.key
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# SQLCipher/SQLite
+*.sqlite
+*.sqlite3
