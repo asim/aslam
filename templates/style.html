@@ -5,42 +5,46 @@
         font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
         font-size: 14px;
         line-height: 1.6;
-        background: #000;
-        color: #fff;
+        background: #fff;
+        color: #000;
         min-height: 100vh;
     }
-    a { color: #fff; text-decoration: underline; }
-    a:hover { text-decoration: none; }
-    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-    header { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
-    header h1 { font-size: 18px; font-weight: normal; }
-    nav { margin-top: 10px; }
-    nav a { margin-right: 20px; }
-    .muted { color: #666; }
+    a { color: #000; }
+    a:hover { opacity: 0.6; }
+    .container { max-width: 700px; margin: 0 auto; padding: 24px; }
+    header { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid #e0e0e0; }
+    header h1 { font-size: 18px; font-weight: 600; }
+    nav { margin-top: 12px; }
+    nav a { margin-right: 20px; text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    .muted { color: #888; }
     input, textarea, button {
         font-family: inherit; font-size: inherit;
-        background: #111; color: #fff;
-        border: 1px solid #333; padding: 8px 12px;
+        background: #fff; color: #000;
+        border: 1px solid #ddd; padding: 10px 14px;
+        border-radius: 8px;
     }
-    input:focus, textarea:focus { outline: none; border-color: #666; }
-    button { cursor: pointer; background: #fff; color: #000; border: none; }
-    button:hover { background: #ccc; }
-    textarea { min-height: 100px; resize: vertical; }
+    input:focus, textarea:focus { outline: none; border-color: #999; }
+    button { cursor: pointer; background: #000; color: #fff; border: none; border-radius: 8px; }
+    button:hover { background: #333; }
+    textarea { min-height: 60px; resize: vertical; }
     ul { list-style: none; }
-    li { padding: 10px 0; border-bottom: 1px solid #222; }
+    li { padding: 14px 0; border-bottom: 1px solid #eee; }
     li:last-child { border-bottom: none; }
-    .message { margin-bottom: 20px; padding: 15px; border: 1px solid #333; }
-    .message.user { background: #111; }
-    .message.assistant { background: #0a0a0a; border-color: #444; }
-    .message-role { font-size: 12px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+    .message { margin-bottom: 16px; padding: 16px; border: 1px solid #e0e0e0; border-radius: 12px; }
+    .message.user { background: #f8f8f8; }
+    .message.assistant { background: #fff; }
+    .message-role { font-size: 11px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     .message-content { white-space: pre-wrap; word-wrap: break-word; }
     .search-form { display: flex; gap: 10px; margin-bottom: 20px; }
     .search-form input { flex: 1; }
-    .time { color: #666; font-size: 12px; }
-    .chat-input { position: fixed; bottom: 0; left: 0; right: 0; background: #000; border-top: 1px solid #333; padding: 15px; }
-    .chat-input form { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; }
-    .chat-input textarea { flex: 1; min-height: 50px; max-height: 200px; }
-    .messages-container { padding-bottom: 120px; }
-    @media (max-width: 600px) { .container { padding: 15px; } nav a { display: block; margin: 5px 0; } }
+    .time { color: #999; font-size: 12px; }
+    .chat-input { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e0e0e0; padding: 16px; }
+    .chat-input form { max-width: 700px; margin: 0 auto; display: flex; gap: 10px; }
+    .chat-input textarea { flex: 1; min-height: 44px; max-height: 200px; }
+    .messages-container { padding-bottom: 100px; }
+    h2 { font-weight: 600; font-size: 20px; }
+    h3 { font-weight: 600; font-size: 16px; }
+    @media (max-width: 600px) { .container { padding: 16px; } nav a { display: block; margin: 8px 0; } }
 </style>
 {{end}}
