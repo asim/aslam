@@ -14,11 +14,11 @@
         <p class="muted" style="margin: 15px 0">Personal assistant and family knowledge base.</p>
 
         <form action="/chat/new" method="POST" style="margin: 20px 0">
-            <button type="submit">+ New Conversation</button>
+            <button type="submit">+ New Chat</button>
         </form>
 
         {{if .Conversations}}
-        <h3 style="margin-top: 30px">Recent Conversations</h3>
+        <h3 style="margin-top: 30px">Recent Chats</h3>
         <ul>
             {{range .Conversations}}
             <li>
@@ -28,7 +28,7 @@
             {{end}}
         </ul>
         {{else}}
-        <p class="muted">No conversations yet.</p>
+        <p class="muted">No chats yet.</p>
         {{end}}
     </div>
 </body>
