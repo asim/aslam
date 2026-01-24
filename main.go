@@ -592,12 +592,12 @@ func generateResponse(messages []Message) (string, error) {
 	}
 	
 	// Build messages for API
-	var apiMessages []map[string]string
+	var apiMessages []map[string]interface{}
 	for _, m := range messages {
 		if m.Role == "system" {
 			continue
 		}
-		apiMessages = append(apiMessages, map[string]string{
+		apiMessages = append(apiMessages, map[string]interface{}{
 			"role":    m.Role,
 			"content": m.Content,
 		})
@@ -636,11 +636,21 @@ Be concise, practical, and helpful. Ground advice in both practical wisdom and I
 
 You have access to a knowledge base of past conversations and entries that can be searched.`
 	
+	// Use prompt caching for system prompt (reduces cost for repeated calls)
+	// System prompt is ~600 tokens, cached for 5 minutes
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
 		"max_tokens": 2048,
-		"system":     systemPrompt,
-		"messages":   apiMessages,
+		"system": []map[string]interface{}{
+			{
+				"type": "text",
+				"text": systemPrompt,
+				"cache_control": map[string]string{
+					"type": "ephemeral",
+				},
+			},
+		},
+		"messages": apiMessages,
 	}
 	
 	jsonBody, _ := json.Marshal(reqBody)
