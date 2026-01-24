@@ -1,0 +1,38 @@
+{{define "chat.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Conversation.Title}} - Aslam</title>
+    {{template "style"}}
+</head>
+<body>
+    <div class="container">
+        {{template "header"}}
+        <div class="messages-container">
+            <h2 style="margin-bottom: 20px">{{.Conversation.Title}}</h2>
+            
+            {{if .Messages}}
+            {{range .Messages}}
+            <div class="message {{.Role}}">
+                <div class="message-role">{{.Role}} <span class="time">{{formatTime .CreatedAt}}</span></div>
+                <div class="message-content">{{.Content}}</div>
+            </div>
+            {{end}}
+            {{else}}
+            <p class="muted">Start the conversation below.</p>
+            {{end}}
+        </div>
+
+        <div class="chat-input">
+            <form action="/chat/send" method="POST">
+                <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
+                <textarea name="message" placeholder="Type your message..." autofocus></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,40 @@
+{{define "search.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - Aslam</title>
+    {{template "style"}}
+</head>
+<body>
+    <div class="container">
+        {{template "header"}}
+        <h2>Search</h2>
+
+        <form class="search-form" method="GET" action="/search">
+            <input type="text" name="q" value="{{.Query}}" placeholder="Search conversations..." autofocus>
+            <button type="submit">Search</button>
+        </form>
+
+        {{if .Query}}
+        {{if .Results}}
+        <p class="muted">{{len .Results}} results</p>
+        <ul>
+            {{range .Results}}
+            <li>
+                <a href="/chat/{{index . "ConversationID"}}">{{index . "Title"}}</a>
+                <span class="muted">[{{index . "Role"}}]</span>
+                <span class="time">{{formatTime (index . "CreatedAt")}}</span>
+                <div class="muted" style="margin-top: 5px">{{truncate (index . "Content") 200}}</div>
+            </li>
+            {{end}}
+        </ul>
+        {{else}}
+        <p class="muted">No results found.</p>
+        {{end}}
+        {{end}}
+    </div>
+</body>
+</html>
+{{end}}

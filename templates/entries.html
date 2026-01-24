@@ -1,0 +1,32 @@
+{{define "entries.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entries - Aslam</title>
+    {{template "style"}}
+</head>
+<body>
+    <div class="container">
+        {{template "header"}}
+        <h2>Entries</h2>
+
+        {{if .Entries}}
+        <ul>
+            {{range .Entries}}
+            <li>
+                <span class="muted">[{{index . "Type"}}]</span>
+                <a href="/entries/{{index . "ID"}}">{{index . "Title"}}</a>
+                <span class="time">{{formatTime (index . "CreatedAt")}}</span>
+            </li>
+            {{end}}
+        </ul>
+        {{else}}
+        <p class="muted">No entries yet. Use the CLI to add entries:</p>
+        <pre style="margin-top: 10px; color: #666">./kb add thought "Title" "Content"</pre>
+        {{end}}
+    </div>
+</body>
+</html>
+{{end}}

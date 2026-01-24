@@ -1,0 +1,27 @@
+{{define "entry.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{index . "Title"}} - Aslam</title>
+    {{template "style"}}
+</head>
+<body>
+    <div class="container">
+        {{template "header"}}
+        <p class="muted">[{{index . "Type"}}] <span class="time">{{formatTime (index . "CreatedAt")}}</span></p>
+        <h2 style="margin: 10px 0">{{index . "Title"}}</h2>
+
+        <div class="message" style="margin-top: 20px">
+            <div class="message-content">{{index . "Content"}}</div>
+        </div>
+
+        {{if index . "Metadata"}}
+        <p class="muted" style="margin-top: 20px">Metadata:</p>
+        <pre style="color: #666">{{index . "Metadata"}}</pre>
+        {{end}}
+    </div>
+</body>
+</html>
+{{end}}

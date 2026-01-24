@@ -1,0 +1,46 @@
+{{define "style"}}
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        background: #000;
+        color: #fff;
+        min-height: 100vh;
+    }
+    a { color: #fff; text-decoration: underline; }
+    a:hover { text-decoration: none; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    header { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+    header h1 { font-size: 18px; font-weight: normal; }
+    nav { margin-top: 10px; }
+    nav a { margin-right: 20px; }
+    .muted { color: #666; }
+    input, textarea, button {
+        font-family: inherit; font-size: inherit;
+        background: #111; color: #fff;
+        border: 1px solid #333; padding: 8px 12px;
+    }
+    input:focus, textarea:focus { outline: none; border-color: #666; }
+    button { cursor: pointer; background: #fff; color: #000; border: none; }
+    button:hover { background: #ccc; }
+    textarea { min-height: 100px; resize: vertical; }
+    ul { list-style: none; }
+    li { padding: 10px 0; border-bottom: 1px solid #222; }
+    li:last-child { border-bottom: none; }
+    .message { margin-bottom: 20px; padding: 15px; border: 1px solid #333; }
+    .message.user { background: #111; }
+    .message.assistant { background: #0a0a0a; border-color: #444; }
+    .message-role { font-size: 12px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+    .message-content { white-space: pre-wrap; word-wrap: break-word; }
+    .search-form { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-form input { flex: 1; }
+    .time { color: #666; font-size: 12px; }
+    .chat-input { position: fixed; bottom: 0; left: 0; right: 0; background: #000; border-top: 1px solid #333; padding: 15px; }
+    .chat-input form { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; }
+    .chat-input textarea { flex: 1; min-height: 50px; max-height: 200px; }
+    .messages-container { padding-bottom: 120px; }
+    @media (max-width: 600px) { .container { padding: 15px; } nav a { display: block; margin: 5px 0; } }
+</style>
+{{end}}

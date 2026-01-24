@@ -52,3 +52,40 @@ END;
 CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type);
 CREATE INDEX IF NOT EXISTS idx_entries_created ON entries(created_at);
 CREATE INDEX IF NOT EXISTS idx_entries_updated ON entries(updated_at);
+
+-- Conversations table
+CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    summary TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Messages within conversations
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
+-- Full-text search for messages
+CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts4(
+    content,
+    content='messages'
+);
+
+CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
+    INSERT INTO messages_fts(docid, content) VALUES (new.id, new.content);
+END;
+
+CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
+    DELETE FROM messages_fts WHERE docid = old.id;
+END;
+
+-- Indexes for conversations
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at);
