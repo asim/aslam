@@ -16,3 +16,6 @@
 # SQLCipher/SQLite
 *.sqlite
 *.sqlite3
+
+# Binary
+/aslam
