@@ -94,6 +94,8 @@ func main() {
 	http.HandleFunc("/chat/", handleChatView)
 	http.HandleFunc("/chat/new", handleNewChat)
 	http.HandleFunc("/chat/send", handleSendMessage)
+	http.HandleFunc("/api/chat/send", handleAPISendMessage)
+	http.HandleFunc("/api/search", handleAPISearch)
 	http.HandleFunc("/search", handleSearch)
 	http.HandleFunc("/entries", handleEntries)
 	http.HandleFunc("/entries/", handleEntryView)
@@ -284,6 +286,80 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", convID), http.StatusSeeOther)
+}
+
+func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ConversationID int64  `json:"conversation_id"`
+		Message        string `json:"message"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request", 400)
+		return
+	}
+
+	if req.ConversationID == 0 || req.Message == "" {
+		jsonError(w, "Missing fields", 400)
+		return
+	}
+
+	// Save user message
+	if err := addMessage(req.ConversationID, "user", req.Message); err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+
+	// Get conversation history for context
+	messages, _ := getMessages(req.ConversationID)
+
+	// Generate AI response
+	response, err := generateResponse(messages)
+	if err != nil {
+		response = "Error: " + err.Error()
+	}
+	addMessage(req.ConversationID, "assistant", response)
+
+	// Update conversation title if first message
+	if len(messages) <= 1 {
+		title := req.Message
+		if len(title) > 50 {
+			title = title[:50] + "..."
+		}
+		updateConversationTitle(req.ConversationID, title)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"response": response})
+}
+
+func handleAPISearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		return
+	}
+
+	results, err := searchMessages(query)
+	if err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"results": results})
+}
+
+func jsonError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
 
 func handleSearch(w http.ResponseWriter, r *http.Request) {

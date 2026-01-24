@@ -6,17 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search - Aslam</title>
     {{template "style"}}
+    <style>
+        .loading { opacity: 0.5; }
+        #search-btn:disabled { opacity: 0.5; }
+    </style>
 </head>
 <body>
     <div class="container">
         {{template "header"}}
         <h2>Search</h2>
 
-        <form class="search-form" method="GET" action="/search">
-            <input type="text" name="q" value="{{.Query}}" placeholder="Search conversations..." autofocus>
-            <button type="submit">Search</button>
+        <form class="search-form" id="search-form">
+            <input type="text" name="q" id="search-input" value="{{.Query}}" placeholder="Search chats..." autofocus>
+            <button type="submit" id="search-btn">Search</button>
         </form>
 
+        <div id="results">
         {{if .Query}}
         {{if .Results}}
         <p class="muted">{{len .Results}} results</p>
@@ -34,7 +39,77 @@
         <p class="muted">No results found.</p>
         {{end}}
         {{end}}
+        </div>
     </div>
+
+    <script>
+        const form = document.getElementById('search-form');
+        const input = document.getElementById('search-input');
+        const results = document.getElementById('results');
+        const btn = document.getElementById('search-btn');
+
+        let debounceTimer;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function truncate(str, n) {
+            return str.length > n ? str.slice(0, n) + '...' : str;
+        }
+
+        async function doSearch(query) {
+            if (!query.trim()) {
+                results.innerHTML = '';
+                return;
+            }
+
+            results.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/search?q=' + encodeURIComponent(query));
+                const data = await resp.json();
+
+                if (data.error) {
+                    results.innerHTML = '<p class="muted">Error: ' + escapeHtml(data.error) + '</p>';
+                } else if (data.results && data.results.length > 0) {
+                    let html = '<p class="muted">' + data.results.length + ' results</p><ul>';
+                    for (const r of data.results) {
+                        html += `
+                            <li>
+                                <a href="/chat/${r.ConversationID}">${escapeHtml(r.Title)}</a>
+                                <span class="muted">[${r.Role}]</span>
+                                <div class="muted" style="margin-top: 5px">${escapeHtml(truncate(r.Content, 200))}</div>
+                            </li>
+                        `;
+                    }
+                    html += '</ul>';
+                    results.innerHTML = html;
+                } else {
+                    results.innerHTML = '<p class="muted">No results found.</p>';
+                }
+            } catch (err) {
+                results.innerHTML = '<p class="muted">Error: ' + escapeHtml(err.message) + '</p>';
+            }
+
+            results.classList.remove('loading');
+            btn.disabled = false;
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            doSearch(input.value);
+        });
+
+        // Live search with debounce
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => doSearch(input.value), 300);
+        });
+    </script>
 </body>
 </html>
 {{end}}

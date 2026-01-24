@@ -6,12 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
+    <style>
+        .typing { opacity: 0.6; }
+        .typing .message-content::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
 </head>
 <body>
     <div class="container">
         {{template "header"}}
-        <div class="messages-container">
-            <h2 style="margin-bottom: 20px">{{.Conversation.Title}}</h2>
+        <div class="messages-container" id="messages">
+            <h2 style="margin-bottom: 20px" id="chat-title">{{.Conversation.Title}}</h2>
             
             {{if .Messages}}
             {{range .Messages}}
@@ -21,18 +34,121 @@
             </div>
             {{end}}
             {{else}}
-            <p class="muted">Start the conversation below.</p>
+            <p class="muted" id="empty-state">Start the conversation below.</p>
             {{end}}
         </div>
 
         <div class="chat-input">
-            <form action="/chat/send" method="POST">
+            <form id="chat-form">
                 <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
-                <textarea name="message" placeholder="Type your message..." autofocus></textarea>
-                <button type="submit">Send</button>
+                <textarea name="message" id="message-input" placeholder="Type your message..." autofocus></textarea>
+                <button type="submit" id="send-btn">Send</button>
             </form>
         </div>
     </div>
+
+    <script>
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message-input');
+        const messages = document.getElementById('messages');
+        const sendBtn = document.getElementById('send-btn');
+        const convId = form.querySelector('input[name="conversation_id"]').value;
+
+        function formatTime() {
+            const now = new Date();
+            return now.toISOString().slice(0, 16).replace('T', ' ');
+        }
+
+        function addMessage(role, content, isTyping = false) {
+            // Remove empty state if present
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.remove();
+
+            const div = document.createElement('div');
+            div.className = 'message ' + role + (isTyping ? ' typing' : '');
+            div.innerHTML = `
+                <div class="message-role">${role} <span class="time">${formatTime()}</span></div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            messages.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+            window.scrollTo(0, document.body.scrollHeight - 150);
+        }
+
+        function updateTitle(title) {
+            const titleEl = document.getElementById('chat-title');
+            if (titleEl.textContent === 'New conversation') {
+                titleEl.textContent = title.length > 50 ? title.slice(0, 50) + '...' : title;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Disable input
+            input.disabled = true;
+            sendBtn.disabled = true;
+            input.value = '';
+
+            // Show user message immediately
+            addMessage('user', message);
+            updateTitle(message);
+
+            // Show typing indicator
+            const typingDiv = addMessage('assistant', 'Thinking', true);
+
+            try {
+                const resp = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ conversation_id: parseInt(convId), message: message })
+                });
+
+                const data = await resp.json();
+                
+                // Remove typing indicator and show real response
+                typingDiv.remove();
+                
+                if (data.error) {
+                    addMessage('assistant', 'Error: ' + data.error);
+                } else {
+                    addMessage('assistant', data.response);
+                }
+            } catch (err) {
+                typingDiv.remove();
+                addMessage('assistant', 'Error: ' + err.message);
+            }
+
+            // Re-enable input
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        });
+
+        // Submit on Enter (Shift+Enter for newline)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                form.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Scroll to bottom on load
+        scrollToBottom();
+    </script>
 </body>
 </html>
 {{end}}
