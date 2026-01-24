@@ -108,7 +108,7 @@
             updateTitle(message);
 
             // Show typing indicator
-            const typingDiv = addMessage('assistant', 'Thinking', true);
+            const typingDiv = addMessage('assistant', 'Processing', true);
 
             try {
                 const resp = await fetch('/api/chat/send', {
