@@ -1,0 +1,201 @@
+#!/bin/bash
+# Aslam Knowledge Base CLI
+# Usage: ./kb <command> [args]
+
+set -e
+
+DB_PATH="${ASLAM_DB:-$HOME/.aslam/aslam.db}"
+DB_DIR=$(dirname "$DB_PATH")
+
+# Ensure directory exists
+mkdir -p "$DB_DIR"
+
+# Check for passphrase
+if [ -z "$ASLAM_KEY" ]; then
+    echo "ASLAM_KEY environment variable not set."
+    echo "Export it with: export ASLAM_KEY='your-passphrase'"
+    exit 1
+fi
+
+run_sql() {
+    sqlcipher "$DB_PATH" <<EOF | grep -v '^ok$'
+PRAGMA key='$ASLAM_KEY';
+$1
+EOF
+}
+
+run_sql_pretty() {
+    sqlcipher -header -column "$DB_PATH" <<EOF | grep -v '^ok$' | grep -v '^--$'
+PRAGMA key='$ASLAM_KEY';
+$1
+EOF
+}
+
+case "${1:-help}" in
+    init)
+        if [ -f "$DB_PATH" ]; then
+            echo "Database already exists at $DB_PATH"
+            exit 1
+        fi
+        SCRIPT_DIR=$(dirname "$0")
+        sqlcipher "$DB_PATH" <<EOF
+PRAGMA key='$ASLAM_KEY';
+$(cat "$SCRIPT_DIR/schema.sql")
+EOF
+        echo "Database initialized at $DB_PATH"
+        ;;
+    
+    add)
+        TYPE="$2"
+        TITLE="$3"
+        CONTENT="$4"
+        METADATA="${5:-{}}"
+        
+        if [ -z "$TYPE" ] || [ -z "$TITLE" ]; then
+            echo "Usage: kb add <type> <title> [content] [metadata]"
+            echo "Types: thought, project, credential, contact, document, decision, instruction, note"
+            exit 1
+        fi
+        
+        # Escape single quotes
+        TITLE_ESC=$(echo "$TITLE" | sed "s/'/''/g")
+        CONTENT_ESC=$(echo "$CONTENT" | sed "s/'/''/g")
+        METADATA_ESC=$(echo "$METADATA" | sed "s/'/''/g")
+        
+        run_sql "INSERT INTO entries (type, title, content, metadata) VALUES ('$TYPE', '$TITLE_ESC', '$CONTENT_ESC', '$METADATA_ESC'); SELECT last_insert_rowid();"
+        ;;
+    
+    search)
+        QUERY="$2"
+        if [ -z "$QUERY" ]; then
+            echo "Usage: kb search <query>"
+            exit 1
+        fi
+        QUERY_ESC=$(echo "$QUERY" | sed "s/'/''/g")
+        run_sql_pretty "SELECT e.id, e.type, e.title, substr(e.content, 1, 50) as preview, e.created_at FROM entries e JOIN entries_fts fts ON e.id = fts.docid WHERE entries_fts MATCH '$QUERY_ESC' ORDER BY e.created_at DESC;"
+        ;;
+    
+    list)
+        TYPE="$2"
+        if [ -n "$TYPE" ]; then
+            TYPE_ESC=$(echo "$TYPE" | sed "s/'/''/g")
+            run_sql_pretty "SELECT id, type, title, substr(content, 1, 50) as preview, created_at FROM entries WHERE type='$TYPE_ESC' ORDER BY created_at DESC LIMIT 50;"
+        else
+            run_sql_pretty "SELECT id, type, title, substr(content, 1, 50) as preview, created_at FROM entries ORDER BY created_at DESC LIMIT 50;"
+        fi
+        ;;
+    
+    get)
+        ID="$2"
+        if [ -z "$ID" ]; then
+            echo "Usage: kb get <id>"
+            exit 1
+        fi
+        sqlcipher -line "$DB_PATH" <<EOF | grep -v '^[[:space:]]*ok = ok$'
+PRAGMA key='$ASLAM_KEY';
+SELECT * FROM entries WHERE id=$ID;
+EOF
+        ;;
+    
+    update)
+        ID="$2"
+        FIELD="$3"
+        VALUE="$4"
+        if [ -z "$ID" ] || [ -z "$FIELD" ] || [ -z "$VALUE" ]; then
+            echo "Usage: kb update <id> <field> <value>"
+            exit 1
+        fi
+        VALUE_ESC=$(echo "$VALUE" | sed "s/'/''/g")
+        run_sql "UPDATE entries SET $FIELD='$VALUE_ESC', updated_at=CURRENT_TIMESTAMP WHERE id=$ID;"
+        echo "Updated entry $ID"
+        ;;
+    
+    delete)
+        ID="$2"
+        if [ -z "$ID" ]; then
+            echo "Usage: kb delete <id>"
+            exit 1
+        fi
+        run_sql "DELETE FROM entries WHERE id=$ID;"
+        echo "Deleted entry $ID"
+        ;;
+    
+    tag)
+        ID="$2"
+        TAG="$3"
+        if [ -z "$ID" ] || [ -z "$TAG" ]; then
+            echo "Usage: kb tag <id> <tag>"
+            exit 1
+        fi
+        TAG_ESC=$(echo "$TAG" | sed "s/'/''/g")
+        run_sql "INSERT OR IGNORE INTO tags (name) VALUES ('$TAG_ESC'); INSERT OR IGNORE INTO entry_tags (entry_id, tag_id) SELECT $ID, id FROM tags WHERE name='$TAG_ESC';"
+        echo "Tagged entry $ID with '$TAG'"
+        ;;
+    
+    tags)
+        ID="$2"
+        if [ -n "$ID" ]; then
+            run_sql_pretty "SELECT t.name FROM tags t JOIN entry_tags et ON t.id = et.tag_id WHERE et.entry_id = $ID;"
+        else
+            run_sql_pretty "SELECT name, (SELECT COUNT(*) FROM entry_tags WHERE tag_id = tags.id) as count FROM tags ORDER BY count DESC;"
+        fi
+        ;;
+    
+    bytag)
+        TAG="$2"
+        if [ -z "$TAG" ]; then
+            echo "Usage: kb bytag <tag>"
+            exit 1
+        fi
+        TAG_ESC=$(echo "$TAG" | sed "s/'/''/g")
+        run_sql_pretty "SELECT e.id, e.type, e.title, e.created_at FROM entries e JOIN entry_tags et ON e.id = et.entry_id JOIN tags t ON et.tag_id = t.id WHERE t.name = '$TAG_ESC' ORDER BY e.created_at DESC;"
+        ;;
+    
+    sql)
+        shift
+        run_sql "$*"
+        ;;
+    
+    shell)
+        sqlcipher "$DB_PATH" <<EOF
+PRAGMA key='$ASLAM_KEY';
+EOF
+        ;;
+    
+    export)
+        # Export to JSON (for backup)
+        sqlcipher -json "$DB_PATH" <<EOF
+PRAGMA key='$ASLAM_KEY';
+SELECT * FROM entries;
+EOF
+        ;;
+    
+    help|*)
+        echo "Aslam Knowledge Base"
+        echo ""
+        echo "Usage: kb <command> [args]"
+        echo ""
+        echo "Commands:"
+        echo "  init                    Initialize the database"
+        echo "  add <type> <title> [content] [metadata]"
+        echo "                          Add a new entry"
+        echo "  search <query>          Full-text search"
+        echo "  list [type]             List entries (optionally by type)"
+        echo "  get <id>                Get full entry details"
+        echo "  update <id> <field> <value>"
+        echo "                          Update an entry field"
+        echo "  delete <id>             Delete an entry"
+        echo "  tag <id> <tag>          Add a tag to an entry"
+        echo "  tags [id]               List all tags or tags for an entry"
+        echo "  bytag <tag>             List entries with a tag"
+        echo "  sql <query>             Run raw SQL"
+        echo "  shell                   Open SQLCipher shell"
+        echo "  export                  Export all entries as JSON"
+        echo ""
+        echo "Types: thought, project, credential, contact, document, decision, instruction, note"
+        echo ""
+        echo "Environment:"
+        echo "  ASLAM_KEY               Database passphrase (required)"
+        echo "  ASLAM_DB                Database path (default: ~/.aslam/aslam.db)"
+        ;;
+esac
