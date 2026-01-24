@@ -20,15 +20,43 @@ aslam/
     └── aslam.db      # Encrypted SQLite database
 ```
 
-## Running
+## Setup (New VM)
 
 ```bash
-# Set API key
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+# Clone the repo
+git clone git@github.com:asim/aslam.git
+cd aslam
 
-# Run server
+# Install sqlcipher (for encrypted SQLite)
+sudo apt-get install -y sqlcipher
+
+# Create .env with API key
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+chmod 600 .env
+
+# Create encryption key for database
+mkdir -p ~/.aslam
+openssl rand -base64 32 > ~/.aslam/.key
+chmod 600 ~/.aslam/.key
+
+# Build and run
+go build -o aslam .
 ./aslam
 # Serves on http://localhost:8000
+```
+
+## Systemd Service
+
+```bash
+sudo cp aslam.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable aslam
+sudo systemctl start aslam
+
+# Manage with:
+sudo systemctl status aslam
+sudo systemctl restart aslam
+sudo journalctl -u aslam -f
 ```
 
 ## Key Design Decisions
