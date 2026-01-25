@@ -1,6 +1,6 @@
 # Aslam
 
-A personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org).
+A personal assistant for the Aslam family.
 
 ## What is this?
 
@@ -33,5 +33,7 @@ This is a centralised repository of knowledge, thoughts, and information for Asi
 6. **Durable** — outlives any single service or platform
 
 ---
+
+How to think about it:
 
 *A second brain, a family vault, a digital estate.*
