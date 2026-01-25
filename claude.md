@@ -20,6 +20,16 @@ aslam/
     └── aslam.db      # Encrypted SQLite database
 ```
 
+## Important: Deploying Changes
+
+Templates are embedded at build time (`//go:embed`). After ANY change to templates, CSS, JS, or Go code:
+
+```bash
+cd /home/exedev/aslam && go build -o aslam . && sudo systemctl restart aslam
+```
+
+Both steps are required - rebuild embeds new templates, restart loads new binary.
+
 ## Setup (New VM)
 
 ```bash

@@ -1,0 +1,15 @@
+[Unit]
+Description=Aslam Knowledge Base
+After=network.target
+
+[Service]
+Type=simple
+User=exedev
+WorkingDirectory=/home/exedev/aslam
+ExecStart=/home/exedev/aslam/aslam
+Restart=always
+RestartSec=5
+Environment=HOME=/home/exedev
+
+[Install]
+WantedBy=multi-user.target

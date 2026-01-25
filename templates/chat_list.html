@@ -3,31 +3,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Chats - Aslam</title>
     {{template "style"}}
 </head>
 <body>
-    <div class="container">
+    <div class="app">
         {{template "header"}}
-        <h2>Chats</h2>
+        <main class="app-content">
+            <h2>Chats</h2>
 
-        <form action="/chat/new" method="POST" style="margin: 20px 0">
-            <button type="submit">+ New Chat</button>
-        </form>
+            <form action="/chat/new" method="POST" style="margin-bottom: 20px">
+                <button type="submit" style="padding: 10px 16px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer;">+ New Chat</button>
+            </form>
 
-        {{if .Conversations}}
-        <ul>
-            {{range .Conversations}}
-            <li>
-                <a href="/chat/{{.ID}}">{{.Title}}</a>
-                <span class="time">{{formatTime .UpdatedAt}}</span>
-            </li>
+            {{if .Conversations}}
+            <ul>
+                {{range .Conversations}}
+                <li style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <a href="/chat/{{.ID}}">{{.Title}}</a>
+                        <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
+                    </div>
+                    <button onclick="deleteChat({{.ID}})" style="padding: 4px 8px; background: #fff; color: #999; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 12px;">delete</button>
+                </li>
+                {{end}}
+            </ul>
+            <script>
+            function timeAgo(timestamp) {
+                const seconds = Math.floor((Date.now() / 1000) - timestamp);
+                if (seconds < 60) return 'just now';
+                if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+                if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+                if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+                return Math.floor(seconds / 604800) + 'w ago';
+            }
+            document.querySelectorAll('[data-time]').forEach(el => {
+                el.textContent = timeAgo(parseInt(el.dataset.time));
+            });
+            function deleteChat(id) {
+                if (confirm('Delete this conversation?')) {
+                    fetch('/api/chat/delete', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id: id})
+                    }).then(() => location.reload());
+                }
+            }
+            </script>
+            {{else}}
+            <p class="muted">No chats yet.</p>
             {{end}}
-        </ul>
-        {{else}}
-        <p class="muted">No chats yet.</p>
-        {{end}}
+        </main>
     </div>
 </body>
 </html>

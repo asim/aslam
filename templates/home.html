@@ -3,33 +3,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Aslam</title>
     {{template "style"}}
 </head>
 <body>
-    <div class="container">
+    <div class="app">
         {{template "header"}}
-        <h2>Knowledge Base</h2>
-        <p class="muted" style="margin: 15px 0">Personal assistant and family knowledge base.</p>
+        <main class="app-content">
+            <h2>Home</h2>
+            <p class="muted" style="margin-bottom: 20px">Family assistant</p>
 
-        <form action="/chat/new" method="POST" style="margin: 20px 0">
-            <button type="submit">+ New Chat</button>
-        </form>
+            <form action="/chat/new" method="POST" style="margin-bottom: 30px">
+                <button type="submit" style="padding: 10px 16px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer;">+ New Chat</button>
+            </form>
 
-        {{if .Conversations}}
-        <h3 style="margin-top: 30px">Recent Chats</h3>
-        <ul>
-            {{range .Conversations}}
-            <li>
-                <a href="/chat/{{.ID}}">{{.Title}}</a>
-                <span class="time">{{formatTime .UpdatedAt}}</span>
-            </li>
+            {{if .Conversations}}
+            <h3 style="margin-bottom: 10px">Recent Chats</h3>
+            <ul>
+                {{range .Conversations}}
+                <li>
+                    <a href="/chat/{{.ID}}">{{.Title}}</a>
+                    <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
+                </li>
+                {{end}}
+            </ul>
+            <script>
+            function timeAgo(timestamp) {
+                const seconds = Math.floor((Date.now() / 1000) - timestamp);
+                if (seconds < 60) return 'just now';
+                if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+                if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+                if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+                return Math.floor(seconds / 604800) + 'w ago';
+            }
+            document.querySelectorAll('[data-time]').forEach(el => {
+                el.textContent = timeAgo(parseInt(el.dataset.time));
+            });
+            </script>
+            {{else}}
+            <p class="muted">No chats yet.</p>
             {{end}}
-        </ul>
-        {{else}}
-        <p class="muted">No chats yet.</p>
-        {{end}}
+        </main>
     </div>
 </body>
 </html>
