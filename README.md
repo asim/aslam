@@ -1,6 +1,6 @@
 # Aslam
 
-A personal knowledge base for the Aslam family.
+A personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org).
 
 ## What is this?
 
@@ -31,10 +31,6 @@ This is a centralised repository of knowledge, thoughts, and information for Asi
 4. **Simple** — easy to add, easy to retrieve
 5. **Shareable** — family can access what they need
 6. **Durable** — outlives any single service or platform
-
-## Future
-
-May be served at [aslam.org](https://aslam.org) with proper authentication.
 
 ---
 
