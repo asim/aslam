@@ -1,6 +1,6 @@
 # Aslam
 
-A personal assistant for the Aslam family.
+A personal archive for the Aslam family.
 
 ## What is this?
 
