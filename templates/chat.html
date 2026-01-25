@@ -57,7 +57,7 @@
             {{if .Messages}}
             {{range .Messages}}
             <div class="message {{.Role}}">
-                <div class="message-role">{{.Role}} <span class="time">{{formatTime .CreatedAt}}</span></div>
+                <div class="message-role">{{if eq .Role "user"}}{{$.UserName}}{{else}}Aslam{{end}} <span class="time" data-time="{{.CreatedAt.Unix}}">{{formatTime .CreatedAt}}</span></div>
                 <div class="message-content{{if eq .Role "assistant"}} markdown{{end}}">{{.Content}}</div>
             </div>
             {{end}}
@@ -82,10 +82,29 @@
         const sendBtn = document.getElementById('send-btn');
         const convId = form.querySelector('input[name="conversation_id"]').value;
 
-        function formatTime() {
+        const userName = '{{.UserName}}';
+        
+        function timeAgo(date) {
             const now = new Date();
-            return now.toISOString().slice(0, 16).replace('T', ' ');
+            const seconds = Math.floor((now - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + 'm ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + 'h ago';
+            const days = Math.floor(hours / 24);
+            if (days < 7) return days + 'd ago';
+            return date.toLocaleDateString();
         }
+        
+        function updateTimeAgo() {
+            document.querySelectorAll('.time[data-time]').forEach(el => {
+                const ts = parseInt(el.dataset.time) * 1000;
+                el.textContent = timeAgo(new Date(ts));
+            });
+        }
+        updateTimeAgo();
+        setInterval(updateTimeAgo, 60000);
 
         function addMessage(role, content, isTyping = false) {
             const empty = document.getElementById('empty-state');
@@ -94,7 +113,7 @@
             const div = document.createElement('div');
             div.className = 'message ' + role + (isTyping ? ' typing' : '');
             div.innerHTML = `
-                <div class="message-role">${role} <span class="time">${formatTime()}</span></div>
+                <div class="message-role">${role === 'user' ? userName : 'Aslam'} <span class="time">just now</span></div>
                 <div class="message-content${role === 'assistant' ? ' markdown' : ''}">${escapeHtml(content)}</div>
             `;
             messages.appendChild(div);
