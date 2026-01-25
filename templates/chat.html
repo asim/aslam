@@ -57,7 +57,7 @@
             {{if .Messages}}
             {{range .Messages}}
             <div class="message {{.Role}}">
-                <div class="message-role">{{if eq .Role "user"}}{{$.UserName}}{{else}}Aslam{{end}} <span class="time" data-time="{{.CreatedAt.Unix}}">{{formatTime .CreatedAt}}</span></div>
+                <div class="message-role">{{if eq .Role "user"}}{{$.UserName}}{{else}}Assistant{{end}} <span class="time" data-time="{{.CreatedAt.Unix}}">{{formatTime .CreatedAt}}</span></div>
                 <div class="message-content{{if eq .Role "assistant"}} markdown{{end}}">{{.Content}}</div>
             </div>
             {{end}}
@@ -113,7 +113,7 @@
             const div = document.createElement('div');
             div.className = 'message ' + role + (isTyping ? ' typing' : '');
             div.innerHTML = `
-                <div class="message-role">${role === 'user' ? userName : 'Aslam'} <span class="time">just now</span></div>
+                <div class="message-role">${role === 'user' ? userName : 'Assistant'} <span class="time">just now</span></div>
                 <div class="message-content${role === 'assistant' ? ' markdown' : ''}">${escapeHtml(content)}</div>
             `;
             messages.appendChild(div);
