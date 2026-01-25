@@ -24,7 +24,7 @@ import (
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 )
 
-//go:embed templates/*
+//go:embed html/*
 var templates embed.FS
 
 //go:embed README.md
@@ -142,7 +142,7 @@ func main() {
 		},
 	}
 	
-	tmpl = template.Must(template.New("").Funcs(funcs).ParseFS(templates, "templates/*.html"))
+	tmpl = template.Must(template.New("").Funcs(funcs).ParseFS(templates, "html/*.html"))
 
 	// Auth routes (no auth required)
 	http.HandleFunc("/auth/login", handleLogin)
