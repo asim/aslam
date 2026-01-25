@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
-	"database/sql"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -14,11 +13,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"aslam/db"
 	"aslam/tools"
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
@@ -34,7 +33,6 @@ var readmeContent string
 var claudeContent string
 
 var (
-	db             *sql.DB
 	tmpl           *template.Template
 	anthropicKey   string
 	anthropicModel string
@@ -49,13 +47,7 @@ var (
 	apiKey             string
 )
 
-type Session struct {
-	Token     string
-	Email     string
-	Name      string
-	CreatedAt time.Time
-	ExpiresAt time.Time
-}
+
 
 func main() {
 	// Load config
@@ -96,38 +88,11 @@ func main() {
 	devToken = os.Getenv("DEV_TOKEN")
 	apiKey = os.Getenv("API_KEY")
 
-	dbKey := os.Getenv("ASLAM_KEY")
-	if dbKey == "" {
-		// Try loading from key file
-		keyPath := filepath.Join(os.Getenv("HOME"), ".aslam", ".key")
-		if data, err := os.ReadFile(keyPath); err == nil {
-			dbKey = strings.TrimSpace(string(data))
-		}
-	}
-	if dbKey == "" {
-		log.Fatal("ASLAM_KEY not set and ~/.aslam/.key not found")
-	}
-
-	// Open encrypted database
-	dbPath := os.Getenv("ASLAM_DB")
-	if dbPath == "" {
-		dbPath = filepath.Join(os.Getenv("HOME"), ".aslam", "aslam.db")
-	}
-	
-	var err error
-	// go-sqlcipher uses _pragma_key - need to URL encode the key
-	encodedKey := url.QueryEscape(dbKey)
-	dsn := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096", dbPath, encodedKey)
-	db, err = sql.Open("sqlite3", dsn)
-	if err != nil {
-		log.Fatal("Failed to open database:", err)
+	// Initialize database
+	if err := db.Init(); err != nil {
+		log.Fatal("Database init failed:", err)
 	}
 	defer db.Close()
-	
-	// Run migrations
-	if err := migrate(); err != nil {
-		log.Fatal("Migration failed:", err)
-	}
 
 	// Parse templates
 	funcs := template.FuncMap{
@@ -181,15 +146,15 @@ func main() {
 type dbStorage struct{}
 
 func (s *dbStorage) SaveEntry(entryType, title, content, metadata string) (int64, error) {
-	return saveEntry(entryType, title, content, metadata)
+	return db.SaveEntry(entryType, title, content, metadata)
 }
 
 func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interface{}, error) {
-	return getEntryByTitle(entryType, title)
+	return db.GetEntryByTitle(entryType, title)
 }
 
 func (s *dbStorage) SearchEntries(query string) ([]map[string]interface{}, error) {
-	return searchEntries(query)
+	return db.SearchEntries(query)
 }
 
 func loadEnv() {
@@ -207,128 +172,6 @@ func loadEnv() {
 			os.Setenv(parts[0], parts[1])
 		}
 	}
-}
-
-func migrate() error {
-	// Conversations table
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS conversations (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			title TEXT,
-			summary TEXT,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)
-	`)
-	if err != nil {
-		return err
-	}
-	
-	// Messages table
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS messages (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			conversation_id INTEGER NOT NULL,
-			role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
-			content TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-		)
-	`)
-	if err != nil {
-		return err
-	}
-	
-	// FTS for messages
-	_, err = db.Exec(`
-		CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts4(
-			content,
-			content='messages'
-		)
-	`)
-	if err != nil {
-		return err
-	}
-	
-	// Trigger for FTS
-	db.Exec(`CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
-		INSERT INTO messages_fts(docid, content) VALUES (new.id, new.content);
-	END`)
-	
-	db.Exec(`CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
-		DELETE FROM messages_fts WHERE docid = old.id;
-	END`)
-	
-	// Index
-	db.Exec(`CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id)`)
-
-	// Sessions table
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS sessions (
-			token TEXT PRIMARY KEY,
-			email TEXT NOT NULL,
-			name TEXT,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			expires_at DATETIME NOT NULL
-		)
-	`)
-	if err != nil {
-		return err
-	}
-
-	// OAuth states table
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS oauth_states (
-			state TEXT PRIMARY KEY,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			expires_at DATETIME NOT NULL
-		)
-	`)
-	if err != nil {
-		return err
-	}
-
-	// Clean up expired sessions and states
-	db.Exec(`DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP`)
-	db.Exec(`DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP`)
-
-	// Entries table (knowledge base)
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS entries (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			type TEXT NOT NULL,
-			title TEXT NOT NULL,
-			content TEXT,
-			metadata TEXT,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)
-	`)
-	if err != nil {
-		return err
-	}
-
-	// FTS for entries
-	db.Exec(`
-		CREATE VIRTUAL TABLE IF NOT EXISTS entries_fts USING fts4(
-			title,
-			content,
-			content='entries'
-		)
-	`)
-
-	db.Exec(`CREATE TRIGGER IF NOT EXISTS entries_ai AFTER INSERT ON entries BEGIN
-		INSERT INTO entries_fts(docid, title, content) VALUES (new.id, new.title, new.content);
-	END`)
-
-	db.Exec(`CREATE TRIGGER IF NOT EXISTS entries_ad AFTER DELETE ON entries BEGIN
-		DELETE FROM entries_fts WHERE docid = old.id;
-	END`)
-
-	db.Exec(`CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type)`)
-	db.Exec(`CREATE INDEX IF NOT EXISTS idx_entries_title ON entries(title)`)
-
-	return nil
 }
 
 // Auth middleware and handlers
@@ -365,36 +208,20 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func getSession(r *http.Request) *Session {
+func getSession(r *http.Request) *db.Session {
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		return nil
 	}
-
-	var s Session
-	err = db.QueryRow(`
-		SELECT token, email, name, created_at, expires_at 
-		FROM sessions WHERE token = ? AND expires_at > CURRENT_TIMESTAMP
-	`, cookie.Value).Scan(&s.Token, &s.Email, &s.Name, &s.CreatedAt, &s.ExpiresAt)
-	if err != nil {
-		return nil
-	}
-	return &s
+	return db.GetSessionByToken(cookie.Value)
 }
 
 func createSession(email, name string) string {
-	b := make([]byte, 32)
-	rand.Read(b)
-	token := base64.URLEncoding.EncodeToString(b)
-
-	expiresAt := time.Now().Add(7 * 24 * time.Hour) // 7 days
-	_, err := db.Exec(`
-		INSERT INTO sessions (token, email, name, expires_at) VALUES (?, ?, ?, ?)
-	`, token, email, name, expiresAt)
+	token, err := db.CreateSession(email, name)
 	if err != nil {
 		log.Printf("Failed to create session: %v", err)
+		return ""
 	}
-
 	return token
 }
 
@@ -418,8 +245,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	state := base64.URLEncoding.EncodeToString(b)
 
 	// Store state in database (persists across restarts)
-	expiresAt := time.Now().Add(5 * time.Minute)
-	db.Exec(`INSERT INTO oauth_states (state, expires_at) VALUES (?, ?)`, state, expiresAt)
+	db.CreateOAuthState(state)
 
 	// Store state in cookie (works across www/non-www with Domain)
 	http.SetCookie(w, &http.Cookie{
@@ -447,19 +273,11 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	queryState := r.URL.Query().Get("state")
 	
 	// Verify state exists in database (survives restarts)
-	var dbState string
-	err := db.QueryRow(`
-		SELECT state FROM oauth_states 
-		WHERE state = ? AND expires_at > CURRENT_TIMESTAMP
-	`, queryState).Scan(&dbState)
-	if err != nil {
+	if !db.ValidateOAuthState(queryState) {
 		log.Printf("OAuth callback: state not found in db: %s", queryState)
 		http.Error(w, "Invalid or expired state. Try logging in again.", 400)
 		return
 	}
-	
-	// Delete used state
-	db.Exec(`DELETE FROM oauth_states WHERE state = ?`, queryState)
 
 	// Clear state cookie
 	http.SetCookie(w, &http.Cookie{
@@ -545,7 +363,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err == nil {
-		db.Exec(`DELETE FROM sessions WHERE token = ?`, cookie.Value)
+		db.DeleteSession(cookie.Value)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -567,7 +385,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Get recent conversations
-	convs, _ := getRecentConversations(10)
+	convs, _ := db.GetRecentConversations(10)
 	
 	if err := tmpl.ExecuteTemplate(w, "home.html", map[string]interface{}{
 		"Conversations": convs,
@@ -577,7 +395,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
-	convs, _ := getRecentConversations(50)
+	convs, _ := db.GetRecentConversations(50)
 	tmpl.ExecuteTemplate(w, "chat_list.html", map[string]interface{}{
 		"Conversations": convs,
 	})
@@ -591,13 +409,13 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	conv, err := getConversation(id)
+	conv, err := db.GetConversation(id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	
-	messages, _ := getMessages(id)
+	messages, _ := db.GetMessages(id)
 	
 	// Get user's first name from session
 	userName := "You"
@@ -622,7 +440,7 @@ func handleNewChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	id, err := createConversation("New conversation")
+	id, err := db.CreateConversation("New conversation")
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -646,21 +464,21 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Save user message
-	if err := addMessage(convID, "user", userMessage); err != nil {
+	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	
 	// Get conversation history for context
-	messages, _ := getMessages(convID)
+	messages, _ := db.GetMessages(convID)
 	
 	// Generate AI response
 	response, err := generateResponse(messages)
 	if err != nil {
 		// Save error as assistant message
-		addMessage(convID, "assistant", "Error: "+err.Error())
+		db.AddMessage(convID, "assistant", "Error: "+err.Error())
 	} else {
-		addMessage(convID, "assistant", response)
+		db.AddMessage(convID, "assistant", response)
 	}
 	
 	// Update conversation title if first message
@@ -669,7 +487,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		if len(title) > 50 {
 			title = title[:50] + "..."
 		}
-		updateConversationTitle(convID, title)
+		db.UpdateConversationTitle(convID, title)
 	}
 	
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", convID), http.StatusSeeOther)
@@ -697,20 +515,20 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save user message
-	if err := addMessage(req.ConversationID, "user", req.Message); err != nil {
+	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
 		jsonError(w, err.Error(), 500)
 		return
 	}
 
 	// Get conversation history for context
-	messages, _ := getMessages(req.ConversationID)
+	messages, _ := db.GetMessages(req.ConversationID)
 
 	// Generate AI response
 	response, err := generateResponse(messages)
 	if err != nil {
 		response = "Error: " + err.Error()
 	}
-	addMessage(req.ConversationID, "assistant", response)
+	db.AddMessage(req.ConversationID, "assistant", response)
 
 	// Update conversation title if first message
 	if len(messages) <= 1 {
@@ -718,7 +536,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		if len(title) > 50 {
 			title = title[:50] + "..."
 		}
-		updateConversationTitle(req.ConversationID, title)
+		db.UpdateConversationTitle(req.ConversationID, title)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -731,7 +549,7 @@ func handleAPINewChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := createConversation("New conversation")
+	id, err := db.CreateConversation("New conversation")
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -755,10 +573,8 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete messages first, then conversation
-	db.Exec(`DELETE FROM messages WHERE conversation_id = ?`, req.ID)
-	_, err := db.Exec(`DELETE FROM conversations WHERE id = ?`, req.ID)
-	if err != nil {
+	// Delete conversation (messages deleted by cascade)
+	if err := db.DeleteConversation(req.ID); err != nil {
 		jsonError(w, err.Error(), 500)
 		return
 	}
@@ -768,7 +584,7 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAPIChats(w http.ResponseWriter, r *http.Request) {
-	convs, err := getRecentConversations(50)
+	convs, err := db.GetRecentConversations(50)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -801,7 +617,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := searchMessages(query)
+	results, err := db.SearchMessages(query)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -822,7 +638,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	
 	var results []map[string]interface{}
 	if query != "" {
-		results, _ = searchMessages(query)
+		results, _ = db.SearchMessages(query)
 	}
 	
 	tmpl.ExecuteTemplate(w, "search.html", map[string]interface{}{
@@ -832,7 +648,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
-	entries, _ := getEntries(50)
+	entries, _ := db.GetEntries(50)
 	tmpl.ExecuteTemplate(w, "entries.html", map[string]interface{}{
 		"Entries": entries,
 	})
@@ -846,7 +662,7 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	entry, err := getEntry(id)
+	entry, err := db.GetEntry(id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -857,258 +673,6 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 
 // Database functions
 
-type Conversation struct {
-	ID        int64
-	Title     string
-	Summary   sql.NullString
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-type Message struct {
-	ID             int64
-	ConversationID int64
-	Role           string
-	Content        string
-	CreatedAt      time.Time
-}
-
-func getRecentConversations(limit int) ([]Conversation, error) {
-	rows, err := db.Query(`
-		SELECT id, title, summary, created_at, updated_at 
-		FROM conversations 
-		ORDER BY updated_at DESC 
-		LIMIT ?
-	`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	
-	var convs []Conversation
-	for rows.Next() {
-		var c Conversation
-		rows.Scan(&c.ID, &c.Title, &c.Summary, &c.CreatedAt, &c.UpdatedAt)
-		convs = append(convs, c)
-	}
-	return convs, nil
-}
-
-func getConversation(id int64) (*Conversation, error) {
-	var c Conversation
-	err := db.QueryRow(`
-		SELECT id, title, summary, created_at, updated_at 
-		FROM conversations WHERE id = ?
-	`, id).Scan(&c.ID, &c.Title, &c.Summary, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
-}
-
-func createConversation(title string) (int64, error) {
-	result, err := db.Exec(`INSERT INTO conversations (title) VALUES (?)`, title)
-	if err != nil {
-		return 0, err
-	}
-	return result.LastInsertId()
-}
-
-func updateConversationTitle(id int64, title string) error {
-	_, err := db.Exec(`UPDATE conversations SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, title, id)
-	return err
-}
-
-func getMessages(convID int64) ([]Message, error) {
-	rows, err := db.Query(`
-		SELECT id, conversation_id, role, content, created_at 
-		FROM messages 
-		WHERE conversation_id = ? 
-		ORDER BY created_at ASC
-	`, convID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	
-	var msgs []Message
-	for rows.Next() {
-		var m Message
-		rows.Scan(&m.ID, &m.ConversationID, &m.Role, &m.Content, &m.CreatedAt)
-		msgs = append(msgs, m)
-	}
-	return msgs, nil
-}
-
-func addMessage(convID int64, role, content string) error {
-	_, err := db.Exec(`
-		INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)
-	`, convID, role, content)
-	if err != nil {
-		return err
-	}
-	// Update conversation timestamp
-	db.Exec(`UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`, convID)
-	return nil
-}
-
-func searchMessages(query string) ([]map[string]interface{}, error) {
-	rows, err := db.Query(`
-		SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, c.title
-		FROM messages m
-		JOIN messages_fts fts ON m.id = fts.docid
-		JOIN conversations c ON m.conversation_id = c.id
-		WHERE messages_fts MATCH ?
-		ORDER BY m.created_at DESC
-		LIMIT 50
-	`, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	
-	var results []map[string]interface{}
-	for rows.Next() {
-		var id, convID int64
-		var role, content, title string
-		var createdAt time.Time
-		rows.Scan(&id, &convID, &role, &content, &createdAt, &title)
-		results = append(results, map[string]interface{}{
-			"ID":             id,
-			"ConversationID": convID,
-			"Role":           role,
-			"Content":        content,
-			"CreatedAt":      createdAt,
-			"Title":          title,
-		})
-	}
-	return results, nil
-}
-
-func getEntries(limit int) ([]map[string]interface{}, error) {
-	rows, err := db.Query(`
-		SELECT id, type, title, content, created_at 
-		FROM entries 
-		ORDER BY created_at DESC 
-		LIMIT ?
-	`, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	
-	var entries []map[string]interface{}
-	for rows.Next() {
-		var id int64
-		var typ, title string
-		var content sql.NullString
-		var createdAt time.Time
-		rows.Scan(&id, &typ, &title, &content, &createdAt)
-		entries = append(entries, map[string]interface{}{
-			"ID":        id,
-			"Type":      typ,
-			"Title":     title,
-			"Content":   content.String,
-			"CreatedAt": createdAt,
-		})
-	}
-	return entries, nil
-}
-
-func saveEntry(entryType, title, content, metadata string) (int64, error) {
-	result, err := db.Exec(`
-		INSERT INTO entries (type, title, content, metadata) VALUES (?, ?, ?, ?)
-	`, entryType, title, content, metadata)
-	if err != nil {
-		return 0, err
-	}
-	return result.LastInsertId()
-}
-
-func getEntryByTitle(entryType, title string) (map[string]interface{}, error) {
-	var id int64
-	var content, metadata sql.NullString
-	var createdAt time.Time
-
-	err := db.QueryRow(`
-		SELECT id, content, metadata, created_at FROM entries WHERE type = ? AND title = ?
-	`, entryType, title).Scan(&id, &content, &metadata, &createdAt)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"ID":        id,
-		"Type":      entryType,
-		"Title":     title,
-		"Content":   content.String,
-		"Metadata":  metadata.String,
-		"CreatedAt": createdAt,
-	}, nil
-}
-
-func searchEntries(query string) ([]map[string]interface{}, error) {
-	rows, err := db.Query(`
-		SELECT e.id, e.type, e.title, e.content, e.created_at
-		FROM entries e
-		JOIN entries_fts fts ON e.id = fts.docid
-		WHERE entries_fts MATCH ?
-		ORDER BY e.created_at DESC
-		LIMIT 10
-	`, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []map[string]interface{}
-	for rows.Next() {
-		var id int64
-		var typ, title string
-		var content sql.NullString
-		var createdAt time.Time
-		rows.Scan(&id, &typ, &title, &content, &createdAt)
-		
-		// Truncate content for display
-		c := content.String
-		if len(c) > 500 {
-			c = c[:500] + "..."
-		}
-		
-		results = append(results, map[string]interface{}{
-			"ID":        id,
-			"Type":      typ,
-			"Title":     title,
-			"Content":   c,
-			"CreatedAt": createdAt,
-		})
-	}
-	return results, nil
-}
-
-func getEntry(id int64) (map[string]interface{}, error) {
-	var typ, title string
-	var content, metadata sql.NullString
-	var createdAt, updatedAt time.Time
-	
-	err := db.QueryRow(`
-		SELECT id, type, title, content, metadata, created_at, updated_at 
-		FROM entries WHERE id = ?
-	`, id).Scan(&id, &typ, &title, &content, &metadata, &createdAt, &updatedAt)
-	if err != nil {
-		return nil, err
-	}
-	
-	return map[string]interface{}{
-		"ID":        id,
-		"Type":      typ,
-		"Title":     title,
-		"Content":   content.String,
-		"Metadata":  metadata.String,
-		"CreatedAt": createdAt,
-		"UpdatedAt": updatedAt,
-	}, nil
-}
 
 // AI functions
 
@@ -1155,7 +719,7 @@ func init() {
 	systemPrompt = fmt.Sprintf(systemPromptTemplate, readmeContent, claudeContent)
 }
 
-func generateResponse(messages []Message) (string, error) {
+func generateResponse(messages []db.Message) (string, error) {
 	if anthropicKey == "" {
 		return "", fmt.Errorf("ANTHROPIC_API_KEY not set")
 	}
