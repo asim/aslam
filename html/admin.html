@@ -47,6 +47,11 @@
         .btn:hover { opacity: 0.8; }
         .btn-danger { background: #dc2626; }
         .btn-small { padding: 4px 8px; font-size: 12px; }
+        .btn-small:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
+        .status-configured { background: #22c55e; color: white; }
+        .status-missing { background: #888; color: white; }
+        .integration-details { font-size: 12px; color: #888; margin-top: 4px; }
         .success { color: #16a34a; margin-bottom: 16px; }
         .error { color: #dc2626; margin-bottom: 16px; }
         .secret { 
@@ -92,6 +97,54 @@
             <div class="warning-box">
                 <strong>⚠️ Estate Planning:</strong> This page contains information needed to maintain or transfer this system. 
                 Keep credentials updated so someone else can take over if needed.
+            </div>
+
+            <!-- Integrations Section -->
+            <div class="admin-section">
+                <h3>Integrations</h3>
+                <p class="muted" style="margin-bottom: 16px;">External services the assistant uses. Toggle to enable/disable.</p>
+                
+                {{range .Integrations}}
+                <div class="item-card">
+                    <div class="item-header">
+                        <div>
+                            <strong>{{.Name}}</strong>
+                            {{if .Configured}}
+                            <span class="status-badge status-configured">Configured</span>
+                            {{else}}
+                            <span class="status-badge status-missing">Not Configured</span>
+                            {{end}}
+                        </div>
+                        {{if .Toggleable}}
+                        <form class="inline" method="POST" action="/admin/toggle-integration">
+                            <input type="hidden" name="key" value="{{.Key}}">
+                            <input type="hidden" name="enabled" value="{{if .Enabled}}false{{else}}true{{end}}">
+                            {{if .Enabled}}
+                            <button type="submit" class="btn btn-small">Disable</button>
+                            {{else}}
+                            <button type="submit" class="btn btn-small" {{if not .Configured}}disabled title="Configure credentials first"{{end}}>Enable</button>
+                            {{end}}
+                        </form>
+                        {{end}}
+                    </div>
+                    <p class="muted">{{.Description}}</p>
+                    {{if .Details}}<p class="integration-details">{{.Details}}</p>{{end}}
+                    {{if .EnvVar}}<p class="integration-details">Env: <code>{{.EnvVar}}</code></p>{{end}}
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Tools Section -->
+            <div class="admin-section">
+                <h3>Tools ({{len .Tools}})</h3>
+                <p class="muted" style="margin-bottom: 16px;">Capabilities available to the assistant.</p>
+                
+                {{range .Tools}}
+                <div class="item-card" style="padding: 8px 12px;">
+                    <strong>{{.Name}}</strong>
+                    <p class="muted" style="font-size: 12px; margin-top: 4px;">{{.Description}}</p>
+                </div>
+                {{end}}
             </div>
 
             <!-- Admins Section -->

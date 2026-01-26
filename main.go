@@ -129,20 +129,33 @@ func main() {
 	http.HandleFunc("/search", requireAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
-	http.HandleFunc("/dev", requireAuth(handleDev))
+	http.HandleFunc("/dev", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin", http.StatusMovedPermanently)
+	})
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-admin", requireAuth(requireAdmin(handleAddAdmin)))
 	http.HandleFunc("/admin/remove-admin", requireAuth(requireAdmin(handleRemoveAdmin)))
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
+	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
 	}
 	
-	// Set up tools storage
+	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
+	tools.SetIntegrationChecker(func(name string) bool {
+		switch name {
+		case "brave_search":
+			return os.Getenv("BRAVE_API_KEY") != "" && db.GetSetting("brave_search_enabled") != "false"
+		case "gmail":
+			return os.Getenv("GMAIL_USER") != "" && db.GetSetting("gmail_enabled") != "false"
+		default:
+			return true
+		}
+	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
@@ -1013,16 +1026,63 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	session := getSession(r)
 	accounts, _ := db.GetAccounts()
 	admins, _ := db.GetAdmins()
+	toolDefs := tools.GetTools()
+	
+	// Build integrations with enable/disable state
+	integrations := []map[string]interface{}{
+		{
+			"Name":        "Anthropic Claude",
+			"Key":         "anthropic",
+			"Description": "AI model for chat responses",
+			"Configured":  anthropicKey != "",
+			"Enabled":     true, // Always enabled if configured
+			"Toggleable":  false,
+			"Details":     anthropicModel,
+			"EnvVar":      "ANTHROPIC_API_KEY",
+		},
+		{
+			"Name":        "Google OAuth",
+			"Key":         "google_oauth",
+			"Description": "User authentication",
+			"Configured":  googleClientID != "" && googleClientSecret != "",
+			"Enabled":     true, // Always enabled if configured
+			"Toggleable":  false,
+			"Details":     googleRedirectURI,
+			"EnvVar":      "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET",
+		},
+		{
+			"Name":        "Brave Search",
+			"Key":         "brave_search",
+			"Description": "Web search via www tool",
+			"Configured":  os.Getenv("BRAVE_API_KEY") != "",
+			"Enabled":     os.Getenv("BRAVE_API_KEY") != "" && db.GetSetting("brave_search_enabled") != "false",
+			"Toggleable":  true,
+			"Details":     "2000 free queries/month",
+			"EnvVar":      "BRAVE_API_KEY",
+		},
+		{
+			"Name":        "Gmail (Assistant Inbox)",
+			"Key":         "gmail",
+			"Description": "Email via IMAP/SMTP for assistant@aslam.org",
+			"Configured":  os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != "",
+			"Enabled":     os.Getenv("GMAIL_USER") != "" && db.GetSetting("gmail_enabled") != "false",
+			"Toggleable":  true,
+			"Details":     os.Getenv("GMAIL_USER"),
+			"EnvVar":      "GMAIL_USER, GMAIL_APP_PASSWORD",
+		},
+	}
 	
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
 	
 	tmpl.ExecuteTemplate(w, "admin.html", map[string]interface{}{
-		"Accounts":    accounts,
-		"Admins":      admins,
-		"CurrentUser": session.Email,
-		"Message":     msg,
-		"Error":       errMsg,
+		"Accounts":     accounts,
+		"Admins":       admins,
+		"Integrations": integrations,
+		"Tools":        toolDefs,
+		"CurrentUser":  session.Email,
+		"Message":      msg,
+		"Error":        errMsg,
 	})
 }
 
@@ -1112,4 +1172,26 @@ func handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 	
 	db.DeleteAccount(id)
 	http.Redirect(w, r, "/admin?msg=Account+deleted", http.StatusSeeOther)
+}
+
+func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+	
+	key := r.FormValue("key")
+	enabled := r.FormValue("enabled") == "true"
+	
+	switch key {
+	case "brave_search":
+		db.SetSettingBool("brave_search_enabled", enabled)
+	case "gmail":
+		db.SetSettingBool("gmail_enabled", enabled)
+	default:
+		http.Redirect(w, r, "/admin?error=Unknown+integration", http.StatusSeeOther)
+		return
+	}
+	
+	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
 }

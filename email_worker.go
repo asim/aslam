@@ -28,6 +28,7 @@ func startEmailWorker() {
 	}
 
 	log.Println("Email worker: starting (checking every 2 minutes)")
+	log.Println("Email worker: can be disabled from /admin")
 	
 	// Initial check after 30 seconds
 	time.AfterFunc(30*time.Second, func() {
@@ -44,6 +45,11 @@ func startEmailWorker() {
 }
 
 func checkInbox() {
+	// Check if disabled via admin
+	if db.GetSetting("gmail_enabled") == "false" {
+		return
+	}
+	
 	log.Println("Email worker: checking inbox")
 	
 	emails, err := tools.FetchEmails(20, true) // Fetch up to 20 unread

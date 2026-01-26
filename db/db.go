@@ -260,6 +260,18 @@ func Migrate() error {
 		return err
 	}
 
+	// Settings - key/value store for configuration
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -953,4 +965,31 @@ func IsAdmin(email string) bool {
 	var id int64
 	err := DB.QueryRow(`SELECT id FROM admins WHERE email = ?`, email).Scan(&id)
 	return err == nil
+}
+
+// Settings functions
+
+func GetSetting(key string) string {
+	var value sql.NullString
+	DB.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&value)
+	return value.String
+}
+
+func SetSetting(key, value string) error {
+	_, err := DB.Exec(`
+		INSERT INTO settings (key, value) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
+	`, key, value, value)
+	return err
+}
+
+func GetSettingBool(key string) bool {
+	return GetSetting(key) == "true"
+}
+
+func SetSettingBool(key string, value bool) error {
+	if value {
+		return SetSetting(key, "true")
+	}
+	return SetSetting(key, "false")
 }

@@ -21,6 +21,16 @@ func SetStorage(s Storage) {
 	store = s
 }
 
+// IntegrationChecker checks if an integration is enabled
+type IntegrationChecker func(name string) bool
+
+var isIntegrationEnabled IntegrationChecker
+
+// SetIntegrationChecker sets the function to check if integrations are enabled
+func SetIntegrationChecker(checker IntegrationChecker) {
+	isIntegrationEnabled = checker
+}
+
 // ToolDefinition for Anthropic API
 type ToolDefinition struct {
 	Name        string                 `json:"name"`
@@ -202,6 +212,9 @@ func executeWikipedia(input map[string]interface{}) (string, error) {
 }
 
 func executeWebSearch(input map[string]interface{}) (string, error) {
+	if isIntegrationEnabled != nil && !isIntegrationEnabled("brave_search") {
+		return "", fmt.Errorf("web search is disabled")
+	}
 	query, _ := input["query"].(string)
 	if query == "" {
 		return "", fmt.Errorf("query is required")
