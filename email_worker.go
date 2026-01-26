@@ -120,8 +120,8 @@ func processEmail(email tools.Email) {
 		return
 	}
 
-	// Add the email as a user message
-	userMessage := fmt.Sprintf("[Email from %s]\nSubject: %s\n\n%s", email.From, email.Subject, email.Body)
+	// Add the email as a user message (just the content, context is in the conversation)
+	userMessage := email.Body
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		log.Printf("Email worker: failed to add message: %v", err)
 		return
