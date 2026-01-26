@@ -364,9 +364,10 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		Name:     "session",
 		Value:    token,
 		Path:     "/",
+		Domain:   "aslam.org",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   30 * 24 * 60 * 60,
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 	})
@@ -384,7 +385,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "session",
 		Path:   "/",
-		
+		Domain: "aslam.org",
 		MaxAge: -1,
 	})
 
