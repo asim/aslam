@@ -195,7 +195,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "vault_add",
-			Description: "Add something to keep track of - assets, accounts, people, instructions, documents. Use this when the user mentions something important they own, have access to, or need to remember. Categories: asset, account, person, instruction, document.",
+			Description: "Add a family asset, account, contact, or important information to the vault. Use this when the user mentions something they own, have access to, or need to remember - bank accounts, property, crypto wallets, important people, instructions for family. Categories: asset, account, person, instruction, document.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -229,7 +229,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "vault_search",
-			Description: "Search for things being tracked - assets, accounts, people, instructions, documents. Use this when the user asks about what they have, own, or need to do.",
+			Description: "Search the family vault for assets, accounts, contacts, or important information. Use when the user asks about what they own, their accounts, important contacts, or stored instructions.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -246,7 +246,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "vault_update",
-			Description: "Update an existing vault item. Use this when the user wants to change or add information to something already being tracked.",
+			Description: "Update an existing item in the family vault. Use when the user wants to change details, add credentials, or update status of a tracked asset, account, or contact.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
