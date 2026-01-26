@@ -941,8 +941,32 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 
 func handleDev(w http.ResponseWriter, r *http.Request) {
 	toolDefs := tools.GetTools()
+	
+	// Build integrations status
+	integrations := []map[string]interface{}{
+		{
+			"Name":        "Anthropic Claude",
+			"Description": "AI model for chat responses",
+			"Enabled":     anthropicKey != "",
+			"Details":     anthropicModel,
+		},
+		{
+			"Name":        "Google OAuth",
+			"Description": "User authentication",
+			"Enabled":     googleClientID != "" && googleClientSecret != "",
+			"Details":     googleRedirectURI,
+		},
+		{
+			"Name":        "Brave Search",
+			"Description": "Web search via www tool",
+			"Enabled":     os.Getenv("BRAVE_API_KEY") != "",
+			"Details":     "2000 free queries/month",
+		},
+	}
+	
 	tmpl.ExecuteTemplate(w, "dev.html", map[string]interface{}{
-		"Model": anthropicModel,
-		"Tools": toolDefs,
+		"Model":        anthropicModel,
+		"Tools":        toolDefs,
+		"Integrations": integrations,
 	})
 }

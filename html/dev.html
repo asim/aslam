@@ -6,6 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev - Aslam</title>
     {{template "style"}}
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-enabled {
+            background: #22c55e;
+            color: white;
+        }
+        .status-disabled {
+            background: #ef4444;
+            color: white;
+        }
+        .integration-item {
+            margin-bottom: 16px;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        .integration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .integration-details {
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
     <div class="app">
@@ -14,9 +47,24 @@
         <main class="app-content">
             <h2>Developer Info</h2>
             
-            <h3>Model</h3>
-            <p><code>{{.Model}}</code></p>
-            <br>
+            <h3>Integrations</h3>
+            {{range .Integrations}}
+            <div class="integration-item">
+                <div class="integration-header">
+                    <strong>{{.Name}}</strong>
+                    {{if .Enabled}}
+                    <span class="status-badge status-enabled">Enabled</span>
+                    {{else}}
+                    <span class="status-badge status-disabled">Disabled</span>
+                    {{end}}
+                </div>
+                <p class="muted">{{.Description}}</p>
+                {{if .Details}}
+                <p class="integration-details">{{.Details}}</p>
+                {{end}}
+            </div>
+            {{end}}
+            
             <h3>Tools ({{len .Tools}})</h3>
             <ul class="tools-list">
             {{range .Tools}}

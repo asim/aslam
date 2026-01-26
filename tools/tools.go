@@ -107,7 +107,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "www",
-			Description: "Search the web for current information. Use this for recent news, current prices, latest updates, or any time-sensitive information that may not be in your training data. Returns search results from DuckDuckGo.",
+			Description: "Search the web for current information. Use this for recent news, current prices, latest updates, or any time-sensitive information that may not be in your training data. Returns search results from Brave Search.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
