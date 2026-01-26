@@ -142,8 +142,9 @@ func main() {
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
 
-	// Start email worker
-	startEmailWorker()
+	// Start background workers
+	startTaskProcessor()  // Handles pending tasks from any channel
+	startEmailWorker()    // Polls inbox for new emails
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
@@ -927,7 +928,10 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		sendEvent("tool", toolName)
 	})
 	if err != nil {
-		response = "Error: " + err.Error()
+		// Create pending task for retry
+		db.CreatePendingTask("chat", req.ConversationID, "", "")
+		response = "Sorry, I encountered an error. I'll retry processing your message shortly."
+		log.Printf("Chat error, created pending task for conv %d: %v", req.ConversationID, err)
 	}
 	db.AddMessage(req.ConversationID, "assistant", response)
 

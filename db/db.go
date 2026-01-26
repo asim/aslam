@@ -198,6 +198,29 @@ func Migrate() error {
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_email_log_status ON email_log(status)`)
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_email_log_thread ON email_log(thread_id)`)
 
+	// Pending tasks - unified queue for all channels
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS pending_tasks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			channel TEXT NOT NULL,
+			conversation_id INTEGER NOT NULL,
+			reference_id TEXT,
+			status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+			attempts INTEGER NOT NULL DEFAULT 0,
+			max_attempts INTEGER NOT NULL DEFAULT 3,
+			last_error TEXT,
+			metadata TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_tasks_status ON pending_tasks(status)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_tasks_channel ON pending_tasks(channel)`)
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -664,4 +687,111 @@ func EmailExists(messageID string) bool {
 	var id int64
 	err := DB.QueryRow(`SELECT id FROM email_log WHERE message_id = ?`, messageID).Scan(&id)
 	return err == nil
+}
+
+func UpdateEmailStatusByMessageID(messageID, status, errMsg string) error {
+	if status == "processed" {
+		_, err := DB.Exec(`
+			UPDATE email_log SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE message_id = ?
+		`, status, messageID)
+		return err
+	}
+	_, err := DB.Exec(`
+		UPDATE email_log SET status = ?, error = ?, processed_at = CURRENT_TIMESTAMP WHERE message_id = ?
+	`, status, errMsg, messageID)
+	return err
+}
+
+// Pending task functions
+
+type PendingTask struct {
+	ID             int64
+	Channel        string
+	ConversationID int64
+	ReferenceID    string // Channel-specific ref (e.g., email message ID)
+	Status         string
+	Attempts       int
+	MaxAttempts    int
+	LastError      string
+	Metadata       string // JSON for channel-specific data
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func CreatePendingTask(channel string, conversationID int64, referenceID, metadata string) (int64, error) {
+	result, err := DB.Exec(`
+		INSERT INTO pending_tasks (channel, conversation_id, reference_id, metadata)
+		VALUES (?, ?, ?, ?)
+	`, channel, conversationID, referenceID, metadata)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func GetPendingTasks() ([]PendingTask, error) {
+	rows, err := DB.Query(`
+		SELECT id, channel, conversation_id, reference_id, status, attempts, max_attempts, last_error, metadata, created_at, updated_at
+		FROM pending_tasks 
+		WHERE status IN ('pending', 'processing') AND attempts < max_attempts
+		ORDER BY created_at ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []PendingTask
+	for rows.Next() {
+		var t PendingTask
+		var refID, lastErr, meta sql.NullString
+		err := rows.Scan(&t.ID, &t.Channel, &t.ConversationID, &refID, &t.Status, &t.Attempts, &t.MaxAttempts, &lastErr, &meta, &t.CreatedAt, &t.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		t.ReferenceID = refID.String
+		t.LastError = lastErr.String
+		t.Metadata = meta.String
+		tasks = append(tasks, t)
+	}
+	return tasks, nil
+}
+
+func UpdateTaskStatus(id int64, status, lastError string) error {
+	_, err := DB.Exec(`
+		UPDATE pending_tasks 
+		SET status = ?, last_error = ?, attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP 
+		WHERE id = ?
+	`, status, lastError, id)
+	return err
+}
+
+func MarkTaskProcessing(id int64) error {
+	_, err := DB.Exec(`
+		UPDATE pending_tasks SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id = ?
+	`, id)
+	return err
+}
+
+func MarkTaskCompleted(id int64) error {
+	_, err := DB.Exec(`
+		UPDATE pending_tasks SET status = 'completed', attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+	`, id)
+	return err
+}
+
+func MarkTaskFailed(id int64, errMsg string) error {
+	_, err := DB.Exec(`
+		UPDATE pending_tasks SET status = 'failed', last_error = ?, attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+	`, errMsg, id)
+	return err
+}
+
+// ResetStaleTasks marks any 'processing' tasks as 'pending' (for restart recovery)
+func ResetStaleTasks() error {
+	_, err := DB.Exec(`
+		UPDATE pending_tasks SET status = 'pending', updated_at = CURRENT_TIMESTAMP 
+		WHERE status = 'processing'
+	`)
+	return err
 }

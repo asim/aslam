@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -77,18 +78,18 @@ func processEmail(email tools.Email) {
 
 	// Check if we've already processed this email
 	if email.MessageID != "" && db.EmailExists(email.MessageID) {
-		log.Printf("Email worker: email already processed: %s", email.MessageID)
+		log.Printf("Email worker: email already logged: %s", email.MessageID)
 		tools.MarkAsRead(email.UID)
 		return
 	}
 
-	log.Printf("Email worker: processing email from %s: %s", senderEmail, email.Subject)
+	log.Printf("Email worker: queueing email from %s: %s", senderEmail, email.Subject)
 
-	// Determine thread ID (use In-Reply-To or References, or create new from MessageID)
+	// Determine thread ID
 	threadID := determineThreadID(email)
 
-	// Log the email first (status: pending)
-	logID, err := db.LogEmail(
+	// Log the email first
+	_, err := db.LogEmail(
 		email.MessageID,
 		threadID,
 		"inbound",
@@ -107,7 +108,6 @@ func processEmail(email tools.Email) {
 	convID, err := getOrCreateConversation(threadID, email.Subject, senderEmail)
 	if err != nil {
 		log.Printf("Email worker: failed to get/create conversation: %v", err)
-		db.UpdateEmailStatus(logID, "failed", err.Error())
 		return
 	}
 
@@ -115,65 +115,28 @@ func processEmail(email tools.Email) {
 	userMessage := fmt.Sprintf("[Email from %s]\nSubject: %s\n\n%s", email.From, email.Subject, email.Body)
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		log.Printf("Email worker: failed to add message: %v", err)
-		db.UpdateEmailStatus(logID, "failed", err.Error())
 		return
 	}
 
-	// Get conversation history
-	messages, err := db.GetMessages(convID)
+	// Create pending task for processing
+	metadata, _ := json.Marshal(map[string]string{
+		"from":       senderEmail,
+		"subject":    email.Subject,
+		"message_id": email.MessageID,
+		"thread_id":  threadID,
+		"references": email.References,
+	})
+	
+	_, err = db.CreatePendingTask("email", convID, email.MessageID, string(metadata))
 	if err != nil {
-		log.Printf("Email worker: failed to get messages: %v", err)
-		db.UpdateEmailStatus(logID, "failed", err.Error())
+		log.Printf("Email worker: failed to create pending task: %v", err)
 		return
 	}
 
-	// Call Claude
-	response, err := callClaudeForEmail(messages)
-	if err != nil {
-		log.Printf("Email worker: Claude failed: %v", err)
-		db.UpdateEmailStatus(logID, "failed", err.Error())
-		return
-	}
-
-	// Save assistant response
-	if err := db.AddMessage(convID, "assistant", response); err != nil {
-		log.Printf("Email worker: failed to save response: %v", err)
-	}
-
-	// Send reply email
-	replySubject := email.Subject
-	if !strings.HasPrefix(strings.ToLower(replySubject), "re:") {
-		replySubject = "Re: " + replySubject
-	}
-
-	// Build references chain
-	references := email.References
-	if references != "" && email.MessageID != "" {
-		references = references + " " + email.MessageID
-	} else if email.MessageID != "" {
-		references = email.MessageID
-	}
-
-	err = tools.SendEmailThreaded(senderEmail, replySubject, response, email.MessageID, references)
-	if err != nil {
-		log.Printf("Email worker: failed to send reply: %v", err)
-		db.UpdateEmailStatus(logID, "failed", err.Error())
-		return
-	}
-
-	// Log the outbound email
-	db.LogEmail("", threadID, "outbound", os.Getenv("GMAIL_USER"), senderEmail, replySubject, response, "processed")
-
-	// Update thread
-	db.UpdateEmailThread(threadID, email.MessageID)
-
-	// Mark original as read
+	// Mark original as read (we've queued it for processing)
 	tools.MarkAsRead(email.UID)
 
-	// Mark as processed
-	db.UpdateEmailStatus(logID, "processed", "")
-
-	log.Printf("Email worker: replied to %s", senderEmail)
+	log.Printf("Email worker: queued email from %s for processing", senderEmail)
 }
 
 func extractEmail(from string) string {
@@ -237,8 +200,4 @@ func getOrCreateConversation(threadID, subject, sender string) (int64, error) {
 	return convID, nil
 }
 
-// callClaudeForEmail uses the same generateResponse as chat
-// Email is just another input channel - same agent, same tools
-func callClaudeForEmail(messages []db.Message) (string, error) {
-	return generateResponse(messages)
-}
+
