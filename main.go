@@ -739,6 +739,11 @@ You have tools available:
 - islamic_search: Query Quran, Hadith, Names of Allah for authoritative answers.
 - email_send: Send an email. When the user asks you to send them an email, USE THIS TOOL to actually send it - don't just write out what the email would say. Actually call the tool.
 - email_check: Check the assistant's inbox.
+- www: Search the web for current information.
+- wikipedia: Look up factual information.
+- reminder: Search Islamic sources (Quran, Hadith).
+
+When asked to send information about a topic, USE the research tools first (www, wikipedia, reminder) to gather accurate information, then send the email with that information.
 
 Do NOT:
 - Add Islamic greetings or phrases unless the user does first
@@ -854,12 +859,19 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 		}
 
 		// Extract text response
+		var textResponse string
 		for _, block := range result.Content {
 			if block.Type == "text" {
-				return block.Text, nil
+				textResponse = block.Text
+				break
 			}
 		}
-		return "", fmt.Errorf("no text in response")
+		
+		// If no text but we had tool calls that succeeded, return a default message
+		if textResponse == "" {
+			return "Done.", nil
+		}
+		return textResponse, nil
 	}
 
 	return "", fmt.Errorf("too many tool calls")
