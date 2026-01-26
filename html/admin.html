@@ -49,6 +49,22 @@
         .btn-small { padding: 4px 8px; font-size: 12px; }
         .success { color: #16a34a; margin-bottom: 16px; }
         .error { color: #dc2626; margin-bottom: 16px; }
+        .secret { 
+            filter: blur(4px); 
+            cursor: pointer; 
+            user-select: none;
+            transition: filter 0.2s;
+        }
+        .secret.revealed { 
+            filter: none; 
+            user-select: text;
+        }
+        .secret:hover:not(.revealed)::after {
+            content: ' (click to reveal)';
+            filter: none;
+            font-size: 10px;
+            color: #888;
+        }
         .warning-box {
             background: #fef3c7;
             border: 1px solid #f59e0b;
@@ -136,10 +152,12 @@
                             <button type="submit" class="btn btn-danger btn-small">Delete</button>
                         </form>
                     </div>
-                    {{if .AccountID}}<div class="item-detail"><label>Account:</label> {{.AccountID}}</div>{{end}}
-                    {{if .Description}}<div class="item-detail"><label>Purpose:</label> {{.Description}}</div>{{end}}
+                    {{if .URL}}<div class="item-detail"><label>URL:</label> <a href="{{.URL}}" target="_blank">{{.URL}}</a></div>{{end}}
+                    {{if .AccountID}}<div class="item-detail"><label>Username/Email:</label> {{.AccountID}}</div>{{end}}
+                    {{if .Password}}<div class="item-detail"><label>Password:</label> <code class="secret" onclick="this.classList.toggle('revealed')">{{.Password}}</code></div>{{end}}
+                    {{if .APIKey}}<div class="item-detail"><label>API Key:</label> <code class="secret" onclick="this.classList.toggle('revealed')">{{.APIKey}}</code></div>{{end}}
                     {{if .EnvVar}}<div class="item-detail"><label>Env Variable:</label> <code>{{.EnvVar}}</code></div>{{end}}
-                    {{if .AccessInfo}}<div class="item-detail"><label>Access:</label> {{.AccessInfo}}</div>{{end}}
+                    {{if .Description}}<div class="item-detail"><label>Purpose:</label> {{.Description}}</div>{{end}}
                     {{if .Notes}}<div class="item-detail"><label>Notes:</label> {{.Notes}}</div>{{end}}
                     <div class="item-meta">Updated: {{.UpdatedAt.Format "2006-01-02 15:04"}}</div>
                 </div>
@@ -155,20 +173,28 @@
                             <input type="text" name="service" required placeholder="e.g., Google Cloud, Anthropic, Brave">
                         </div>
                         <div class="form-row">
-                            <label>Account ID / Email</label>
+                            <label>URL</label>
+                            <input type="url" name="url" placeholder="e.g., https://console.cloud.google.com">
+                        </div>
+                        <div class="form-row">
+                            <label>Username / Email</label>
                             <input type="text" name="account_id" placeholder="e.g., asim@aslam.me">
                         </div>
                         <div class="form-row">
-                            <label>Purpose / Description</label>
-                            <input type="text" name="description" placeholder="What is this account used for?">
+                            <label>Password</label>
+                            <input type="text" name="password" placeholder="Account password (stored encrypted)">
+                        </div>
+                        <div class="form-row">
+                            <label>API Key / Secret</label>
+                            <input type="text" name="api_key" placeholder="API key if applicable">
                         </div>
                         <div class="form-row">
                             <label>Environment Variable</label>
                             <input type="text" name="env_var" placeholder="e.g., ANTHROPIC_API_KEY">
                         </div>
                         <div class="form-row">
-                            <label>How to Access</label>
-                            <textarea name="access_info" placeholder="e.g., Login with Google account, password in 1Password under 'Anthropic'"></textarea>
+                            <label>Purpose / Description</label>
+                            <input type="text" name="description" placeholder="What is this account used for?">
                         </div>
                         <div class="form-row">
                             <label>Additional Notes</label>

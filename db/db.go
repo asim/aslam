@@ -227,8 +227,10 @@ func Migrate() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			service TEXT NOT NULL,
 			account_id TEXT,
+			password TEXT,
+			api_key TEXT,
 			description TEXT,
-			access_info TEXT,
+			url TEXT,
 			env_var TEXT,
 			notes TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -238,6 +240,10 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+	// Add new columns if they don't exist (migration for existing DBs)
+	DB.Exec(`ALTER TABLE accounts ADD COLUMN password TEXT`)
+	DB.Exec(`ALTER TABLE accounts ADD COLUMN api_key TEXT`)
+	DB.Exec(`ALTER TABLE accounts ADD COLUMN url TEXT`)
 
 	// Admins - users who can administer the system
 	_, err = DB.Exec(`
@@ -835,8 +841,10 @@ type Account struct {
 	ID          int64
 	Service     string
 	AccountID   string
+	Password    string
+	APIKey      string
 	Description string
-	AccessInfo  string
+	URL         string
 	EnvVar      string
 	Notes       string
 	CreatedAt   time.Time
@@ -845,7 +853,7 @@ type Account struct {
 
 func GetAccounts() ([]Account, error) {
 	rows, err := DB.Query(`
-		SELECT id, service, account_id, description, access_info, env_var, notes, created_at, updated_at
+		SELECT id, service, account_id, password, api_key, description, url, env_var, notes, created_at, updated_at
 		FROM accounts ORDER BY service
 	`)
 	if err != nil {
@@ -856,14 +864,16 @@ func GetAccounts() ([]Account, error) {
 	var accounts []Account
 	for rows.Next() {
 		var a Account
-		var accountID, desc, access, envVar, notes sql.NullString
-		err := rows.Scan(&a.ID, &a.Service, &accountID, &desc, &access, &envVar, &notes, &a.CreatedAt, &a.UpdatedAt)
+		var accountID, password, apiKey, desc, url, envVar, notes sql.NullString
+		err := rows.Scan(&a.ID, &a.Service, &accountID, &password, &apiKey, &desc, &url, &envVar, &notes, &a.CreatedAt, &a.UpdatedAt)
 		if err != nil {
 			continue
 		}
 		a.AccountID = accountID.String
+		a.Password = password.String
+		a.APIKey = apiKey.String
 		a.Description = desc.String
-		a.AccessInfo = access.String
+		a.URL = url.String
 		a.EnvVar = envVar.String
 		a.Notes = notes.String
 		accounts = append(accounts, a)
@@ -871,22 +881,22 @@ func GetAccounts() ([]Account, error) {
 	return accounts, nil
 }
 
-func SaveAccount(service, accountID, description, accessInfo, envVar, notes string) (int64, error) {
+func SaveAccount(service, accountID, password, apiKey, description, url, envVar, notes string) (int64, error) {
 	result, err := DB.Exec(`
-		INSERT INTO accounts (service, account_id, description, access_info, env_var, notes)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, service, accountID, description, accessInfo, envVar, notes)
+		INSERT INTO accounts (service, account_id, password, api_key, description, url, env_var, notes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, service, accountID, password, apiKey, description, url, envVar, notes)
 	if err != nil {
 		return 0, err
 	}
 	return result.LastInsertId()
 }
 
-func UpdateAccount(id int64, service, accountID, description, accessInfo, envVar, notes string) error {
+func UpdateAccount(id int64, service, accountID, password, apiKey, description, url, envVar, notes string) error {
 	_, err := DB.Exec(`
-		UPDATE accounts SET service=?, account_id=?, description=?, access_info=?, env_var=?, notes=?, updated_at=CURRENT_TIMESTAMP
+		UPDATE accounts SET service=?, account_id=?, password=?, api_key=?, description=?, url=?, env_var=?, notes=?, updated_at=CURRENT_TIMESTAMP
 		WHERE id=?
-	`, service, accountID, description, accessInfo, envVar, notes, id)
+	`, service, accountID, password, apiKey, description, url, envVar, notes, id)
 	return err
 }
 

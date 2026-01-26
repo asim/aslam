@@ -1077,8 +1077,10 @@ func handleAddAccount(w http.ResponseWriter, r *http.Request) {
 	
 	service := strings.TrimSpace(r.FormValue("service"))
 	accountID := strings.TrimSpace(r.FormValue("account_id"))
+	password := r.FormValue("password") // Don't trim passwords
+	apiKey := strings.TrimSpace(r.FormValue("api_key"))
 	description := strings.TrimSpace(r.FormValue("description"))
-	accessInfo := strings.TrimSpace(r.FormValue("access_info"))
+	url := strings.TrimSpace(r.FormValue("url"))
 	envVar := strings.TrimSpace(r.FormValue("env_var"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
 	
@@ -1087,7 +1089,7 @@ func handleAddAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	_, err := db.SaveAccount(service, accountID, description, accessInfo, envVar, notes)
+	_, err := db.SaveAccount(service, accountID, password, apiKey, description, url, envVar, notes)
 	if err != nil {
 		http.Redirect(w, r, "/admin?error=Failed+to+save+account", http.StatusSeeOther)
 		return
