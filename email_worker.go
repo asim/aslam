@@ -160,21 +160,24 @@ func extractEmail(from string) string {
 }
 
 func determineThreadID(email tools.Email) string {
-	// If this is a reply, use the In-Reply-To as thread ID
+	// If this is a reply, look up the thread by In-Reply-To
 	if email.InReplyTo != "" {
-		// Check if we have a thread with this message
-		if thread, err := db.GetEmailThread(email.InReplyTo); err == nil {
+		// Check if we have a thread with this message ID
+		if thread, err := db.GetEmailThreadByMessageID(email.InReplyTo); err == nil {
+			log.Printf("Email worker: found thread %s for In-Reply-To %s", thread.ThreadID, email.InReplyTo)
 			return thread.ThreadID
 		}
 		// Check references
 		if email.References != "" {
 			refs := strings.Fields(email.References)
 			for _, ref := range refs {
-				if thread, err := db.GetEmailThread(ref); err == nil {
+				if thread, err := db.GetEmailThreadByMessageID(ref); err == nil {
+					log.Printf("Email worker: found thread %s for reference %s", thread.ThreadID, ref)
 					return thread.ThreadID
 				}
 			}
 		}
+		log.Printf("Email worker: no thread found for In-Reply-To %s", email.InReplyTo)
 	}
 	
 	// New thread - use this message's ID

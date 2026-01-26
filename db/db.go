@@ -672,6 +672,22 @@ func GetEmailThread(threadID string) (*EmailThread, error) {
 	return &t, nil
 }
 
+// GetEmailThreadByMessageID looks up a thread by any message ID in the thread
+func GetEmailThreadByMessageID(messageID string) (*EmailThread, error) {
+	var t EmailThread
+	var lastMsgID sql.NullString
+	// Look up by thread_id (which is the first message's ID) or last_message_id
+	err := DB.QueryRow(`
+		SELECT id, thread_id, conversation_id, last_message_id, created_at, updated_at
+		FROM email_threads WHERE thread_id = ? OR last_message_id = ?
+	`, messageID, messageID).Scan(&t.ID, &t.ThreadID, &t.ConversationID, &lastMsgID, &t.CreatedAt, &t.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	t.LastMessageID = lastMsgID.String
+	return &t, nil
+}
+
 func CreateEmailThread(threadID string, conversationID int64, lastMessageID string) error {
 	_, err := DB.Exec(`
 		INSERT INTO email_threads (thread_id, conversation_id, last_message_id)

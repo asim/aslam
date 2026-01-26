@@ -165,16 +165,20 @@ func processEmailTask(task db.PendingTask) error {
 		references = meta.MessageID
 	}
 
-	if _, err := tools.SendEmailThreaded(meta.From, replySubject, response, meta.MessageID, references); err != nil {
+	outboundMsgID, err := tools.SendEmailThreaded(meta.From, replySubject, response, meta.MessageID, references)
+	if err != nil {
 		return err
 	}
 
 	// Log outbound email
-	db.LogEmail("", meta.ThreadID, "outbound", "assistant@aslam.org", meta.From, replySubject, response, "processed")
+	db.LogEmail(outboundMsgID, meta.ThreadID, "outbound", "assistant@aslam.org", meta.From, replySubject, response, "processed")
 
-	// Update thread
+	// Create thread mapping for outbound message so replies to it continue the conversation
+	db.CreateEmailThread(outboundMsgID, task.ConversationID, outboundMsgID)
+	
+	// Update original thread
 	if meta.ThreadID != "" {
-		db.UpdateEmailThread(meta.ThreadID, meta.MessageID)
+		db.UpdateEmailThread(meta.ThreadID, outboundMsgID)
 	}
 
 	// Mark inbound email as processed
