@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -340,12 +341,14 @@ func SearchMessages(query string) ([]map[string]interface{}, error) {
 // Session functions
 
 func GetSessionByToken(token string) *Session {
+	log.Printf("DB lookup for token: %q (len=%d)", token, len(token))
 	var s Session
 	err := DB.QueryRow(`
 		SELECT token, email, name, created_at, expires_at 
 		FROM sessions WHERE token = ? AND expires_at > CURRENT_TIMESTAMP
 	`, token).Scan(&s.Token, &s.Email, &s.Name, &s.CreatedAt, &s.ExpiresAt)
 	if err != nil {
+		log.Printf("DB lookup error: %v", err)
 		return nil
 	}
 	return &s

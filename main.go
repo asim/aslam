@@ -178,6 +178,12 @@ func loadEnv() {
 
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Redirect www to non-www
+		if r.Host == "www.aslam.org" {
+			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
+			return
+		}
+
 		// Check if auth is configured
 		if googleClientID == "" {
 			// No auth configured, allow all
@@ -211,9 +217,17 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 func getSession(r *http.Request) *db.Session {
 	cookie, err := r.Cookie("session")
 	if err != nil {
+		log.Printf("No session cookie: %v", err)
 		return nil
 	}
-	return db.GetSessionByToken(cookie.Value)
+	log.Printf("Session cookie found: %s...", cookie.Value[:min(10, len(cookie.Value))])
+	session := db.GetSessionByToken(cookie.Value)
+	if session == nil {
+		log.Printf("Session not found in DB for token")
+	} else {
+		log.Printf("Session valid for: %s", session.Email)
+	}
+	return session
 }
 
 func createSession(email, name string) string {
@@ -252,10 +266,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "oauth_state",
 		Value:    state,
 		Path:     "/",
-		Domain:   ".aslam.org",
+		
 		HttpOnly: true,
-		Secure:   isHTTPS(r),
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   300, // 5 minutes
 	})
 
@@ -283,7 +297,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "oauth_state",
 		Path:   "/",
-		Domain: ".aslam.org",
+		
 		MaxAge: -1,
 	})
 
@@ -345,15 +359,16 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Create session
 	token := createSession(email, userInfo.Name)
+	log.Printf("Created session token: %s... (len=%d)", token[:min(10, len(token))], len(token))
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    token,
 		Path:     "/",
-		Domain:   ".aslam.org",
 		HttpOnly: true,
-		Secure:   isHTTPS(r),
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   30 * 24 * 60 * 60, // 30 days
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+		MaxAge:   30 * 24 * 60 * 60,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
 	})
 
 	log.Printf("User logged in: %s (%s)", userInfo.Name, email)
@@ -369,7 +384,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "session",
 		Path:   "/",
-		Domain: ".aslam.org",
+		
 		MaxAge: -1,
 	})
 
