@@ -14,11 +14,26 @@ type Storage interface {
 	SearchEntries(query string) ([]map[string]interface{}, error)
 }
 
+// VaultStorage interface for vault operations
+type VaultStorage interface {
+	AddVaultItem(category, name, description, details, credentials, notes string) (int64, error)
+	SearchVault(query string) ([]map[string]interface{}, error)
+	GetVaultItems(category string) ([]map[string]interface{}, error)
+	GetVaultItem(id int64) (map[string]interface{}, error)
+	UpdateVaultItem(id int64, updates map[string]interface{}) error
+}
+
 var store Storage
+var vaultStore VaultStorage
 
 // SetStorage sets the storage backend
 func SetStorage(s Storage) {
 	store = s
+}
+
+// SetVaultStorage sets the vault storage backend
+func SetVaultStorage(v VaultStorage) {
+	vaultStore = v
 }
 
 // IntegrationChecker checks if an integration is enabled
@@ -178,6 +193,95 @@ func GetTools() []ToolDefinition {
 				"required": []string{"to", "subject", "body"},
 			},
 		},
+		{
+			Name:        "vault_add",
+			Description: "Add something to keep track of - assets, accounts, people, instructions, documents. Use this when the user mentions something important they own, have access to, or need to remember. Categories: asset, account, person, instruction, document.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"category": map[string]interface{}{
+						"type":        "string",
+						"description": "Category: asset, account, person, instruction, document",
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "Name or title of the item",
+					},
+					"description": map[string]interface{}{
+						"type":        "string",
+						"description": "Brief description",
+					},
+					"details": map[string]interface{}{
+						"type":        "string",
+						"description": "Additional details, instructions, or context",
+					},
+					"credentials": map[string]interface{}{
+						"type":        "string",
+						"description": "Login info, account numbers, or access credentials if applicable",
+					},
+					"notes": map[string]interface{}{
+						"type":        "string",
+						"description": "Any other notes",
+					},
+				},
+				"required": []string{"category", "name"},
+			},
+		},
+		{
+			Name:        "vault_search",
+			Description: "Search for things being tracked - assets, accounts, people, instructions, documents. Use this when the user asks about what they have, own, or need to do.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "Search query",
+					},
+					"category": map[string]interface{}{
+						"type":        "string",
+						"description": "Filter by category (optional): asset, account, person, instruction, document",
+					},
+				},
+			},
+		},
+		{
+			Name:        "vault_update",
+			Description: "Update an existing vault item. Use this when the user wants to change or add information to something already being tracked.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"id": map[string]interface{}{
+						"type":        "integer",
+						"description": "ID of the item to update",
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "Updated name",
+					},
+					"description": map[string]interface{}{
+						"type":        "string",
+						"description": "Updated description",
+					},
+					"details": map[string]interface{}{
+						"type":        "string",
+						"description": "Updated details",
+					},
+					"credentials": map[string]interface{}{
+						"type":        "string",
+						"description": "Updated credentials",
+					},
+					"notes": map[string]interface{}{
+						"type":        "string",
+						"description": "Updated notes",
+					},
+					"status": map[string]interface{}{
+						"type":        "string",
+						"description": "Status: active, closed, archived",
+					},
+				},
+				"required": []string{"id"},
+			},
+		},
 	}
 }
 
@@ -200,6 +304,12 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeEmailCheck(input)
 	case "email_send":
 		return executeEmailSend(input)
+	case "vault_add":
+		return executeVaultAdd(input)
+	case "vault_search":
+		return executeVaultSearch(input)
+	case "vault_update":
+		return executeVaultUpdate(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -374,4 +484,114 @@ func executeEmailSend(input map[string]interface{}) (string, error) {
 	}
 
 	return fmt.Sprintf("Email sent to %s with subject: %s", to, subject), nil
+}
+
+func executeVaultAdd(input map[string]interface{}) (string, error) {
+	if vaultStore == nil {
+		return "", fmt.Errorf("vault storage not available")
+	}
+	
+	category, _ := input["category"].(string)
+	name, _ := input["name"].(string)
+	description, _ := input["description"].(string)
+	details, _ := input["details"].(string)
+	credentials, _ := input["credentials"].(string)
+	notes, _ := input["notes"].(string)
+	
+	if category == "" || name == "" {
+		return "", fmt.Errorf("category and name are required")
+	}
+	
+	id, err := vaultStore.AddVaultItem(category, name, description, details, credentials, notes)
+	if err != nil {
+		return "", err
+	}
+	
+	return fmt.Sprintf("Added to vault: %s '%s' (ID: %d)", category, name, id), nil
+}
+
+func executeVaultSearch(input map[string]interface{}) (string, error) {
+	if vaultStore == nil {
+		return "", fmt.Errorf("vault storage not available")
+	}
+	
+	query, _ := input["query"].(string)
+	category, _ := input["category"].(string)
+	
+	var items []map[string]interface{}
+	var err error
+	
+	if query != "" {
+		items, err = vaultStore.SearchVault(query)
+	} else {
+		items, err = vaultStore.GetVaultItems(category)
+	}
+	
+	if err != nil {
+		return "", err
+	}
+	
+	if len(items) == 0 {
+		if query != "" {
+			return fmt.Sprintf("No items found matching '%s'", query), nil
+		}
+		if category != "" {
+			return fmt.Sprintf("No items in category '%s'", category), nil
+		}
+		return "Vault is empty.", nil
+	}
+	
+	var result string
+	for _, item := range items {
+		result += fmt.Sprintf("[%v] %s: %s\n", item["ID"], item["Category"], item["Name"])
+		if desc, ok := item["Description"].(string); ok && desc != "" {
+			result += fmt.Sprintf("    %s\n", desc)
+		}
+		if details, ok := item["Details"].(string); ok && details != "" {
+			result += fmt.Sprintf("    Details: %s\n", details)
+		}
+		if notes, ok := item["Notes"].(string); ok && notes != "" {
+			result += fmt.Sprintf("    Notes: %s\n", notes)
+		}
+		result += "\n"
+	}
+	
+	return result, nil
+}
+
+func executeVaultUpdate(input map[string]interface{}) (string, error) {
+	if vaultStore == nil {
+		return "", fmt.Errorf("vault storage not available")
+	}
+	
+	idFloat, ok := input["id"].(float64)
+	if !ok {
+		return "", fmt.Errorf("id is required")
+	}
+	id := int64(idFloat)
+	
+	// Get existing item
+	existing, err := vaultStore.GetVaultItem(id)
+	if err != nil {
+		return "", fmt.Errorf("item not found: %w", err)
+	}
+	
+	// Build updates
+	updates := make(map[string]interface{})
+	for _, field := range []string{"name", "description", "details", "credentials", "notes", "status"} {
+		if v, ok := input[field].(string); ok && v != "" {
+			updates[field] = v
+		}
+	}
+	
+	if len(updates) == 0 {
+		return "No updates provided", nil
+	}
+	
+	err = vaultStore.UpdateVaultItem(id, updates)
+	if err != nil {
+		return "", err
+	}
+	
+	return fmt.Sprintf("Updated vault item: %s", existing["Name"]), nil
 }

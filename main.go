@@ -135,6 +135,10 @@ func main() {
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
+	http.HandleFunc("/vault", requireAuth(handleVault))
+	http.HandleFunc("/vault/add", requireAuth(handleVaultAdd))
+	http.HandleFunc("/vault/edit/", requireAuth(handleVaultEdit))
+	http.HandleFunc("/vault/delete/", requireAuth(handleVaultDelete))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -143,6 +147,7 @@ func main() {
 	
 	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
+	tools.SetVaultStorage(&vaultStorage{})
 	tools.SetIntegrationChecker(func(name string) bool {
 		switch name {
 		case "brave_search":
@@ -186,6 +191,100 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 
 func (s *dbStorage) SearchEntries(query string) ([]map[string]interface{}, error) {
 	return db.SearchEntries(query)
+}
+
+// vaultStorage implements tools.VaultStorage interface
+type vaultStorage struct{}
+
+func (v *vaultStorage) AddVaultItem(category, name, description, details, credentials, notes string) (int64, error) {
+	return db.AddVaultItem(category, name, description, details, credentials, notes)
+}
+
+func (v *vaultStorage) SearchVault(query string) ([]map[string]interface{}, error) {
+	items, err := db.SearchVault(query)
+	if err != nil {
+		return nil, err
+	}
+	return vaultItemsToMaps(items), nil
+}
+
+func (v *vaultStorage) GetVaultItems(category string) ([]map[string]interface{}, error) {
+	items, err := db.GetVaultItems(category)
+	if err != nil {
+		return nil, err
+	}
+	return vaultItemsToMaps(items), nil
+}
+
+func (v *vaultStorage) GetVaultItem(id int64) (map[string]interface{}, error) {
+	item, err := db.GetVaultItem(id)
+	if err != nil {
+		return nil, err
+	}
+	return vaultItemToMap(item), nil
+}
+
+func (v *vaultStorage) UpdateVaultItem(id int64, updates map[string]interface{}) error {
+	// Get current item, apply updates
+	item, err := db.GetVaultItem(id)
+	if err != nil {
+		return err
+	}
+	
+	// Apply updates
+	if val, ok := updates["name"].(string); ok && val != "" {
+		item.Name = val
+	}
+	if val, ok := updates["description"].(string); ok {
+		item.Description = val
+	}
+	if val, ok := updates["details"].(string); ok {
+		item.Details = val
+	}
+	if val, ok := updates["credentials"].(string); ok {
+		item.Credentials = val
+	}
+	if val, ok := updates["notes"].(string); ok {
+		item.Notes = val
+	}
+	if val, ok := updates["status"].(string); ok && val != "" {
+		item.Status = val
+	}
+	if val, ok := updates["category"].(string); ok && val != "" {
+		item.Category = val
+	}
+	
+	return db.UpdateVaultItem(id, item.Category, item.Name, item.Description, item.Details, item.Credentials, item.Notes, item.Status)
+}
+
+func vaultItemToMap(item *db.VaultItem) map[string]interface{} {
+	return map[string]interface{}{
+		"ID":          item.ID,
+		"Category":    item.Category,
+		"Name":        item.Name,
+		"Description": item.Description,
+		"Details":     item.Details,
+		"Credentials": item.Credentials,
+		"Notes":       item.Notes,
+		"Status":      item.Status,
+	}
+}
+
+func vaultItemsToMaps(items []db.VaultItem) []map[string]interface{} {
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
+		result[i] = map[string]interface{}{
+			"ID":          item.ID,
+			"Category":    item.Category,
+			"Name":        item.Name,
+			"Description": item.Description,
+			"Details":     item.Details,
+			"Credentials": item.Credentials,
+			"Notes":       item.Notes,
+			"Status":      item.Status,
+		}
+	}
+	return result
 }
 
 func loadEnv() {
@@ -1311,4 +1410,109 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
+}
+
+// Vault handlers
+
+func handleVault(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	
+	items, err := db.GetVaultItems(category)
+	if err != nil {
+		http.Error(w, "Failed to get vault items", http.StatusInternalServerError)
+		return
+	}
+	
+	categories, _ := db.GetVaultCategories()
+	
+	data := map[string]interface{}{
+		"Items":      items,
+		"Categories": categories,
+		"Category":   category,
+	}
+	
+	tmpl.ExecuteTemplate(w, "vault.html", data)
+}
+
+func handleVaultAdd(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		return
+	}
+	
+	category := strings.TrimSpace(r.FormValue("category"))
+	name := strings.TrimSpace(r.FormValue("name"))
+	description := strings.TrimSpace(r.FormValue("description"))
+	details := strings.TrimSpace(r.FormValue("details"))
+	credentials := r.FormValue("credentials") // Don't trim
+	notes := strings.TrimSpace(r.FormValue("notes"))
+	
+	if category == "" || name == "" {
+		http.Redirect(w, r, "/vault?error=Category+and+name+required", http.StatusSeeOther)
+		return
+	}
+	
+	_, err := db.AddVaultItem(category, name, description, details, credentials, notes)
+	if err != nil {
+		http.Redirect(w, r, "/vault?error=Failed+to+add+item", http.StatusSeeOther)
+		return
+	}
+	
+	http.Redirect(w, r, "/vault?category="+category, http.StatusSeeOther)
+}
+
+func handleVaultEdit(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/vault/edit/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id == 0 {
+		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		return
+	}
+	
+	if r.Method == "POST" {
+		category := strings.TrimSpace(r.FormValue("category"))
+		name := strings.TrimSpace(r.FormValue("name"))
+		description := strings.TrimSpace(r.FormValue("description"))
+		details := strings.TrimSpace(r.FormValue("details"))
+		credentials := r.FormValue("credentials")
+		notes := strings.TrimSpace(r.FormValue("notes"))
+		status := strings.TrimSpace(r.FormValue("status"))
+		
+		err := db.UpdateVaultItem(id, category, name, description, details, credentials, notes, status)
+		if err != nil {
+			http.Redirect(w, r, "/vault?error=Failed+to+update", http.StatusSeeOther)
+			return
+		}
+		
+		http.Redirect(w, r, "/vault?category="+category, http.StatusSeeOther)
+		return
+	}
+	
+	item, err := db.GetVaultItem(id)
+	if err != nil {
+		http.Redirect(w, r, "/vault?error=Item+not+found", http.StatusSeeOther)
+		return
+	}
+	
+	data := map[string]interface{}{
+		"Item": item,
+	}
+	tmpl.ExecuteTemplate(w, "vault_edit.html", data)
+}
+
+func handleVaultDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		return
+	}
+	
+	idStr := strings.TrimPrefix(r.URL.Path, "/vault/delete/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id == 0 {
+		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		return
+	}
+	
+	db.DeleteVaultItem(id)
+	http.Redirect(w, r, "/vault?msg=Item+deleted", http.StatusSeeOther)
 }

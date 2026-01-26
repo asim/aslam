@@ -272,6 +272,27 @@ func Migrate() error {
 		return err
 	}
 
+	// Vault - things to keep track of (assets, accounts, people, instructions, documents)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS vault (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			category TEXT NOT NULL,
+			name TEXT NOT NULL,
+			description TEXT,
+			details TEXT,
+			credentials TEXT,
+			notes TEXT,
+			status TEXT DEFAULT 'active',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_vault_category ON vault(category)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_vault_status ON vault(status)`)
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -1094,4 +1115,140 @@ func GetRecentTasks(limit int) ([]PendingTask, error) {
 		tasks = append(tasks, t)
 	}
 	return tasks, nil
+}
+
+// Vault functions
+
+type VaultItem struct {
+	ID          int64
+	Category    string
+	Name        string
+	Description string
+	Details     string
+	Credentials string
+	Notes       string
+	Status      string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func GetVaultItems(category string) ([]VaultItem, error) {
+	var query string
+	var args []interface{}
+	if category != "" {
+		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
+			FROM vault WHERE category = ? ORDER BY name`
+		args = []interface{}{category}
+	} else {
+		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
+			FROM vault ORDER BY category, name`
+	}
+	
+	rows, err := DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []VaultItem
+	for rows.Next() {
+		var v VaultItem
+		var desc, details, creds, notes sql.NullString
+		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		v.Description = desc.String
+		v.Details = details.String
+		v.Credentials = creds.String
+		v.Notes = notes.String
+		items = append(items, v)
+	}
+	return items, nil
+}
+
+func GetVaultItem(id int64) (*VaultItem, error) {
+	var v VaultItem
+	var desc, details, creds, notes sql.NullString
+	err := DB.QueryRow(`
+		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
+		FROM vault WHERE id = ?
+	`, id).Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	v.Description = desc.String
+	v.Details = details.String
+	v.Credentials = creds.String
+	v.Notes = notes.String
+	return &v, nil
+}
+
+func AddVaultItem(category, name, description, details, credentials, notes string) (int64, error) {
+	result, err := DB.Exec(`
+		INSERT INTO vault (category, name, description, details, credentials, notes)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, category, name, description, details, credentials, notes)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func UpdateVaultItem(id int64, category, name, description, details, credentials, notes, status string) error {
+	_, err := DB.Exec(`
+		UPDATE vault SET category=?, name=?, description=?, details=?, credentials=?, notes=?, status=?, updated_at=CURRENT_TIMESTAMP
+		WHERE id=?
+	`, category, name, description, details, credentials, notes, status, id)
+	return err
+}
+
+func DeleteVaultItem(id int64) error {
+	_, err := DB.Exec(`DELETE FROM vault WHERE id = ?`, id)
+	return err
+}
+
+func SearchVault(query string) ([]VaultItem, error) {
+	rows, err := DB.Query(`
+		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
+		FROM vault 
+		WHERE name LIKE ? OR description LIKE ? OR details LIKE ? OR notes LIKE ?
+		ORDER BY category, name
+	`, "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []VaultItem
+	for rows.Next() {
+		var v VaultItem
+		var desc, details, creds, notes sql.NullString
+		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		v.Description = desc.String
+		v.Details = details.String
+		v.Credentials = creds.String
+		v.Notes = notes.String
+		items = append(items, v)
+	}
+	return items, nil
+}
+
+func GetVaultCategories() ([]string, error) {
+	rows, err := DB.Query(`SELECT DISTINCT category FROM vault ORDER BY category`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var categories []string
+	for rows.Next() {
+		var cat string
+		rows.Scan(&cat)
+		categories = append(categories, cat)
+	}
+	return categories, nil
 }

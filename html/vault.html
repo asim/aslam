@@ -1,0 +1,197 @@
+{{define "vault.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault - Aslam</title>
+    {{template "style"}}
+    <style>
+        .vault-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .vault-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .vault-item h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.1em;
+        }
+        .vault-item .category {
+            display: inline-block;
+            font-size: 0.75em;
+            background: var(--border-color);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .vault-item .description {
+            color: var(--muted-text);
+            margin-bottom: 8px;
+        }
+        .vault-item .details {
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            background: var(--background-color);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .vault-item .meta {
+            font-size: 0.8em;
+            color: var(--muted-text);
+            margin-top: 8px;
+        }
+        .filters {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filters a {
+            padding: 4px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .filters a.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        .add-form {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .add-form summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .add-form label {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.9em;
+        }
+        .add-form input, .add-form select, .add-form textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .add-form textarea {
+            min-height: 80px;
+        }
+        .add-form button {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .status-closed {
+            opacity: 0.6;
+        }
+        .status-badge {
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+        .status-badge.closed { background: #fee; color: #c00; }
+        .status-badge.archived { background: #eee; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header"}}
+        <main class="app-content">
+            <h2>Vault</h2>
+            <p class="muted" style="margin-bottom: 20px">Assets, accounts, people, and important information</p>
+
+            <div class="filters">
+                <a href="/vault" {{if not .Category}}class="active"{{end}}>All</a>
+                {{range .Categories}}
+                <a href="/vault?category={{.}}" {{if eq . $.Category}}class="active"{{end}}>{{.}}</a>
+                {{end}}
+            </div>
+
+            <details class="add-form">
+                <summary>+ Add new item</summary>
+                <form action="/vault/add" method="POST">
+                    <label>Category
+                        <select name="category" required>
+                            <option value="asset">Asset</option>
+                            <option value="account">Account</option>
+                            <option value="person">Person</option>
+                            <option value="instruction">Instruction</option>
+                            <option value="document">Document</option>
+                        </select>
+                    </label>
+                    <label>Name
+                        <input type="text" name="name" required placeholder="e.g. AWS Account, Bitcoin Wallet">
+                    </label>
+                    <label>Description
+                        <input type="text" name="description" placeholder="Brief description">
+                    </label>
+                    <label>Details
+                        <textarea name="details" placeholder="Additional information, instructions, etc."></textarea>
+                    </label>
+                    <label>Credentials
+                        <textarea name="credentials" placeholder="Login info, account numbers, keys (stored encrypted)"></textarea>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" placeholder="Any other notes"></textarea>
+                    </label>
+                    <button type="submit">Add to Vault</button>
+                </form>
+            </details>
+
+            {{if .Items}}
+            <div class="vault-grid">
+                {{range .Items}}
+                <div class="vault-item {{if eq .Status "closed"}}status-closed{{end}}">
+                    <span class="category">{{.Category}}</span>
+                    {{if ne .Status "active"}}<span class="status-badge {{.Status}}">{{.Status}}</span>{{end}}
+                    <h3>{{.Name}}</h3>
+                    {{if .Description}}<div class="description">{{.Description}}</div>{{end}}
+                    {{if .Details}}<div class="details">{{.Details}}</div>{{end}}
+                    {{if .Credentials}}<details><summary style="cursor:pointer;font-size:0.9em;color:var(--muted-text)">Show credentials</summary><div class="details">{{.Credentials}}</div></details>{{end}}
+                    {{if .Notes}}<div class="meta">Notes: {{.Notes}}</div>{{end}}
+                    <div class="meta">
+                        Added <span data-time="{{.CreatedAt.Unix}}"></span>
+                        · <a href="/vault/edit/{{.ID}}">edit</a>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <p class="muted">No items in vault{{if .Category}} for category "{{.Category}}"{{end}}. Add something above or ask the assistant to track things for you.</p>
+            {{end}}
+        </main>
+    </div>
+    <script>
+    function timeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() / 1000) - timestamp);
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+        return Math.floor(seconds / 604800) + 'w ago';
+    }
+    document.querySelectorAll('[data-time]').forEach(el => {
+        el.textContent = timeAgo(parseInt(el.dataset.time));
+    });
+    </script>
+</body>
+</html>
+{{end}}
