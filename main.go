@@ -1135,6 +1135,12 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	
+	// Get status info
+	taskStats := db.GetTaskStats()
+	emailStats := db.GetEmailStats()
+	recentEmails, _ := db.GetRecentEmails(10)
+	recentTasks, _ := db.GetRecentTasks(10)
+	
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
 	
@@ -1143,6 +1149,10 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		"Admins":       admins,
 		"Integrations": integrations,
 		"Tools":        toolDefs,
+		"TaskStats":    taskStats,
+		"EmailStats":   emailStats,
+		"RecentEmails": recentEmails,
+		"RecentTasks":  recentTasks,
 		"CurrentUser":  session.Email,
 		"Message":      msg,
 		"Error":        errMsg,

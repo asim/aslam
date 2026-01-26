@@ -993,3 +993,89 @@ func SetSettingBool(key string, value bool) error {
 	}
 	return SetSetting(key, "false")
 }
+
+// Status/stats functions
+
+type TaskStats struct {
+	Pending   int
+	Processing int
+	Completed int
+	Failed    int
+}
+
+func GetTaskStats() TaskStats {
+	var stats TaskStats
+	DB.QueryRow(`SELECT COUNT(*) FROM pending_tasks WHERE status = 'pending'`).Scan(&stats.Pending)
+	DB.QueryRow(`SELECT COUNT(*) FROM pending_tasks WHERE status = 'processing'`).Scan(&stats.Processing)
+	DB.QueryRow(`SELECT COUNT(*) FROM pending_tasks WHERE status = 'completed'`).Scan(&stats.Completed)
+	DB.QueryRow(`SELECT COUNT(*) FROM pending_tasks WHERE status = 'failed'`).Scan(&stats.Failed)
+	return stats
+}
+
+type EmailStats struct {
+	Inbound   int
+	Outbound  int
+	Pending   int
+	Failed    int
+}
+
+func GetEmailStats() EmailStats {
+	var stats EmailStats
+	DB.QueryRow(`SELECT COUNT(*) FROM email_log WHERE direction = 'inbound'`).Scan(&stats.Inbound)
+	DB.QueryRow(`SELECT COUNT(*) FROM email_log WHERE direction = 'outbound'`).Scan(&stats.Outbound)
+	DB.QueryRow(`SELECT COUNT(*) FROM email_log WHERE status = 'pending'`).Scan(&stats.Pending)
+	DB.QueryRow(`SELECT COUNT(*) FROM email_log WHERE status = 'failed'`).Scan(&stats.Failed)
+	return stats
+}
+
+func GetRecentEmails(limit int) ([]EmailLog, error) {
+	rows, err := DB.Query(`
+		SELECT id, message_id, thread_id, direction, from_email, to_email, subject, body, status, created_at
+		FROM email_log ORDER BY created_at DESC LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []EmailLog
+	for rows.Next() {
+		var e EmailLog
+		var msgID, threadID, body sql.NullString
+		err := rows.Scan(&e.ID, &msgID, &threadID, &e.Direction, &e.FromEmail, &e.ToEmail, &e.Subject, &body, &e.Status, &e.CreatedAt)
+		if err != nil {
+			continue
+		}
+		e.MessageID = msgID.String
+		e.ThreadID = threadID.String
+		e.Body = body.String
+		emails = append(emails, e)
+	}
+	return emails, nil
+}
+
+func GetRecentTasks(limit int) ([]PendingTask, error) {
+	rows, err := DB.Query(`
+		SELECT id, channel, conversation_id, reference_id, status, attempts, max_attempts, last_error, metadata, created_at, updated_at
+		FROM pending_tasks ORDER BY created_at DESC LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []PendingTask
+	for rows.Next() {
+		var t PendingTask
+		var refID, lastErr, meta sql.NullString
+		err := rows.Scan(&t.ID, &t.Channel, &t.ConversationID, &refID, &t.Status, &t.Attempts, &t.MaxAttempts, &lastErr, &meta, &t.CreatedAt, &t.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		t.ReferenceID = refID.String
+		t.LastError = lastErr.String
+		t.Metadata = meta.String
+		tasks = append(tasks, t)
+	}
+	return tasks, nil
+}

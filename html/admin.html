@@ -55,6 +55,19 @@
         .status-disabled:hover { background: #dc2626; }
         .status-missing { background: #888; color: white; }
         .integration-details { font-size: 12px; color: #888; margin-top: 4px; }
+        .stat-box { padding: 12px 16px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px; }
+        .stat-label { font-size: 12px; color: #888; }
+        .stat-value { font-size: 18px; font-weight: bold; }
+        .stat-detail { font-size: 11px; color: #888; }
+        .status-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+        .status-table th, .status-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
+        .status-table th { background: #f5f5f5; }
+        .status-pending { color: #f59e0b; }
+        .status-processing { color: #3b82f6; }
+        .status-completed { color: #22c55e; }
+        .status-processed { color: #22c55e; }
+        .status-failed { color: #ef4444; }
+        .error-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ef4444; font-size: 11px; }
         .success { color: #16a34a; margin-bottom: 16px; }
         .error { color: #dc2626; margin-bottom: 16px; }
         .secret { 
@@ -99,6 +112,64 @@
 
             <div class="warning-box">
                 System configuration and credentials. Keep updated for continuity.
+            </div>
+
+            <!-- Status Section -->
+            <div class="admin-section">
+                <h3>Status</h3>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px;">
+                    <div class="stat-box">
+                        <div class="stat-label">Tasks</div>
+                        <div class="stat-value">{{.TaskStats.Pending}} pending</div>
+                        <div class="stat-detail">{{.TaskStats.Completed}} completed, {{.TaskStats.Failed}} failed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Emails</div>
+                        <div class="stat-value">{{.EmailStats.Inbound}} in / {{.EmailStats.Outbound}} out</div>
+                        <div class="stat-detail">{{.EmailStats.Pending}} pending, {{.EmailStats.Failed}} failed</div>
+                    </div>
+                </div>
+                
+                <details>
+                    <summary style="cursor: pointer; margin-bottom: 8px;">Recent Emails ({{len .RecentEmails}})</summary>
+                    {{if .RecentEmails}}
+                    <table class="status-table">
+                        <tr><th>Time</th><th>Dir</th><th>From/To</th><th>Subject</th><th>Status</th></tr>
+                        {{range .RecentEmails}}
+                        <tr>
+                            <td>{{.CreatedAt.Format "Jan 2 15:04"}}</td>
+                            <td>{{if eq .Direction "inbound"}}←{{else}}→{{end}}</td>
+                            <td>{{if eq .Direction "inbound"}}{{.FromEmail}}{{else}}{{.ToEmail}}{{end}}</td>
+                            <td>{{.Subject}}</td>
+                            <td><span class="status-{{.Status}}">{{.Status}}</span></td>
+                        </tr>
+                        {{end}}
+                    </table>
+                    {{else}}
+                    <p class="muted">No emails yet.</p>
+                    {{end}}
+                </details>
+                
+                <details style="margin-top: 12px;">
+                    <summary style="cursor: pointer; margin-bottom: 8px;">Recent Tasks ({{len .RecentTasks}})</summary>
+                    {{if .RecentTasks}}
+                    <table class="status-table">
+                        <tr><th>Time</th><th>Channel</th><th>Conv</th><th>Status</th><th>Attempts</th><th>Error</th></tr>
+                        {{range .RecentTasks}}
+                        <tr>
+                            <td>{{.CreatedAt.Format "Jan 2 15:04"}}</td>
+                            <td>{{.Channel}}</td>
+                            <td><a href="/chat/{{.ConversationID}}">{{.ConversationID}}</a></td>
+                            <td><span class="status-{{.Status}}">{{.Status}}</span></td>
+                            <td>{{.Attempts}}/{{.MaxAttempts}}</td>
+                            <td class="error-cell">{{if .LastError}}{{.LastError}}{{end}}</td>
+                        </tr>
+                        {{end}}
+                    </table>
+                    {{else}}
+                    <p class="muted">No tasks yet.</p>
+                    {{end}}
+                </details>
             </div>
 
             <!-- Integrations Section -->
