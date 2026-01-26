@@ -353,7 +353,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   7 * 24 * 60 * 60, // 7 days
+		MaxAge:   30 * 24 * 60 * 60, // 30 days
 	})
 
 	log.Printf("User logged in: %s (%s)", userInfo.Name, email)
