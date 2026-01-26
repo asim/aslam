@@ -129,9 +129,21 @@ export ASLAM_KEY=$(cat ~/.aslam/.key)
 
 None currently.
 
+## Trust Model
+
+See README.md for full details. Summary:
+
+- **Level 0 (current):** Assistant has own email (assistant@aslam.org), no access to user accounts
+- **Level 1:** Read user's calendar (requires OAuth)
+- **Level 2:** Read user's email (requires OAuth + security hardening)
+- **Level 3:** Send as user, create events (requires confirmation flows + audit)
+
 ## Future
 
-- [ ] Email integration (assistant@aslam.org)
-- [ ] Fix web search tool
+- [ ] Calendar integration (Level 1)
+- [ ] Email read access (Level 2) 
+- [ ] Full delegation (Level 3)
 - [ ] Mobile PWA improvements
 - [ ] Usage/cost tracking
+- [ ] Audit logging
+- [ ] Prompt injection defenses

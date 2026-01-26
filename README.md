@@ -87,6 +87,74 @@ The assistant has access to these tools:
 - **reminder** - Search Islamic sources (Quran, Hadith)
 - **wikipedia** - Search Wikipedia for factual information
 - **www** - Web search via Brave Search API
+- **email_check** - Check assistant's inbox (assistant@aslam.org)
+- **email_send** - Send email from assistant's address
+
+## Trust Model
+
+The assistant operates on a levelled trust model. Access to personal accounts is earned over time as the system proves reliable and secure.
+
+### Level 0: Sandbox (Current)
+- Assistant has its own identity (assistant@aslam.org)
+- Own email inbox, cannot access user accounts
+- Users forward emails to assistant when they want it involved
+- Safe to experiment - assistant can't touch your stuff
+
+### Level 1: Read Calendar (Future)
+- Assistant can read your Google Calendar (read-only)
+- Can answer "What's on my schedule today?"
+- Cannot create, modify, or delete events
+- Requires: OAuth consent with calendar.readonly scope
+
+### Level 2: Read Email (Future)
+- Assistant can read your Gmail inbox
+- Can summarise emails, find information, track threads
+- Cannot send, delete, or modify emails
+- Requires: OAuth consent with gmail.readonly scope
+- Requires: Prompt injection defenses, audit logging
+
+### Level 3: Act As You (Future)
+- Assistant can send emails as you
+- Can create calendar events
+- Full delegation of digital identity
+- Requires: Explicit confirmation flows ("Send this email? Y/N")
+- Requires: Rate limits, scope limits, comprehensive audit trail
+- Requires: Battle-tested prompt injection defenses
+
+### Security Requirements (Before Advancing)
+- [ ] Input sanitisation and validation
+- [ ] Output validation (assistant can't leak data)
+- [ ] Audit logging (every action logged with context)
+- [ ] Confirmation flows for destructive actions
+- [ ] Rate limiting
+- [ ] Scope limiting (e.g., only last 7 days of email)
+- [ ] Regular security review
+
+## Purpose
+
+This exists for two reasons:
+
+**1. A second brain while alive**
+- Searchable, organised knowledge
+- Things that would otherwise be forgotten
+- Decisions documented, context preserved
+
+**2. A digital estate when gone**
+
+We live in a purely digital world. When someone dies, their family must navigate:
+- Multiple email accounts
+- Cryptocurrency wallets and keys
+- Subscriptions and services
+- Documents scattered across cloud storage
+- Passwords and credentials
+- Digital assets with real value
+
+This system aims to be the map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
+
+> *"When a man dies, his deeds come to an end except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for him."*
+> — Prophet Muhammad ﷺ (Sahih Muslim)
+
+This is the knowledge left behind.
 
 ---
 
