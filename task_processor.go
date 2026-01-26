@@ -123,7 +123,7 @@ func processEmailTask(task db.PendingTask) error {
 	}
 
 	// Set user context from email sender
-	currentUserContext = &UserContext{Email: meta.From, Name: ""}
+	currentUserContext = &UserContext{Email: meta.From, Name: "", ConversationID: task.ConversationID}
 
 	// Get conversation messages
 	messages, err := db.GetMessages(task.ConversationID)
@@ -163,7 +163,7 @@ func processEmailTask(task db.PendingTask) error {
 		references = meta.MessageID
 	}
 
-	if err := tools.SendEmailThreaded(meta.From, replySubject, response, meta.MessageID, references); err != nil {
+	if _, err := tools.SendEmailThreaded(meta.From, replySubject, response, meta.MessageID, references); err != nil {
 		return err
 	}
 

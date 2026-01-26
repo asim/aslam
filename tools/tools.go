@@ -31,6 +31,16 @@ func SetIntegrationChecker(checker IntegrationChecker) {
 	isIntegrationEnabled = checker
 }
 
+// EmailThreadCallback is called when an email is sent to create thread mapping
+type EmailThreadCallback func(messageID string, to, subject string)
+
+var onEmailSent EmailThreadCallback
+
+// SetEmailSentCallback sets the callback for when emails are sent
+func SetEmailSentCallback(cb EmailThreadCallback) {
+	onEmailSent = cb
+}
+
 // ToolDefinition for Anthropic API
 type ToolDefinition struct {
 	Name        string                 `json:"name"`
@@ -353,8 +363,14 @@ func executeEmailSend(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("to, subject, and body are required")
 	}
 
-	if err := SendEmail(to, subject, body); err != nil {
+	msgID, err := SendEmail(to, subject, body)
+	if err != nil {
 		return "", fmt.Errorf("failed to send email: %w", err)
+	}
+
+	// Notify callback to create thread mapping
+	if onEmailSent != nil {
+		onEmailSent(msgID, to, subject)
 	}
 
 	return fmt.Sprintf("Email sent to %s with subject: %s", to, subject), nil

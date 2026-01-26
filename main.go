@@ -153,6 +153,15 @@ func main() {
 			return true
 		}
 	})
+	
+	// When an email is sent from chat, create thread mapping so replies go to same conversation
+	tools.SetEmailSentCallback(func(messageID, to, subject string) {
+		if currentUserContext != nil && currentUserContext.ConversationID > 0 {
+			// Create email thread pointing to current conversation
+			db.CreateEmailThread(messageID, currentUserContext.ConversationID, messageID)
+			log.Printf("Created email thread %s -> conversation %d", messageID, currentUserContext.ConversationID)
+		}
+	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
@@ -504,7 +513,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	// Set user context
 	session := getSession(r)
 	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: convID}
 	}
 
 	// Save user message
@@ -561,7 +570,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	// Set user context
 	session := getSession(r)
 	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
 
 	// Save user message
@@ -782,8 +791,9 @@ func init() {
 
 // UserContext contains info about the current user for personalization
 type UserContext struct {
-	Email string
-	Name  string
+	Email          string
+	Name           string
+	ConversationID int64
 }
 
 var currentUserContext *UserContext
@@ -979,7 +989,7 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 	// Set user context for this request
 	session := getSession(r)
 	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
 
 	// Save user message

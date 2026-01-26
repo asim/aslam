@@ -182,15 +182,16 @@ func extractBody(r imap.Literal) string {
 
 
 // SendEmail sends an email via Gmail SMTP
-func SendEmail(to, subject, body string) error {
+func SendEmail(to, subject, body string) (string, error) {
 	return SendEmailThreaded(to, subject, body, "", "")
 }
 
 // SendEmailThreaded sends an email with threading headers
-func SendEmailThreaded(to, subject, body, inReplyTo, references string) error {
+// SendEmailThreaded sends an email and returns the Message-ID
+func SendEmailThreaded(to, subject, body, inReplyTo, references string) (string, error) {
 	user, password, err := getEmailConfig()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Generate Message-ID
@@ -222,10 +223,10 @@ func SendEmailThreaded(to, subject, body, inReplyTo, references string) error {
 	auth := smtp.PlainAuth("", user, password, "smtp.gmail.com")
 	err = smtp.SendMail("smtp.gmail.com:587", auth, user, []string{to}, []byte(msg))
 	if err != nil {
-		return fmt.Errorf("failed to send: %w", err)
+		return "", fmt.Errorf("failed to send: %w", err)
 	}
 
-	return nil
+	return msgID, nil
 }
 
 func randomString(n int) string {
