@@ -11,10 +11,8 @@ import (
 	"time"
 )
 
-var braveAPIKey string
-
-func init() {
-	braveAPIKey = os.Getenv("BRAVE_API_KEY")
+func getBraveAPIKey() string {
+	return os.Getenv("BRAVE_API_KEY")
 }
 
 // BraveSearchResponse represents the Brave Search API response
@@ -30,7 +28,8 @@ type BraveSearchResponse struct {
 
 // WebSearch performs a web search using Brave Search API
 func WebSearch(query string) (string, error) {
-	if braveAPIKey == "" {
+	apiKey := getBraveAPIKey()
+	if apiKey == "" {
 		return "", fmt.Errorf("BRAVE_API_KEY not set")
 	}
 
@@ -44,7 +43,7 @@ func WebSearch(query string) (string, error) {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-Subscription-Token", braveAPIKey)
+	req.Header.Set("X-Subscription-Token", apiKey)
 
 	// Execute request
 	client := &http.Client{Timeout: 10 * time.Second}
