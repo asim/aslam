@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -31,7 +32,7 @@ type ToolDefinition struct {
 func GetTools() []ToolDefinition {
 	return []ToolDefinition{
 		{
-			Name:        "fetch_url",
+			Name:        "fetch",
 			Description: "Fetch the content of a URL (webpage, API, GitHub repo, etc). The content is automatically saved to memory for future recall. Use this to look up information from websites.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -77,7 +78,7 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "islamic_search",
+			Name:        "reminder",
 			Description: "Search Islamic sources (Quran, Hadith, Names of Allah) for authoritative answers. Use this when discussing Islamic topics, questions about the Prophet Muhammad (PBUH), Allah, religious rulings, or Quranic/Hadith references. Returns summarised answers with source references. Note: This can be slow.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -90,20 +91,52 @@ func GetTools() []ToolDefinition {
 				"required": []string{"query"},
 			},
 		},
+		{
+			Name:        "wikipedia",
+			Description: "Search Wikipedia for factual information, definitions, concepts, history, and reference material. Use this for background knowledge, understanding terms, or researching topics. Returns article summaries with links.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The topic or term to search for on Wikipedia",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
+		{
+			Name:        "www",
+			Description: "Search the web for current information. Use this for recent news, current prices, latest updates, or any time-sensitive information that may not be in your training data. Returns search results from DuckDuckGo.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The search query",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
 // ExecuteTool runs a tool and returns the result
 func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 	switch name {
-	case "fetch_url":
+	case "fetch":
 		return executeFetchURL(input)
 	case "recall":
 		return executeRecall(input)
 	case "remember":
 		return executeRemember(input)
-	case "islamic_search":
+	case "reminder":
 		return executeIslamicSearch(input)
+	case "wikipedia":
+		return executeWikipedia(input)
+	case "www":
+		return executeWebSearch(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -115,6 +148,28 @@ func executeIslamicSearch(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("query is required")
 	}
 	return SearchIslam(query)
+}
+
+func executeWikipedia(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	return WikiSearch(query)
+}
+
+func executeWebSearch(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	result, err := WebSearch(query)
+	if err != nil {
+		log.Printf("Web search error: %v", err)
+		return "", err
+	}
+	log.Printf("Web search got %d chars", len(result))
+	return result, nil
 }
 
 func executeFetchURL(input map[string]interface{}) (string, error) {

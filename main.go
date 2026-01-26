@@ -121,6 +121,7 @@ func main() {
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
 	http.HandleFunc("/chat/send", requireAuth(handleSendMessage))
 	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessage))
+	http.HandleFunc("/api/chat/stream", requireAuth(handleAPISendMessageStream))
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
@@ -128,6 +129,7 @@ func main() {
 	http.HandleFunc("/search", requireAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
+	http.HandleFunc("/dev", requireAuth(handleDev))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -736,6 +738,10 @@ func init() {
 }
 
 func generateResponse(messages []db.Message) (string, error) {
+	return generateResponseWithProgress(messages, nil)
+}
+
+func generateResponseWithProgress(messages []db.Message, onTool func(string)) (string, error) {
 	if anthropicKey == "" {
 		return "", fmt.Errorf("ANTHROPIC_API_KEY not set")
 	}
@@ -772,6 +778,9 @@ func generateResponse(messages []db.Message) (string, error) {
 			for _, block := range result.Content {
 				if block.Type == "tool_use" {
 					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
+					if onTool != nil {
+						onTool(block.Name)
+					}
 					toolResult, err := tools.ExecuteTool(block.Name, block.Input)
 					if err != nil {
 						toolResult = fmt.Sprintf("Error: %v", err)
@@ -856,4 +865,84 @@ func callAnthropic(apiMessages []map[string]interface{}) (*anthropicResponse, er
 	}
 
 	return &result, nil
+}
+
+func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ConversationID int64  `json:"conversation_id"`
+		Message        string `json:"message"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request", 400)
+		return
+	}
+
+	if req.ConversationID == 0 || req.Message == "" {
+		jsonError(w, "Missing fields", 400)
+		return
+	}
+
+	// Set up SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", 500)
+		return
+	}
+
+	sendEvent := func(event, data string) {
+		fmt.Fprintf(w, "event: %s\n", event)
+		// SSE requires each line of data to have data: prefix
+		for _, line := range strings.Split(data, "\n") {
+			fmt.Fprintf(w, "data: %s\n", line)
+		}
+		fmt.Fprintf(w, "\n")
+		flusher.Flush()
+	}
+
+	// Save user message
+	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
+		sendEvent("error", err.Error())
+		return
+	}
+
+	// Get conversation history for context
+	messages, _ := db.GetMessages(req.ConversationID)
+
+	// Generate AI response with progress callback
+	response, err := generateResponseWithProgress(messages, func(toolName string) {
+		log.Printf("Sending tool event: %s", toolName)
+		sendEvent("tool", toolName)
+	})
+	if err != nil {
+		response = "Error: " + err.Error()
+	}
+	db.AddMessage(req.ConversationID, "assistant", response)
+
+	// Update conversation title if first message
+	if len(messages) <= 1 {
+		title := req.Message
+		if len(title) > 50 {
+			title = title[:50] + "..."
+		}
+		db.UpdateConversationTitle(req.ConversationID, title)
+	}
+
+	sendEvent("done", response)
+}
+
+func handleDev(w http.ResponseWriter, r *http.Request) {
+	toolDefs := tools.GetTools()
+	tmpl.ExecuteTemplate(w, "dev.html", map[string]interface{}{
+		"Model": anthropicModel,
+		"Tools": toolDefs,
+	})
 }

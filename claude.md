@@ -1,126 +1,139 @@
 # Aslam - Development Guide
 
-Personal knowledge base and assistant for the Aslam family.
-
-## Overview
-
-This is a conversational knowledge base with Islamic values baked into the system prompt. It stores conversations and entries in an encrypted SQLite database (SQLCipher, AES-256).
+Personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org).
 
 ## Architecture
 
 ```
 aslam/
 ├── main.go           # HTTP server, routes, Anthropic integration
-├── schema.sql        # Database schema (entries, conversations, messages)
-├── kb                # CLI tool for database operations
-├── templates/        # HTML templates (terminal-style UI)
-├── .env              # Configuration (ANTHROPIC_API_KEY) - not committed
+├── db/
+│   ├── db.go         # Database functions (SQLCipher)
+│   └── schema.sql    # Reference schema
+├── tools/
+│   ├── tools.go      # Tool definitions and execution
+│   ├── web.go        # URL fetching
+│   ├── wiki.go       # Wikipedia API
+│   ├── islam.go      # Islamic sources API
+│   └── search.go     # Web search (headless Chrome)
+├── html/             # HTML templates (embedded at build)
+├── scripts/
+│   ├── aslam.service # Systemd service file
+│   └── kb            # CLI tool for database operations
+├── cmd/
+│   └── aslam-cli/    # Command line client
+├── .env              # Configuration (not committed)
 └── ~/.aslam/
     ├── .key          # Database encryption key
     └── aslam.db      # Encrypted SQLite database
 ```
 
-## Important: Deploying Changes
+## Key Files
 
-Templates are embedded at build time (`//go:embed`). After ANY change to templates, CSS, JS, or Go code:
+### main.go
+- HTTP server on port 8000
+- Google OAuth authentication
+- Anthropic Claude API integration with tool use
+- SSE streaming for real-time tool progress
+
+### db/db.go
+- SQLCipher encrypted database
+- Sessions, conversations, messages, entries tables
+- All database functions exported (GetConversation, CreateSession, etc.)
+
+### tools/
+- `tools.go` - Tool registry, definitions for Claude API
+- `search.go` - Web search using headless Chrome (WIP - DDG blocking)
+- `wiki.go` - Wikipedia API (free, no key needed)
+- `islam.go` - Islamic sources search
+- `web.go` - URL fetching with HTML-to-text conversion
+
+## Deploying Changes
+
+Templates are embedded at build time (`//go:embed`). After ANY change:
 
 ```bash
 cd /home/exedev/aslam && go build -o aslam . && sudo systemctl restart aslam
 ```
 
-Both steps are required - rebuild embeds new templates, restart loads new binary.
+## Environment Variables
 
-## Setup (New VM)
-
-```bash
-# Clone the repo
-git clone git@github.com:asim/aslam.git
-cd aslam
-
-# Install sqlcipher (for encrypted SQLite)
-sudo apt-get install -y sqlcipher
-
-# Create .env with API key
-echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-chmod 600 .env
-
-# Create encryption key for database
-mkdir -p ~/.aslam
-openssl rand -base64 32 > ~/.aslam/.key
-chmod 600 ~/.aslam/.key
-
-# Build and run
-go build -o aslam .
-./aslam
-# Serves on http://localhost:8000
+Required in `.env`:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
+ALLOWED_EMAILS=email1@example.com,email2@example.com
 ```
 
-## Systemd Service
+Optional:
+```
+ANTHROPIC_MODEL=claude-3-haiku-20240307  # Default model
+PORT=8000                                  # Server port
+API_KEY=...                               # For CLI/API access
+DEV_TOKEN=...                             # Dev bypass token
+```
+
+## Authentication
+
+- Google OAuth with allowed email whitelist
+- Sessions stored in DB, 30-day expiry
+- Cookie set on `aslam.org` domain (covers www subdomain)
+- www.aslam.org redirects to aslam.org
+
+## Tools System
+
+Claude can use tools defined in `tools/tools.go`. Each tool has:
+- Name (e.g., "www", "wikipedia")
+- Description (tells Claude when to use it)
+- Input schema (JSON schema for parameters)
+
+Tool execution flow:
+1. Claude decides to use a tool
+2. Backend executes tool, streams "Using X..." to frontend
+3. Tool result sent back to Claude
+4. Claude generates final response
+
+## Web Search (WIP)
+
+Currently using headless Chrome to search DuckDuckGo, but DDG is blocking headless browsers. Options:
+1. Fix Chrome detection bypass
+2. Use Brave Search API (free 2000/month)
+3. Self-host SearXNG
+
+## Frontend
+
+- Monospace font, 1024px max-width
+- SSE streaming shows tool usage in real-time
+- Voice input via Web Speech API (mic button)
+- Timeago timestamps, auto-scroll
+
+## Useful Commands
 
 ```bash
-sudo cp aslam.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable aslam
-sudo systemctl start aslam
-
-# Manage with:
-sudo systemctl status aslam
-sudo systemctl restart aslam
+# View logs
 sudo journalctl -u aslam -f
-```
 
-## Key Design Decisions
+# Restart service
+sudo systemctl restart aslam
 
-1. **Islamic Values in System Prompt**: All AI responses are framed within Sharia principles:
-   - No riba (interest-based finance)
-   - No maysir (speculation/gambling)
-   - No haram activities or consumption
-   - Family values aligned with Islamic ethics
-   - Tool framing: not a replacement for dua, scholars, or Allah
-
-2. **Encryption at Rest**: Database is encrypted with SQLCipher. Key stored in `~/.aslam/.key`.
-
-3. **Terminal Aesthetic**: Black background, white text, monospace font. Simple and functional.
-
-4. **No Auth Yet**: Currently no authentication. Future: Google OAuth or magic link.
-
-## CLI Usage
-
-```bash
+# Query database
 export ASLAM_KEY=$(cat ~/.aslam/.key)
+./scripts/kb sql "SELECT * FROM conversations LIMIT 5;"
 
-./kb add thought "Title" "Content"
-./kb add credential "Service" "username/password" '{"url":"..."}'
-./kb search "query"
-./kb list [type]
-./kb get <id>
+# List sessions
+./scripts/kb sql "SELECT token, email, expires_at FROM sessions;"
 ```
 
-## Entry Types
+## Known Issues
 
-- `thought` - Ideas, reflections
-- `project` - Things being worked on
-- `credential` - Passwords, accounts (encrypted at rest)
-- `contact` - People, relationships
-- `document` - Important files, records
-- `decision` - Why choices were made
-- `instruction` - How to do things
-- `note` - General notes
+1. Web search (www tool) not working - DDG blocks headless Chrome
+2. Need to implement Brave Search API or fix Chrome fingerprinting
 
-## Cost Optimization
+## Future
 
-- **Prompt caching**: System prompt (~600 tokens) is cached for 5 minutes using Anthropic's cache_control
-- **Model**: Using Claude Haiku by default (cheapest, fastest)
-- **Future**: Consider batch processing for non-real-time tasks (50% discount)
-
-## Future Enhancements
-
-- [ ] Authentication (Google OAuth / magic link)
-- [ ] Email integration (Gmail API)
-- [ ] Calendar integration
-- [ ] Conversation summarization
-- [ ] Auto-tagging with AI
-- [ ] Mobile app / PWA
-- [ ] Backup/export functionality
-- [ ] Multi-user family access
-- [ ] Usage monitoring / token tracking
+- [ ] Email integration (assistant@aslam.org)
+- [ ] Fix web search tool
+- [ ] Mobile PWA improvements
+- [ ] Usage/cost tracking
