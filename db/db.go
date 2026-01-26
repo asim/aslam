@@ -358,7 +358,7 @@ func CreateSession(email, name string) (string, error) {
 	}
 	token := base64.URLEncoding.EncodeToString(b)
 
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	expiresAt := time.Now().Add(30 * 24 * time.Hour) // 30 days
 	_, err := DB.Exec(`
 		INSERT INTO sessions (token, email, name, expires_at) VALUES (?, ?, ?, ?)
 	`, token, email, name, expiresAt)
