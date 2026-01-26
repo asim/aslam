@@ -52,14 +52,14 @@ func checkInbox() {
 	
 	log.Println("Email worker: checking inbox")
 	
-	emails, err := tools.FetchEmails(20, true) // Fetch up to 20 unread
+	emails, err := tools.FetchEmails(20, false) // Fetch recent emails (not just unread - we track by Message-ID)
 	if err != nil {
 		log.Printf("Email worker: failed to fetch emails: %v", err)
 		return
 	}
 
 	if len(emails) == 0 {
-		log.Println("Email worker: no unread emails")
+		log.Println("Email worker: no emails")
 		return
 	}
 
@@ -74,11 +74,14 @@ func processEmail(email tools.Email) {
 	// Extract sender email address
 	senderEmail := extractEmail(email.From)
 	
+	// Skip emails from ourselves (outbound)
+	if strings.EqualFold(senderEmail, os.Getenv("GMAIL_USER")) {
+		return
+	}
+	
 	// Check if sender is allowed
 	if !emailAllowedSenders[strings.ToLower(senderEmail)] {
 		log.Printf("Email worker: ignoring email from unauthorized sender: %s", senderEmail)
-		// Mark as read to avoid processing again
-		tools.MarkAsRead(email.UID)
 		return
 	}
 
