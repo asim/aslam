@@ -526,12 +526,14 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(convID)
 	
 	// Generate AI response
-	response, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages)
 	if err != nil {
 		// Save error as assistant message
 		db.AddMessage(convID, "assistant", "Error: "+err.Error())
 	} else {
-		db.AddMessage(convID, "assistant", response)
+		// Append sources if tools were used
+		fullResponse := formatResponseWithSources(response, toolsUsed)
+		db.AddMessage(convID, "assistant", fullResponse)
 	}
 	
 	// Update conversation title if first message
@@ -583,9 +585,11 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(req.ConversationID)
 
 	// Generate AI response
-	response, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages)
 	if err != nil {
 		response = "Error: " + err.Error()
+	} else {
+		response = formatResponseWithSources(response, toolsUsed)
 	}
 	db.AddMessage(req.ConversationID, "assistant", response)
 
@@ -791,6 +795,27 @@ func init() {
 	systemPrompt = fmt.Sprintf(systemPromptTemplate, readmeContent, claudeContent)
 }
 
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
+func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
+	if len(toolsUsed) == 0 {
+		return response
+	}
+	
+	var sources strings.Builder
+	sources.WriteString("\n\n---\n**Sources:**\n")
+	for _, tool := range toolsUsed {
+		sources.WriteString(fmt.Sprintf("- %s: %s\n", tool.Name, tool.Input))
+	}
+	
+	return response + sources.String()
+}
+
 // UserContext contains info about the current user for personalization
 type UserContext struct {
 	Email          string
@@ -800,13 +825,21 @@ type UserContext struct {
 
 var currentUserContext *UserContext
 
-func generateResponse(messages []db.Message) (string, error) {
+// ToolUsage tracks a single tool call and its result
+type ToolUsage struct {
+	Name   string
+	Input  string
+	Output string
+}
+
+func generateResponse(messages []db.Message) (string, []ToolUsage, error) {
 	return generateResponseWithProgress(messages, nil)
 }
 
-func generateResponseWithProgress(messages []db.Message, onTool func(string)) (string, error) {
+func generateResponseWithProgress(messages []db.Message, onTool func(string)) (string, []ToolUsage, error) {
+	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
-		return "", fmt.Errorf("ANTHROPIC_API_KEY not set")
+		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
 	}
 
 	// Build system prompt with user context
@@ -835,7 +868,7 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 	for i := 0; i < 10; i++ { // Max 10 tool calls
 		result, err := callAnthropic(apiMessages, fullSystemPrompt)
 		if err != nil {
-			return "", err
+			return "", toolsUsed, err
 		}
 
 		// Check if we need to handle tool use
@@ -850,6 +883,7 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 			var toolResults []map[string]interface{}
 			for _, block := range result.Content {
 				if block.Type == "tool_use" {
+					inputJSON, _ := json.Marshal(block.Input)
 					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
 					if onTool != nil {
 						onTool(block.Name)
@@ -858,6 +892,14 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 					if err != nil {
 						toolResult = fmt.Sprintf("Error: %v", err)
 					}
+					
+					// Track tool usage
+					toolsUsed = append(toolsUsed, ToolUsage{
+						Name:   block.Name,
+						Input:  string(inputJSON),
+						Output: truncateString(toolResult, 500),
+					})
+					
 					toolResults = append(toolResults, map[string]interface{}{
 						"type":        "tool_result",
 						"tool_use_id": block.ID,
@@ -885,12 +927,12 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 		
 		// If no text but we had tool calls that succeeded, return a default message
 		if textResponse == "" {
-			return "Done.", nil
+			return "Done.", toolsUsed, nil
 		}
-		return textResponse, nil
+		return textResponse, toolsUsed, nil
 	}
 
-	return "", fmt.Errorf("too many tool calls")
+	return "", toolsUsed, fmt.Errorf("too many tool calls")
 }
 
 type anthropicResponse struct {
@@ -1004,7 +1046,7 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(req.ConversationID)
 
 	// Generate AI response with progress callback
-	response, err := generateResponseWithProgress(messages, func(toolName string) {
+	response, toolsUsed, err := generateResponseWithProgress(messages, func(toolName string) {
 		log.Printf("Sending tool event: %s", toolName)
 		sendEvent("tool", toolName)
 	})
@@ -1013,6 +1055,8 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		db.CreatePendingTask("chat", req.ConversationID, "", "")
 		response = "Sorry, I encountered an error. I'll retry processing your message shortly."
 		log.Printf("Chat error, created pending task for conv %d: %v", req.ConversationID, err)
+	} else {
+		response = formatResponseWithSources(response, toolsUsed)
 	}
 	db.AddMessage(req.ConversationID, "assistant", response)
 

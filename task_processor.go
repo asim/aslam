@@ -100,13 +100,14 @@ func processChatTask(task db.PendingTask) error {
 	}
 
 	// Generate response
-	response, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages)
 	if err != nil {
 		return err
 	}
 
-	// Save response
-	return db.AddMessage(task.ConversationID, "assistant", response)
+	// Save response with sources
+	fullResponse := formatResponseWithSources(response, toolsUsed)
+	return db.AddMessage(task.ConversationID, "assistant", fullResponse)
 }
 
 func processEmailTask(task db.PendingTask) error {
@@ -140,13 +141,14 @@ func processEmailTask(task db.PendingTask) error {
 	}
 
 	// Generate response
-	response, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages)
 	if err != nil {
 		return err
 	}
 
-	// Save response
-	if err := db.AddMessage(task.ConversationID, "assistant", response); err != nil {
+	// Save response with sources
+	fullResponse := formatResponseWithSources(response, toolsUsed)
+	if err := db.AddMessage(task.ConversationID, "assistant", fullResponse); err != nil {
 		return err
 	}
 
