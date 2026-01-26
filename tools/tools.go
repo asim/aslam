@@ -119,6 +119,45 @@ func GetTools() []ToolDefinition {
 				"required": []string{"query"},
 			},
 		},
+		{
+			Name:        "email_check",
+			Description: "Check the assistant's email inbox (assistant@aslam.org). Returns recent emails with sender, subject, and body. Use this when the user asks about emails or wants to check their inbox.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"unread_only": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Only return unread emails (default: false)",
+					},
+					"limit": map[string]interface{}{
+						"type":        "integer",
+						"description": "Maximum number of emails to return (default: 10)",
+					},
+				},
+			},
+		},
+		{
+			Name:        "email_send",
+			Description: "Send an email from assistant@aslam.org. Use this when the user wants to send an email or reply to someone.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"to": map[string]interface{}{
+						"type":        "string",
+						"description": "Recipient email address",
+					},
+					"subject": map[string]interface{}{
+						"type":        "string",
+						"description": "Email subject line",
+					},
+					"body": map[string]interface{}{
+						"type":        "string",
+						"description": "Email body content",
+					},
+				},
+				"required": []string{"to", "subject", "body"},
+			},
+		},
 	}
 }
 
@@ -137,6 +176,10 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeWikipedia(input)
 	case "www":
 		return executeWebSearch(input)
+	case "email_check":
+		return executeEmailCheck(input)
+	case "email_send":
+		return executeEmailSend(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -254,4 +297,52 @@ func executeRemember(input map[string]interface{}) (string, error) {
 	}
 
 	return fmt.Sprintf("Saved to memory: %s", title), nil
+}
+
+func executeEmailCheck(input map[string]interface{}) (string, error) {
+	unreadOnly, _ := input["unread_only"].(bool)
+	limit := 10
+	if l, ok := input["limit"].(float64); ok {
+		limit = int(l)
+	}
+
+	emails, err := FetchEmails(limit, unreadOnly)
+	if err != nil {
+		return "", fmt.Errorf("failed to check email: %w", err)
+	}
+
+	if len(emails) == 0 {
+		if unreadOnly {
+			return "No unread emails.", nil
+		}
+		return "Inbox is empty.", nil
+	}
+
+	var output string
+	for i, e := range emails {
+		body := e.Body
+		if len(body) > 500 {
+			body = body[:500] + "..."
+		}
+		output += fmt.Sprintf("[%d] From: %s\nDate: %s\nSubject: %s\n\n%s\n\n---\n\n",
+			i+1, e.From, e.Date.Format("2006-01-02 15:04"), e.Subject, body)
+	}
+
+	return output, nil
+}
+
+func executeEmailSend(input map[string]interface{}) (string, error) {
+	to, _ := input["to"].(string)
+	subject, _ := input["subject"].(string)
+	body, _ := input["body"].(string)
+
+	if to == "" || subject == "" || body == "" {
+		return "", fmt.Errorf("to, subject, and body are required")
+	}
+
+	if err := SendEmail(to, subject, body); err != nil {
+		return "", fmt.Errorf("failed to send email: %w", err)
+	}
+
+	return fmt.Sprintf("Email sent to %s with subject: %s", to, subject), nil
 }

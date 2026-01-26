@@ -962,6 +962,12 @@ func handleDev(w http.ResponseWriter, r *http.Request) {
 			"Enabled":     os.Getenv("BRAVE_API_KEY") != "",
 			"Details":     "2000 free queries/month",
 		},
+		{
+			"Name":        "Gmail",
+			"Description": "Email via IMAP/SMTP",
+			"Enabled":     os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != "",
+			"Details":     os.Getenv("GMAIL_USER"),
+		},
 	}
 	
 	tmpl.ExecuteTemplate(w, "dev.html", map[string]interface{}{
