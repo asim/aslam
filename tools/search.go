@@ -1,91 +1,80 @@
 package tools
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-	"log"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
-var (
-	browserCtx    context.Context
-	browserCancel context.CancelFunc
-	tabCtx        context.Context
-	tabCancel     context.CancelFunc
-	searchMu      sync.Mutex
-	browserReady  bool
-)
+var braveAPIKey string
 
-func initBrowser() error {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.ExecPath("/usr/bin/google-chrome-stable"),
-		chromedp.Flag("headless", "new"),
-		chromedp.Flag("no-sandbox", true),
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("disable-dev-shm-usage", true),
-		chromedp.Flag("disable-blink-features", "AutomationControlled"),
-		chromedp.UserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
-	)
-
-	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
-	browserCtx, browserCancel = chromedp.NewContext(allocCtx)
-	
-	// Create single tab for all searches
-	tabCtx, tabCancel = chromedp.NewContext(browserCtx)
-	
-	// Start the browser
-	if err := chromedp.Run(tabCtx, chromedp.Navigate("about:blank")); err != nil {
-		return err
-	}
-	
-	browserReady = true
-	log.Println("Browser initialized for web search")
-	return nil
+func init() {
+	braveAPIKey = os.Getenv("BRAVE_API_KEY")
 }
 
-// WebSearch performs a web search using headless Chrome
+// BraveSearchResponse represents the Brave Search API response
+type BraveSearchResponse struct {
+	Web struct {
+		Results []struct {
+			Title       string `json:"title"`
+			URL         string `json:"url"`
+			Description string `json:"description"`
+		} `json:"results"`
+	} `json:"web"`
+}
+
+// WebSearch performs a web search using Brave Search API
 func WebSearch(query string) (string, error) {
-	searchMu.Lock()
-	defer searchMu.Unlock()
-
-	// Initialize browser if needed
-	if !browserReady {
-		if err := initBrowser(); err != nil {
-			return "", fmt.Errorf("failed to init browser: %w", err)
-		}
+	if braveAPIKey == "" {
+		return "", fmt.Errorf("BRAVE_API_KEY not set")
 	}
 
-	// Add timeout for this search
-	ctx, cancel := context.WithTimeout(tabCtx, 30*time.Second)
-	defer cancel()
+	// Build request
+	searchURL := fmt.Sprintf("https://api.search.brave.com/res/v1/web/search?q=%s&count=10",
+		url.QueryEscape(query))
 
-	// Use DuckDuckGo
-	searchURL := fmt.Sprintf("https://duckduckgo.com/?q=%s", strings.ReplaceAll(query, " ", "+"))
-
-	var results string
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(searchURL),
-		chromedp.Sleep(5*time.Second), // Wait for JS to render
-		chromedp.Text("body", &results, chromedp.ByQuery),
-	)
+	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
-		// Browser might have died, reset it
-		browserReady = false
-		return "", fmt.Errorf("search failed: %w", err)
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	if results == "" {
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-Subscription-Token", braveAPIKey)
+
+	// Execute request
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("search request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("search failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var searchResp BraveSearchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+		return "", fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if len(searchResp.Web.Results) == 0 {
 		return "No results found.", nil
 	}
 
-	// Trim to reasonable length
-	if len(results) > 4000 {
-		results = results[:4000] + "\n\n[Results truncated]"
+	// Format results
+	var sb strings.Builder
+	for i, result := range searchResp.Web.Results {
+		sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n\n",
+			i+1, result.Title, result.URL, result.Description))
 	}
 
-	return results, nil
+	return sb.String(), nil
 }

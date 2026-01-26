@@ -38,7 +38,7 @@ This is a centralised repository of knowledge, thoughts, and information for Asi
 
 - Go 1.21+
 - SQLCipher (`sudo apt-get install -y sqlcipher`)
-- Google Chrome (`wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo dpkg -i google-chrome-stable_current_amd64.deb && sudo apt-get -f install -y`)
+- Brave Search API key (free tier: 2000 queries/month)
 
 ### Setup
 
@@ -59,6 +59,7 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
 ALLOWED_EMAILS=your@email.com
+BRAVE_API_KEY=your-brave-api-key
 EOF
 chmod 600 .env
 
@@ -85,7 +86,7 @@ The assistant has access to these tools:
 - **remember** - Save notes to memory
 - **reminder** - Search Islamic sources (Quran, Hadith)
 - **wikipedia** - Search Wikipedia for factual information
-- **www** - Web search via headless Chrome (WIP)
+- **www** - Web search via Brave Search API
 
 ---
 

@@ -43,7 +43,7 @@ aslam/
 
 ### tools/
 - `tools.go` - Tool registry, definitions for Claude API
-- `search.go` - Web search using headless Chrome (WIP - DDG blocking)
+- `search.go` - Web search using Brave Search API
 - `wiki.go` - Wikipedia API (free, no key needed)
 - `islam.go` - Islamic sources search
 - `web.go` - URL fetching with HTML-to-text conversion
@@ -73,6 +73,7 @@ ANTHROPIC_MODEL=claude-3-haiku-20240307  # Default model
 PORT=8000                                  # Server port
 API_KEY=...                               # For CLI/API access
 DEV_TOKEN=...                             # Dev bypass token
+BRAVE_API_KEY=...                         # For web search
 ```
 
 ## Authentication
@@ -95,12 +96,10 @@ Tool execution flow:
 3. Tool result sent back to Claude
 4. Claude generates final response
 
-## Web Search (WIP)
+## Web Search
 
-Currently using headless Chrome to search DuckDuckGo, but DDG is blocking headless browsers. Options:
-1. Fix Chrome detection bypass
-2. Use Brave Search API (free 2000/month)
-3. Self-host SearXNG
+Uses Brave Search API. Free tier: 2000 queries/month, then $5/1000.
+Requires `BRAVE_API_KEY` in `.env`.
 
 ## Frontend
 
@@ -128,8 +127,7 @@ export ASLAM_KEY=$(cat ~/.aslam/.key)
 
 ## Known Issues
 
-1. Web search (www tool) not working - DDG blocks headless Chrome
-2. Need to implement Brave Search API or fix Chrome fingerprinting
+None currently.
 
 ## Future
 
