@@ -159,6 +159,45 @@ func Migrate() error {
 	DB.Exec(`DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP`)
 	DB.Exec(`DELETE FROM oauth_states WHERE expires_at < CURRENT_TIMESTAMP`)
 
+	// Email threads - maps email threads to conversations
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS email_threads (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			thread_id TEXT UNIQUE NOT NULL,
+			conversation_id INTEGER NOT NULL,
+			last_message_id TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Email log - all incoming/outgoing emails
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS email_log (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			message_id TEXT UNIQUE,
+			thread_id TEXT,
+			direction TEXT NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+			from_email TEXT NOT NULL,
+			to_email TEXT NOT NULL,
+			subject TEXT,
+			body TEXT,
+			status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processed', 'failed')),
+			error TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			processed_at DATETIME
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_email_log_status ON email_log(status)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_email_log_thread ON email_log(thread_id)`)
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -517,4 +556,112 @@ func GetEntry(id int64) (map[string]interface{}, error) {
 		"CreatedAt": createdAt,
 		"UpdatedAt": updatedAt,
 	}, nil
+}
+
+// Email functions
+
+type EmailThread struct {
+	ID             int64
+	ThreadID       string
+	ConversationID int64
+	LastMessageID  string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type EmailLog struct {
+	ID          int64
+	MessageID   string
+	ThreadID    string
+	Direction   string
+	FromEmail   string
+	ToEmail     string
+	Subject     string
+	Body        string
+	Status      string
+	Error       string
+	CreatedAt   time.Time
+	ProcessedAt *time.Time
+}
+
+func GetEmailThread(threadID string) (*EmailThread, error) {
+	var t EmailThread
+	var lastMsgID sql.NullString
+	err := DB.QueryRow(`
+		SELECT id, thread_id, conversation_id, last_message_id, created_at, updated_at
+		FROM email_threads WHERE thread_id = ?
+	`, threadID).Scan(&t.ID, &t.ThreadID, &t.ConversationID, &lastMsgID, &t.CreatedAt, &t.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	t.LastMessageID = lastMsgID.String
+	return &t, nil
+}
+
+func CreateEmailThread(threadID string, conversationID int64, lastMessageID string) error {
+	_, err := DB.Exec(`
+		INSERT INTO email_threads (thread_id, conversation_id, last_message_id)
+		VALUES (?, ?, ?)
+	`, threadID, conversationID, lastMessageID)
+	return err
+}
+
+func UpdateEmailThread(threadID, lastMessageID string) error {
+	_, err := DB.Exec(`
+		UPDATE email_threads SET last_message_id = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE thread_id = ?
+	`, lastMessageID, threadID)
+	return err
+}
+
+func LogEmail(messageID, threadID, direction, from, to, subject, body, status string) (int64, error) {
+	result, err := DB.Exec(`
+		INSERT INTO email_log (message_id, thread_id, direction, from_email, to_email, subject, body, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, messageID, threadID, direction, from, to, subject, body, status)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func UpdateEmailStatus(id int64, status, errMsg string) error {
+	if status == "processed" {
+		_, err := DB.Exec(`
+			UPDATE email_log SET status = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?
+		`, status, id)
+		return err
+	}
+	_, err := DB.Exec(`
+		UPDATE email_log SET status = ?, error = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?
+	`, status, errMsg, id)
+	return err
+}
+
+func GetPendingEmails() ([]EmailLog, error) {
+	rows, err := DB.Query(`
+		SELECT id, message_id, thread_id, direction, from_email, to_email, subject, body, status, created_at
+		FROM email_log WHERE status = 'pending' ORDER BY created_at ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []EmailLog
+	for rows.Next() {
+		var e EmailLog
+		var msgID, threadID sql.NullString
+		rows.Scan(&e.ID, &msgID, &threadID, &e.Direction, &e.FromEmail, &e.ToEmail, &e.Subject, &e.Body, &e.Status, &e.CreatedAt)
+		e.MessageID = msgID.String
+		e.ThreadID = threadID.String
+		emails = append(emails, e)
+	}
+	return emails, nil
+}
+
+func EmailExists(messageID string) bool {
+	var id int64
+	err := DB.QueryRow(`SELECT id FROM email_log WHERE message_id = ?`, messageID).Scan(&id)
+	return err == nil
 }

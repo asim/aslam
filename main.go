@@ -141,6 +141,10 @@ func main() {
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
+
+	// Start email worker
+	startEmailWorker()
+
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 

@@ -15,12 +15,15 @@ import (
 )
 
 type Email struct {
-	UID     uint32
-	From    string
-	To      string
-	Subject string
-	Date    time.Time
-	Body    string
+	UID        uint32
+	MessageID  string
+	InReplyTo  string
+	References string
+	From       string
+	To         string
+	Subject    string
+	Date       time.Time
+	Body       string
 }
 
 func getEmailConfig() (user, password string, err error) {
@@ -100,9 +103,15 @@ func FetchEmails(limit int, unreadOnly bool) ([]Email, error) {
 		}
 
 		email := Email{
-			UID:     msg.Uid,
-			Subject: msg.Envelope.Subject,
-			Date:    msg.Envelope.Date,
+			UID:       msg.Uid,
+			MessageID: msg.Envelope.MessageId,
+			Subject:   msg.Envelope.Subject,
+			Date:      msg.Envelope.Date,
+		}
+
+		// Extract In-Reply-To and References from envelope
+		if msg.Envelope.InReplyTo != "" {
+			email.InReplyTo = msg.Envelope.InReplyTo
 		}
 
 		if len(msg.Envelope.From) > 0 {
@@ -174,19 +183,40 @@ func extractBody(r imap.Literal) string {
 
 // SendEmail sends an email via Gmail SMTP
 func SendEmail(to, subject, body string) error {
+	return SendEmailThreaded(to, subject, body, "", "")
+}
+
+// SendEmailThreaded sends an email with threading headers
+func SendEmailThreaded(to, subject, body, inReplyTo, references string) error {
 	user, password, err := getEmailConfig()
 	if err != nil {
 		return err
 	}
 
-	// Build message
-	msg := fmt.Sprintf("From: %s\r\n"+
-		"To: %s\r\n"+
-		"Subject: %s\r\n"+
-		"MIME-Version: 1.0\r\n"+
-		"Content-Type: text/plain; charset=utf-8\r\n"+
-		"\r\n"+
-		"%s", user, to, subject, body)
+	// Generate Message-ID
+	msgID := fmt.Sprintf("<%d.%s@aslam.org>", time.Now().UnixNano(), randomString(8))
+
+	// Build headers
+	var headers strings.Builder
+	headers.WriteString(fmt.Sprintf("From: Aslam Assistant <%s>\r\n", user))
+	headers.WriteString(fmt.Sprintf("To: %s\r\n", to))
+	headers.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	headers.WriteString(fmt.Sprintf("Message-ID: %s\r\n", msgID))
+	
+	if inReplyTo != "" {
+		headers.WriteString(fmt.Sprintf("In-Reply-To: %s\r\n", inReplyTo))
+	}
+	if references != "" {
+		headers.WriteString(fmt.Sprintf("References: %s\r\n", references))
+	} else if inReplyTo != "" {
+		headers.WriteString(fmt.Sprintf("References: %s\r\n", inReplyTo))
+	}
+	
+	headers.WriteString("MIME-Version: 1.0\r\n")
+	headers.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
+	headers.WriteString("\r\n")
+
+	msg := headers.String() + body
 
 	// Connect to Gmail SMTP
 	auth := smtp.PlainAuth("", user, password, "smtp.gmail.com")
@@ -196,6 +226,16 @@ func SendEmail(to, subject, body string) error {
 	}
 
 	return nil
+}
+
+func randomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
+		time.Sleep(time.Nanosecond)
+	}
+	return string(b)
 }
 
 // MarkAsRead marks an email as read by UID
