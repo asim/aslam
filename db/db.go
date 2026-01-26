@@ -221,6 +221,39 @@ func Migrate() error {
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_tasks_status ON pending_tasks(status)`)
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_tasks_channel ON pending_tasks(channel)`)
 
+	// Accounts/credentials - for estate planning and handover
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS accounts (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			service TEXT NOT NULL,
+			account_id TEXT,
+			description TEXT,
+			access_info TEXT,
+			env_var TEXT,
+			notes TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Admins - users who can administer the system
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS admins (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT UNIQUE NOT NULL,
+			name TEXT,
+			role TEXT DEFAULT 'admin',
+			added_by TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -794,4 +827,120 @@ func ResetStaleTasks() error {
 		WHERE status = 'processing'
 	`)
 	return err
+}
+
+// Account/credential functions for estate planning
+
+type Account struct {
+	ID          int64
+	Service     string
+	AccountID   string
+	Description string
+	AccessInfo  string
+	EnvVar      string
+	Notes       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func GetAccounts() ([]Account, error) {
+	rows, err := DB.Query(`
+		SELECT id, service, account_id, description, access_info, env_var, notes, created_at, updated_at
+		FROM accounts ORDER BY service
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var accounts []Account
+	for rows.Next() {
+		var a Account
+		var accountID, desc, access, envVar, notes sql.NullString
+		err := rows.Scan(&a.ID, &a.Service, &accountID, &desc, &access, &envVar, &notes, &a.CreatedAt, &a.UpdatedAt)
+		if err != nil {
+			continue
+		}
+		a.AccountID = accountID.String
+		a.Description = desc.String
+		a.AccessInfo = access.String
+		a.EnvVar = envVar.String
+		a.Notes = notes.String
+		accounts = append(accounts, a)
+	}
+	return accounts, nil
+}
+
+func SaveAccount(service, accountID, description, accessInfo, envVar, notes string) (int64, error) {
+	result, err := DB.Exec(`
+		INSERT INTO accounts (service, account_id, description, access_info, env_var, notes)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, service, accountID, description, accessInfo, envVar, notes)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func UpdateAccount(id int64, service, accountID, description, accessInfo, envVar, notes string) error {
+	_, err := DB.Exec(`
+		UPDATE accounts SET service=?, account_id=?, description=?, access_info=?, env_var=?, notes=?, updated_at=CURRENT_TIMESTAMP
+		WHERE id=?
+	`, service, accountID, description, accessInfo, envVar, notes, id)
+	return err
+}
+
+func DeleteAccount(id int64) error {
+	_, err := DB.Exec(`DELETE FROM accounts WHERE id = ?`, id)
+	return err
+}
+
+// Admin functions
+
+type Admin struct {
+	ID        int64
+	Email     string
+	Name      string
+	Role      string
+	AddedBy   string
+	CreatedAt time.Time
+}
+
+func GetAdmins() ([]Admin, error) {
+	rows, err := DB.Query(`SELECT id, email, name, role, added_by, created_at FROM admins ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var admins []Admin
+	for rows.Next() {
+		var a Admin
+		var name, addedBy sql.NullString
+		err := rows.Scan(&a.ID, &a.Email, &name, &a.Role, &addedBy, &a.CreatedAt)
+		if err != nil {
+			continue
+		}
+		a.Name = name.String
+		a.AddedBy = addedBy.String
+		admins = append(admins, a)
+	}
+	return admins, nil
+}
+
+func AddAdmin(email, name, role, addedBy string) error {
+	_, err := DB.Exec(`INSERT INTO admins (email, name, role, added_by) VALUES (?, ?, ?, ?)`,
+		email, name, role, addedBy)
+	return err
+}
+
+func RemoveAdmin(id int64) error {
+	_, err := DB.Exec(`DELETE FROM admins WHERE id = ?`, id)
+	return err
+}
+
+func IsAdmin(email string) bool {
+	var id int64
+	err := DB.QueryRow(`SELECT id FROM admins WHERE email = ?`, email).Scan(&id)
+	return err == nil
 }

@@ -1,0 +1,186 @@
+{{define "admin.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Aslam</title>
+    {{template "style"}}
+    <style>
+        .admin-section { margin-bottom: 32px; }
+        .admin-section h3 { margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .item-card { 
+            border: 1px solid #333; 
+            padding: 12px; 
+            margin-bottom: 12px; 
+            border-radius: 4px;
+        }
+        .item-header { display: flex; justify-content: space-between; align-items: center; }
+        .item-title { font-weight: bold; }
+        .item-meta { font-size: 12px; color: #888; margin-top: 4px; }
+        .item-detail { margin-top: 8px; font-size: 13px; }
+        .item-detail label { color: #888; }
+        form.inline { display: inline; }
+        input, textarea { 
+            font-family: inherit; 
+            font-size: 14px; 
+            padding: 8px; 
+            border: 1px solid #333; 
+            border-radius: 4px;
+            background: #fff;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+        }
+        textarea { min-height: 60px; }
+        .form-row { margin-bottom: 12px; }
+        .form-row label { display: block; margin-bottom: 4px; font-size: 12px; color: #888; }
+        .btn { 
+            padding: 8px 16px; 
+            background: #000; 
+            color: #fff; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn:hover { opacity: 0.8; }
+        .btn-danger { background: #dc2626; }
+        .btn-small { padding: 4px 8px; font-size: 12px; }
+        .success { color: #16a34a; margin-bottom: 16px; }
+        .error { color: #dc2626; margin-bottom: 16px; }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header"}}
+        
+        <main class="app-content">
+            <h2>Administration</h2>
+            
+            {{if .Message}}
+            <p class="success">{{.Message}}</p>
+            {{end}}
+            {{if .Error}}
+            <p class="error">{{.Error}}</p>
+            {{end}}
+
+            <div class="warning-box">
+                <strong>⚠️ Estate Planning:</strong> This page contains information needed to maintain or transfer this system. 
+                Keep credentials updated so someone else can take over if needed.
+            </div>
+
+            <!-- Admins Section -->
+            <div class="admin-section">
+                <h3>Administrators</h3>
+                <p class="muted" style="margin-bottom: 16px;">Users who can access the system. Add family members or trusted parties for continuity.</p>
+                
+                {{range .Admins}}
+                <div class="item-card">
+                    <div class="item-header">
+                        <div>
+                            <span class="item-title">{{.Email}}</span>
+                            {{if .Name}}<span class="muted"> ({{.Name}})</span>{{end}}
+                        </div>
+                        {{if ne .Email $.CurrentUser}}
+                        <form class="inline" method="POST" action="/admin/remove-admin" onsubmit="return confirm('Remove this admin?');">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <button type="submit" class="btn btn-danger btn-small">Remove</button>
+                        </form>
+                        {{end}}
+                    </div>
+                    <div class="item-meta">
+                        Role: {{.Role}} | Added: {{.CreatedAt.Format "2006-01-02"}}
+                        {{if .AddedBy}} by {{.AddedBy}}{{end}}
+                    </div>
+                </div>
+                {{else}}
+                <p class="muted">No admins configured. Using ALLOWED_EMAILS from environment.</p>
+                {{end}}
+                
+                <details style="margin-top: 16px;">
+                    <summary style="cursor: pointer;">Add Administrator</summary>
+                    <form method="POST" action="/admin/add-admin" style="margin-top: 12px;">
+                        <div class="form-row">
+                            <label>Email Address</label>
+                            <input type="email" name="email" required placeholder="family@example.com">
+                        </div>
+                        <div class="form-row">
+                            <label>Name (optional)</label>
+                            <input type="text" name="name" placeholder="Name">
+                        </div>
+                        <button type="submit" class="btn">Add Admin</button>
+                    </form>
+                </details>
+            </div>
+
+            <!-- Accounts Section -->
+            <div class="admin-section">
+                <h3>Service Accounts & Credentials</h3>
+                <p class="muted" style="margin-bottom: 16px;">Document where accounts are, how to access them, and what they're for. This data is encrypted in the database.</p>
+                
+                {{range .Accounts}}
+                <div class="item-card">
+                    <div class="item-header">
+                        <span class="item-title">{{.Service}}</span>
+                        <form class="inline" method="POST" action="/admin/delete-account" onsubmit="return confirm('Delete this account record?');">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <button type="submit" class="btn btn-danger btn-small">Delete</button>
+                        </form>
+                    </div>
+                    {{if .AccountID}}<div class="item-detail"><label>Account:</label> {{.AccountID}}</div>{{end}}
+                    {{if .Description}}<div class="item-detail"><label>Purpose:</label> {{.Description}}</div>{{end}}
+                    {{if .EnvVar}}<div class="item-detail"><label>Env Variable:</label> <code>{{.EnvVar}}</code></div>{{end}}
+                    {{if .AccessInfo}}<div class="item-detail"><label>Access:</label> {{.AccessInfo}}</div>{{end}}
+                    {{if .Notes}}<div class="item-detail"><label>Notes:</label> {{.Notes}}</div>{{end}}
+                    <div class="item-meta">Updated: {{.UpdatedAt.Format "2006-01-02 15:04"}}</div>
+                </div>
+                {{else}}
+                <p class="muted">No accounts documented yet.</p>
+                {{end}}
+                
+                <details style="margin-top: 16px;">
+                    <summary style="cursor: pointer;">Add Account</summary>
+                    <form method="POST" action="/admin/add-account" style="margin-top: 12px;">
+                        <div class="form-row">
+                            <label>Service Name *</label>
+                            <input type="text" name="service" required placeholder="e.g., Google Cloud, Anthropic, Brave">
+                        </div>
+                        <div class="form-row">
+                            <label>Account ID / Email</label>
+                            <input type="text" name="account_id" placeholder="e.g., asim@aslam.me">
+                        </div>
+                        <div class="form-row">
+                            <label>Purpose / Description</label>
+                            <input type="text" name="description" placeholder="What is this account used for?">
+                        </div>
+                        <div class="form-row">
+                            <label>Environment Variable</label>
+                            <input type="text" name="env_var" placeholder="e.g., ANTHROPIC_API_KEY">
+                        </div>
+                        <div class="form-row">
+                            <label>How to Access</label>
+                            <textarea name="access_info" placeholder="e.g., Login with Google account, password in 1Password under 'Anthropic'"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <label>Additional Notes</label>
+                            <textarea name="notes" placeholder="Any other important information"></textarea>
+                        </div>
+                        <button type="submit" class="btn">Add Account</button>
+                    </form>
+                </details>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

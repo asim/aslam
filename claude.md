@@ -4,24 +4,30 @@ Personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org
 
 ## Architecture
 
+See `ARCHITECTURE.md` for full details. Key principle: **single agent, multiple channels**.
+
 ```
 aslam/
 ├── main.go           # HTTP server, routes, Anthropic integration
+├── email_worker.go   # Email channel (IMAP polling)
+├── task_processor.go # Unified task queue processor
 ├── db/
 │   ├── db.go         # Database functions (SQLCipher)
 │   └── schema.sql    # Reference schema
 ├── tools/
 │   ├── tools.go      # Tool definitions and execution
+│   ├── email.go      # Email send/receive (IMAP/SMTP)
 │   ├── web.go        # URL fetching
 │   ├── wiki.go       # Wikipedia API
 │   ├── islam.go      # Islamic sources API
-│   └── search.go     # Web search (headless Chrome)
+│   └── search.go     # Web search (Brave API)
 ├── html/             # HTML templates (embedded at build)
 ├── scripts/
 │   ├── aslam.service # Systemd service file
 │   └── kb            # CLI tool for database operations
 ├── cmd/
 │   └── aslam-cli/    # Command line client
+├── ARCHITECTURE.md   # System architecture docs
 ├── .env              # Configuration (not committed)
 └── ~/.aslam/
     ├── .key          # Database encryption key
@@ -74,6 +80,8 @@ PORT=8000                                  # Server port
 API_KEY=...                               # For CLI/API access
 DEV_TOKEN=...                             # Dev bypass token
 BRAVE_API_KEY=...                         # For web search
+GMAIL_USER=...                            # Assistant's email
+GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
 ```
 
 ## Authentication

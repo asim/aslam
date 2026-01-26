@@ -130,6 +130,11 @@ func main() {
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
 	http.HandleFunc("/dev", requireAuth(handleDev))
+	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
+	http.HandleFunc("/admin/add-admin", requireAuth(requireAdmin(handleAddAdmin)))
+	http.HandleFunc("/admin/remove-admin", requireAuth(requireAdmin(handleRemoveAdmin)))
+	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
+	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -983,4 +988,126 @@ func handleDev(w http.ResponseWriter, r *http.Request) {
 		"Tools":        toolDefs,
 		"Integrations": integrations,
 	})
+}
+
+// requireAdmin wraps handlers that need admin access
+func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session := getSession(r)
+		if session == nil {
+			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			return
+		}
+		
+		// Check if user is admin (either in admins table or in ALLOWED_EMAILS as fallback)
+		if !db.IsAdmin(session.Email) && !allowedEmails[strings.ToLower(session.Email)] {
+			http.Error(w, "Admin access required", http.StatusForbidden)
+			return
+		}
+		
+		handler(w, r)
+	}
+}
+
+func handleAdmin(w http.ResponseWriter, r *http.Request) {
+	session := getSession(r)
+	accounts, _ := db.GetAccounts()
+	admins, _ := db.GetAdmins()
+	
+	msg := r.URL.Query().Get("msg")
+	errMsg := r.URL.Query().Get("error")
+	
+	tmpl.ExecuteTemplate(w, "admin.html", map[string]interface{}{
+		"Accounts":    accounts,
+		"Admins":      admins,
+		"CurrentUser": session.Email,
+		"Message":     msg,
+		"Error":       errMsg,
+	})
+}
+
+func handleAddAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+	
+	session := getSession(r)
+	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
+	name := strings.TrimSpace(r.FormValue("name"))
+	
+	if email == "" {
+		http.Redirect(w, r, "/admin?error=Email+required", http.StatusSeeOther)
+		return
+	}
+	
+	err := db.AddAdmin(email, name, "admin", session.Email)
+	if err != nil {
+		http.Redirect(w, r, "/admin?error=Failed+to+add+admin", http.StatusSeeOther)
+		return
+	}
+	
+	// Also add to allowed emails for this session
+	allowedEmails[email] = true
+	
+	http.Redirect(w, r, "/admin?msg=Admin+added", http.StatusSeeOther)
+}
+
+func handleRemoveAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+	
+	id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	if id == 0 {
+		http.Redirect(w, r, "/admin?error=Invalid+ID", http.StatusSeeOther)
+		return
+	}
+	
+	db.RemoveAdmin(id)
+	http.Redirect(w, r, "/admin?msg=Admin+removed", http.StatusSeeOther)
+}
+
+func handleAddAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+	
+	service := strings.TrimSpace(r.FormValue("service"))
+	accountID := strings.TrimSpace(r.FormValue("account_id"))
+	description := strings.TrimSpace(r.FormValue("description"))
+	accessInfo := strings.TrimSpace(r.FormValue("access_info"))
+	envVar := strings.TrimSpace(r.FormValue("env_var"))
+	notes := strings.TrimSpace(r.FormValue("notes"))
+	
+	if service == "" {
+		http.Redirect(w, r, "/admin?error=Service+name+required", http.StatusSeeOther)
+		return
+	}
+	
+	_, err := db.SaveAccount(service, accountID, description, accessInfo, envVar, notes)
+	if err != nil {
+		http.Redirect(w, r, "/admin?error=Failed+to+save+account", http.StatusSeeOther)
+		return
+	}
+	
+	http.Redirect(w, r, "/admin?msg=Account+saved", http.StatusSeeOther)
+}
+
+func handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+		return
+	}
+	
+	id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
+	if id == 0 {
+		http.Redirect(w, r, "/admin?error=Invalid+ID", http.StatusSeeOther)
+		return
+	}
+	
+	db.DeleteAccount(id)
+	http.Redirect(w, r, "/admin?msg=Account+deleted", http.StatusSeeOther)
 }

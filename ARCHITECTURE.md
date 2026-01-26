@@ -85,3 +85,37 @@ Each channel maps its native threading to conversations:
 - Testing one channel tests them all
 - New channels are thin adapters, not new agents
 - User can start on email, continue on chat (same conversation)
+
+## Administration & Estate Planning
+
+The `/admin` page provides:
+
+### Administrators
+- Add family members or trusted parties as admins
+- They can log in with Google OAuth
+- Ensures continuity if primary admin is unavailable
+
+### Service Accounts
+- Document all external services (Google, Anthropic, Brave, etc.)
+- Record which email/account is used
+- Note how to access (e.g., "password in 1Password")
+- Link to environment variables
+- All stored encrypted in SQLCipher database
+
+### Handover Process
+
+If transferring to someone else:
+
+1. Add them as admin on `/admin` page
+2. Ensure service accounts are documented
+3. Share access to:
+   - This server (exe.dev VM)
+   - Password manager containing service passwords
+   - Domain registrar for aslam.org
+   - GitHub repo for code
+4. They should update `.env` with their own API keys if needed
+
+### Database Location
+
+All data is in `~/.aslam/aslam.db`, encrypted with the key in `~/.aslam/.key`.
+Backup both files to preserve all data.

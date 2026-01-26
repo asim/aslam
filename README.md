@@ -77,6 +77,27 @@ sudo systemctl enable aslam
 sudo systemctl start aslam
 ```
 
+### Email Setup (Optional)
+
+To enable the assistant's own email inbox:
+
+1. Create a Google Workspace user (e.g., assistant@yourdomain.com)
+2. Enable 2FA on that account
+3. Generate an App Password (Security → App Passwords)
+4. Add to `.env`:
+   ```
+   GMAIL_USER=assistant@yourdomain.com
+   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+   ```
+5. Add to systemd service or restart
+
+### First Run
+
+1. Visit your domain and log in with Google
+2. Go to `/admin` to document your service accounts
+3. Add any additional admins (family members)
+4. Start chatting or send an email to the assistant
+
 ## Tools
 
 The assistant has access to these tools:
