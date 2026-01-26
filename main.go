@@ -501,6 +501,12 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Set user context
+	session := getSession(r)
+	if session != nil {
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
+	}
+
 	// Save user message
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -550,6 +556,12 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	if req.ConversationID == 0 || req.Message == "" {
 		jsonError(w, "Missing fields", 400)
 		return
+	}
+
+	// Set user context
+	session := getSession(r)
+	if session != nil {
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
 	}
 
 	// Save user message
@@ -757,6 +769,14 @@ func init() {
 	systemPrompt = fmt.Sprintf(systemPromptTemplate, readmeContent, claudeContent)
 }
 
+// UserContext contains info about the current user for personalization
+type UserContext struct {
+	Email string
+	Name  string
+}
+
+var currentUserContext *UserContext
+
 func generateResponse(messages []db.Message) (string, error) {
 	return generateResponseWithProgress(messages, nil)
 }
@@ -764,6 +784,16 @@ func generateResponse(messages []db.Message) (string, error) {
 func generateResponseWithProgress(messages []db.Message, onTool func(string)) (string, error) {
 	if anthropicKey == "" {
 		return "", fmt.Errorf("ANTHROPIC_API_KEY not set")
+	}
+
+	// Build system prompt with user context
+	fullSystemPrompt := systemPrompt
+	if currentUserContext != nil && currentUserContext.Email != "" {
+		fullSystemPrompt += fmt.Sprintf("\n\nCurrent user: %s", currentUserContext.Email)
+		if currentUserContext.Name != "" {
+			fullSystemPrompt += fmt.Sprintf(" (%s)", currentUserContext.Name)
+		}
+		fullSystemPrompt += "\nIf the user asks you to send them an email, use this address."
 	}
 
 	// Build messages for API
@@ -780,7 +810,7 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 
 	// Tool loop - keep calling until we get a final response
 	for i := 0; i < 10; i++ { // Max 10 tool calls
-		result, err := callAnthropic(apiMessages)
+		result, err := callAnthropic(apiMessages, fullSystemPrompt)
 		if err != nil {
 			return "", err
 		}
@@ -846,18 +876,18 @@ type contentBlock struct {
 	Input map[string]interface{} `json:"input,omitempty"`
 }
 
-func callAnthropic(apiMessages []map[string]interface{}) (*anthropicResponse, error) {
+func callAnthropic(apiMessages []map[string]interface{}, sysPrompt string) (*anthropicResponse, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
 		"max_tokens": 4096,
 		"tools":      tools.GetTools(),
-		"system": systemPrompt,
-		"messages": apiMessages,
+		"system":     sysPrompt,
+		"messages":   apiMessages,
 	}
 
 	jsonBody, _ := json.Marshal(reqBody)
-	log.Printf("Sending to Anthropic: system prompt len=%d, messages=%d", len(systemPrompt), len(apiMessages))
-	if len(systemPrompt) > 200 {
+	log.Printf("Sending to Anthropic: system prompt len=%d, messages=%d", len(sysPrompt), len(apiMessages))
+	if len(sysPrompt) > 200 {
 		log.Printf("System prompt starts: %s...", systemPrompt[:200])
 	}
 
@@ -926,6 +956,12 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "\n")
 		flusher.Flush()
+	}
+
+	// Set user context for this request
+	session := getSession(r)
+	if session != nil {
+		currentUserContext = &UserContext{Email: session.Email, Name: session.Name}
 	}
 
 	// Save user message

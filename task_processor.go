@@ -122,6 +122,9 @@ func processEmailTask(task db.PendingTask) error {
 		json.Unmarshal([]byte(task.Metadata), &meta)
 	}
 
+	// Set user context from email sender
+	currentUserContext = &UserContext{Email: meta.From, Name: ""}
+
 	// Get conversation messages
 	messages, err := db.GetMessages(task.ConversationID)
 	if err != nil {
