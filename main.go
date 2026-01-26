@@ -129,9 +129,6 @@ func main() {
 	http.HandleFunc("/search", requireAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
-	http.HandleFunc("/dev", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/admin", http.StatusMovedPermanently)
-	})
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-admin", requireAuth(requireAdmin(handleAddAdmin)))
 	http.HandleFunc("/admin/remove-admin", requireAuth(requireAdmin(handleRemoveAdmin)))
