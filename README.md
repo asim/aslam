@@ -4,7 +4,7 @@ A personal assistant for the family.
 
 ## What is this?
 
-This is a centralised repository of knowledge, thoughts, and information for Asim Aslam and family. It exists to solve a simple problem: life accumulates information across too many places—email, docs, notes, browser bookmarks, memory—and none of it is searchable, organised, or transferable.
+This is a centralised repository of knowledge, thoughts, and information for the family. It exists to solve a simple problem: life accumulates information across too many places—email, docs, notes, browser bookmarks, memory—and none of it is searchable, organised, or transferable.
 
 ## Why?
 
