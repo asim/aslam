@@ -1,6 +1,6 @@
 # Aslam
 
-A personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org).
+A personal assistant for the family.
 
 ## What is this?
 
