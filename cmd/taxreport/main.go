@@ -81,7 +81,14 @@ func main() {
 	}
 
 	if len(allTxns) == 0 {
-		fmt.Fprintln(os.Stderr, "No transactions found in the provided files.")
+		if len(warnings) > 0 {
+			fmt.Fprintf(os.Stderr, "\nWarnings (%d):\n", len(warnings))
+			for _, w := range warnings {
+				fmt.Fprintf(os.Stderr, "  * %s\n", w)
+			}
+		}
+		fmt.Fprintln(os.Stderr, "\nNo transactions found in the provided files.")
+		fmt.Fprintln(os.Stderr, "Hint: for USDT/USDC trades, provide --usd-gbp RATE (e.g. --usd-gbp 0.79)")
 		os.Exit(1)
 	}
 

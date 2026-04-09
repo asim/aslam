@@ -363,11 +363,13 @@ func parseTimestamp(s string) (time.Time, error) {
 func parseNumber(s string) (float64, error) {
 	s = strings.TrimSpace(s)
 	s = strings.ReplaceAll(s, ",", "")
-	s = strings.TrimPrefix(s, "£")
-	s = strings.TrimPrefix(s, "$")
-	s = strings.TrimPrefix(s, "\u20ac")
+	// Remove currency symbols anywhere in the string (handles -£123, $123, etc.)
+	s = strings.ReplaceAll(s, "£", "")
+	s = strings.ReplaceAll(s, "$", "")
+	s = strings.ReplaceAll(s, "\u20ac", "")
 	s = strings.TrimPrefix(s, "\"")
 	s = strings.TrimSuffix(s, "\"")
+	s = strings.TrimSpace(s)
 	if s == "" || s == "-" {
 		return 0, nil
 	}
