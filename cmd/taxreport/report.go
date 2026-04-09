@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -83,8 +84,13 @@ func printReport(disposals []DisposalEvent, taxYear int, yearStart, yearEnd time
 		"Date", "Asset", "Quantity", "Proceeds", "Cost", "Gain/Loss", "Rule")
 	fmt.Println(strings.Repeat("-", 82))
 
+	type assetStats struct {
+		quantity                       float64
+		proceeds, cost, gains, losses  float64
+	}
+
 	var totalProceeds, totalCost, totalGains, totalLosses float64
-	assetSummary := map[string]*struct{ proceeds, cost, gains, losses float64 }{}
+	assetSummary := map[string]*assetStats{}
 
 	for _, d := range taxYearDisposals {
 		fmt.Printf("%-12s %-6s %14.8f %11.2f %11.2f %11.2f  %-10s\n",
@@ -102,9 +108,10 @@ func printReport(disposals []DisposalEvent, taxYear int, yearStart, yearEnd time
 
 		s, ok := assetSummary[d.Asset]
 		if !ok {
-			s = &struct{ proceeds, cost, gains, losses float64 }{}
+			s = &assetStats{}
 			assetSummary[d.Asset] = s
 		}
+		s.quantity += d.Quantity
 		s.proceeds += d.Proceeds
 		s.cost += d.Cost
 		if d.Gain >= 0 {
@@ -121,14 +128,16 @@ func printReport(disposals []DisposalEvent, taxYear int, yearStart, yearEnd time
 	// Per-asset summary
 	if len(assetSummary) > 1 {
 		fmt.Println("\nSummary by asset:")
+		fmt.Printf("  %-6s %16s %12s %12s %12s\n", "Asset", "Qty Disposed", "Proceeds", "Cost", "Net")
+		fmt.Printf("  %s\n", strings.Repeat("-", 60))
 		for _, asset := range assetList {
 			s, ok := assetSummary[asset]
 			if !ok {
 				continue
 			}
 			net := s.gains + s.losses
-			fmt.Printf("  %-6s  proceeds: %10.2f  cost: %10.2f  net: %10.2f\n",
-				asset, s.proceeds, s.cost, net)
+			fmt.Printf("  %-6s %16.8f %12.2f %12.2f %12.2f\n",
+				asset, s.quantity, s.proceeds, s.cost, net)
 		}
 	}
 
@@ -161,6 +170,59 @@ func printReport(disposals []DisposalEvent, taxYear int, yearStart, yearEnd time
 	}
 
 	fmt.Println()
+}
+
+func exportCSV(filepath string, disposals []DisposalEvent, taxYear int) error {
+	f, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Header
+	fmt.Fprintf(f, "Tax Year %d/%02d - Capital Gains Disposals\n", taxYear, (taxYear+1)%100)
+	fmt.Fprintln(f, "Date,Asset,Quantity,Disposal Proceeds (GBP),Allowable Cost (GBP),Gain/Loss (GBP),Matching Rule")
+
+	var totalProceeds, totalCost, totalGains, totalLosses float64
+	for _, d := range disposals {
+		fmt.Fprintf(f, "%s,%s,%.8f,%.2f,%.2f,%.2f,%s\n",
+			d.Date.Format("2006-01-02"),
+			d.Asset,
+			d.Quantity,
+			d.Proceeds,
+			d.Cost,
+			d.Gain,
+			d.Rule,
+		)
+		totalProceeds += d.Proceeds
+		totalCost += d.Cost
+		if d.Gain >= 0 {
+			totalGains += d.Gain
+		} else {
+			totalLosses += d.Gain
+		}
+	}
+
+	// Summary rows
+	net := totalGains + totalLosses
+	exemption := annualExemption(taxYear)
+	taxable := net - exemption
+	if taxable < 0 {
+		taxable = 0
+	}
+
+	fmt.Fprintln(f, "")
+	fmt.Fprintln(f, "SUMMARY")
+	fmt.Fprintf(f, "Number of disposals,,,,%d\n", len(disposals))
+	fmt.Fprintf(f, "Total disposal proceeds,,,,%.2f\n", totalProceeds)
+	fmt.Fprintf(f, "Total allowable costs,,,,%.2f\n", totalCost)
+	fmt.Fprintf(f, "Total gains,,,,%.2f\n", totalGains)
+	fmt.Fprintf(f, "Total losses,,,,%.2f\n", totalLosses)
+	fmt.Fprintf(f, "Net gain/(loss),,,,%.2f\n", net)
+	fmt.Fprintf(f, "Annual exempt amount,,,,%.2f\n", exemption)
+	fmt.Fprintf(f, "Taxable gain,,,,%.2f\n", taxable)
+
+	return nil
 }
 
 func annualExemption(taxYear int) float64 {
