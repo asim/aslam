@@ -39,6 +39,7 @@ func parseKrakenPair(pair string) (base, quote string) {
 		{"ZGBP", "GBP"}, {"ZUSD", "USD"}, {"ZEUR", "EUR"},
 		{"ZJPY", "JPY"}, {"ZCAD", "CAD"}, {"ZAUD", "AUD"},
 		{"XXBT", "BTC"}, {"XBT", "BTC"},
+		{"USDT", "USDT"}, {"USDC", "USDC"},
 		{"GBP", "GBP"}, {"USD", "USD"}, {"EUR", "EUR"},
 		{"JPY", "JPY"}, {"CAD", "CAD"}, {"AUD", "AUD"},
 	}
@@ -53,7 +54,7 @@ func parseKrakenPair(pair string) (base, quote string) {
 	return pair, ""
 }
 
-func parseKraken(filepath string) ([]Transaction, []string, error) {
+func parseKraken(filepath string, rates *ExchangeRates) ([]Transaction, []string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, nil, err
@@ -123,8 +124,8 @@ func parseKraken(filepath string) ([]Transaction, []string, error) {
 		pair := strings.Trim(strings.TrimSpace(row[pairCol]), "\"")
 		base, quote := parseKrakenPair(pair)
 
-		if quote != "GBP" {
-			warnings = append(warnings, fmt.Sprintf("Kraken line %d: non-GBP pair %s (%s/%s) - skipped", i+1, pair, base, quote))
+		if quote == "" {
+			warnings = append(warnings, fmt.Sprintf("Kraken line %d: could not parse pair %q - skipped", i+1, pair))
 			continue
 		}
 
@@ -151,23 +152,74 @@ func parseKraken(filepath string) ([]Transaction, []string, error) {
 			continue
 		}
 
-		var totalGBP float64
-		if side == "buy" {
-			totalGBP = cost + fee // total outlay including fees
-		} else {
-			totalGBP = cost - fee // net proceeds after fees
+		// Convert to GBP
+		if quote == "GBP" {
+			// Direct GBP pair - simple case
+			var totalGBP float64
+			if side == "buy" {
+				totalGBP = cost + fee
+			} else {
+				totalGBP = cost - fee
+			}
+			txns = append(txns, Transaction{
+				Date: ts, Type: side, Asset: base, Quantity: vol,
+				TotalGBP: totalGBP, FeeGBP: fee, Source: "kraken",
+				Notes: fmt.Sprintf("pair=%s", pair),
+			})
+			continue
 		}
 
-		txns = append(txns, Transaction{
-			Date:     ts,
-			Type:     side,
-			Asset:    base,
-			Quantity: vol,
-			TotalGBP: totalGBP,
-			FeeGBP:   fee,
-			Source:   "kraken",
-			Notes:    fmt.Sprintf("pair=%s", pair),
-		})
+		// Non-GBP pair - need exchange rate
+		if !rates.HasRate(quote) {
+			warnings = append(warnings, fmt.Sprintf(
+				"Kraken line %d: no exchange rate for %s (pair %s) - skipped. Use --usd-gbp or --rates",
+				i+1, quote, pair))
+			continue
+		}
+
+		if side == "buy" {
+			// Buying base asset, spending quote asset
+			// Total spent in quote = cost + fee
+			gbpTotal, _ := rates.ToGBP(cost+fee, quote, ts)
+			feeGBP, _ := rates.ToGBP(fee, quote, ts)
+
+			// Base asset acquisition
+			txns = append(txns, Transaction{
+				Date: ts, Type: "buy", Asset: base, Quantity: vol,
+				TotalGBP: gbpTotal, FeeGBP: feeGBP, Source: "kraken",
+				Notes: fmt.Sprintf("pair=%s, cost=%.4f %s", pair, cost+fee, quote),
+			})
+
+			// Quote asset disposal (if crypto, not fiat)
+			if !isFiat(quote) {
+				txns = append(txns, Transaction{
+					Date: ts, Type: "sell", Asset: quote, Quantity: cost + fee,
+					TotalGBP: gbpTotal, FeeGBP: 0, Source: "kraken",
+					Notes: fmt.Sprintf("pair=%s, exchanged for %s", pair, base),
+				})
+			}
+		} else {
+			// Selling base asset, receiving quote asset
+			// Net received in quote = cost - fee
+			gbpNet, _ := rates.ToGBP(cost-fee, quote, ts)
+			feeGBP, _ := rates.ToGBP(fee, quote, ts)
+
+			// Base asset disposal
+			txns = append(txns, Transaction{
+				Date: ts, Type: "sell", Asset: base, Quantity: vol,
+				TotalGBP: gbpNet, FeeGBP: feeGBP, Source: "kraken",
+				Notes: fmt.Sprintf("pair=%s, received=%.4f %s", pair, cost-fee, quote),
+			})
+
+			// Quote asset acquisition (if crypto, not fiat)
+			if !isFiat(quote) {
+				txns = append(txns, Transaction{
+					Date: ts, Type: "buy", Asset: quote, Quantity: cost - fee,
+					TotalGBP: gbpNet, FeeGBP: 0, Source: "kraken",
+					Notes: fmt.Sprintf("pair=%s, received from %s sale", pair, base),
+				})
+			}
+		}
 	}
 
 	return txns, warnings, nil
