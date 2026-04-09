@@ -15,9 +15,10 @@ func main() {
 	usdGBP := flag.Float64("usd-gbp", 0, "fixed USD to GBP rate (e.g. 0.79) for USDT/USDC trades")
 	ratesFile := flag.String("rates", "", "CSV file with daily exchange rates (columns: date,USD,EUR,...)")
 	csvOut := flag.String("csv", "", "export disposals to CSV file for accountant")
+	manualFile := flag.String("manual", "", "manual transactions CSV (date,type,asset,quantity,total_gbp,notes)")
 	flag.Parse()
 
-	if *coinbaseFile == "" && *krakenFile == "" {
+	if *coinbaseFile == "" && *krakenFile == "" && *manualFile == "" {
 		fmt.Fprintln(os.Stderr, "HMRC Capital Gains Tax Report for Crypto Trading")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Usage: taxreport [--coinbase FILE] [--kraken FILE] [--year YYYY]")
@@ -79,6 +80,17 @@ func main() {
 		allTxns = append(allTxns, txns...)
 		warnings = append(warnings, warns...)
 		fmt.Fprintf(os.Stderr, "Kraken: loaded %d transactions\n", len(txns))
+	}
+
+	if *manualFile != "" {
+		txns, warns, err := parseManual(*manualFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing manual CSV: %v\n", err)
+			os.Exit(1)
+		}
+		allTxns = append(allTxns, txns...)
+		warnings = append(warnings, warns...)
+		fmt.Fprintf(os.Stderr, "Manual: loaded %d transactions\n", len(txns))
 	}
 
 	if len(allTxns) == 0 {
