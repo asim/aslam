@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func parseCoinbase(filepath string) ([]Transaction, []string, error) {
+func parseCoinbase(filepath string, rates *ExchangeRates) ([]Transaction, []string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, nil, err
@@ -57,12 +57,12 @@ func parseCoinbase(filepath string) ([]Transaction, []string, error) {
 
 	// Detect format
 	if _, ok := cols["portfolio"]; ok {
-		return parseCoinbasePro(records, headerIdx, cols)
+		return parseCoinbasePro(records, headerIdx, cols, rates)
 	}
-	return parseCoinbaseStandard(records, headerIdx, cols)
+	return parseCoinbaseStandard(records, headerIdx, cols, rates)
 }
 
-func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]int) ([]Transaction, []string, error) {
+func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]int, rates *ExchangeRates) ([]Transaction, []string, error) {
 	required := []string{"timestamp", "transaction type", "asset", "quantity transacted"}
 	for _, r := range required {
 		if _, ok := cols[r]; !ok {
@@ -84,8 +84,15 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 	if !hasFee {
 		feeCol, hasFee = cols["fees"]
 	}
+	// Handle column name variations across Coinbase export versions
 	spotCol, hasSpot := cols["spot price at transaction"]
+	if !hasSpot {
+		spotCol, hasSpot = cols["price at transaction"]
+	}
 	spotCurrCol, hasSpotCurr := cols["spot price currency"]
+	if !hasSpotCurr {
+		spotCurrCol, hasSpotCurr = cols["price currency"]
+	}
 	notesCol, hasNotes := cols["notes"]
 
 	convertRe := regexp.MustCompile(`(?i)([\d,.]+)\s+(\w+)\s+to\s+([\d,.]+)\s+(\w+)`)
@@ -103,8 +110,10 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 		txType := strings.TrimSpace(row[typeCol])
 		asset := strings.TrimSpace(strings.ToUpper(row[assetCol]))
 
-		switch strings.ToLower(txType) {
-		case "buy", "sell", "convert":
+		txTypeLower := strings.ToLower(txType)
+		switch txTypeLower {
+		case "buy", "sell", "convert",
+			"advanced trade buy", "advanced trade sell":
 		default:
 			if txType != "" {
 				warnings = append(warnings, fmt.Sprintf("Coinbase line %d: skipped %q for %s", i+1, txType, asset))
@@ -119,35 +128,49 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 		}
 		qty = math.Abs(qty)
 
-		// Check currency
-		if hasSpotCurr && len(row) > spotCurrCol {
-			curr := strings.TrimSpace(strings.ToUpper(row[spotCurrCol]))
-			if curr != "GBP" && curr != "" {
-				warnings = append(warnings, fmt.Sprintf("Coinbase line %d: non-GBP currency (%s) for %s - skipped", i+1, curr, asset))
-				continue
-			}
-		}
-
-		// Determine GBP values
-		var totalGBP, feeGBP float64
-		if hasTotal && len(row) > totalCol {
-			totalGBP, _ = parseNumber(row[totalCol])
-		} else if hasSubtotal && len(row) > subtotalCol {
-			totalGBP, _ = parseNumber(row[subtotalCol])
-		} else if hasSpot && len(row) > spotCol {
-			spot, _ := parseNumber(row[spotCol])
-			totalGBP = qty * spot
-		}
-		totalGBP = math.Abs(totalGBP)
-
-		if hasFee && len(row) > feeCol {
-			feeGBP, _ = parseNumber(row[feeCol])
-			feeGBP = math.Abs(feeGBP)
-		}
-
 		ts, err := parseTimestamp(strings.TrimSpace(row[tsCol]))
 		if err != nil {
 			warnings = append(warnings, fmt.Sprintf("Coinbase line %d: bad timestamp %q", i+1, row[tsCol]))
+			continue
+		}
+
+		// Determine the currency and GBP values
+		currency := "GBP"
+		if hasSpotCurr && len(row) > spotCurrCol {
+			c := strings.TrimSpace(strings.ToUpper(row[spotCurrCol]))
+			if c != "" {
+				currency = c
+			}
+		}
+
+		var totalRaw, feeRaw float64
+		if hasTotal && len(row) > totalCol {
+			totalRaw, _ = parseNumber(row[totalCol])
+		} else if hasSubtotal && len(row) > subtotalCol {
+			totalRaw, _ = parseNumber(row[subtotalCol])
+		} else if hasSpot && len(row) > spotCol {
+			spot, _ := parseNumber(row[spotCol])
+			totalRaw = qty * spot
+		}
+		totalRaw = math.Abs(totalRaw)
+
+		if hasFee && len(row) > feeCol {
+			feeRaw, _ = parseNumber(row[feeCol])
+			feeRaw = math.Abs(feeRaw)
+		}
+
+		// Convert to GBP if needed
+		var totalGBP, feeGBP float64
+		if currency == "GBP" {
+			totalGBP = totalRaw
+			feeGBP = feeRaw
+		} else if rates.HasRate(currency) {
+			totalGBP, _ = rates.ToGBP(totalRaw, currency, ts)
+			feeGBP, _ = rates.ToGBP(feeRaw, currency, ts)
+		} else {
+			warnings = append(warnings, fmt.Sprintf(
+				"Coinbase line %d: no rate for %s - skipped. Use --usd-gbp or --rates",
+				i+1, currency))
 			continue
 		}
 
@@ -156,13 +179,13 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 			notes = strings.TrimSpace(row[notesCol])
 		}
 
-		switch strings.ToLower(txType) {
-		case "buy":
+		switch txTypeLower {
+		case "buy", "advanced trade buy":
 			txns = append(txns, Transaction{
 				Date: ts, Type: "buy", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
 			})
-		case "sell":
+		case "sell", "advanced trade sell":
 			txns = append(txns, Transaction{
 				Date: ts, Type: "sell", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
@@ -194,7 +217,7 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 	return txns, warnings, nil
 }
 
-func parseCoinbasePro(records [][]string, headerIdx int, cols map[string]int) ([]Transaction, []string, error) {
+func parseCoinbasePro(records [][]string, headerIdx int, cols map[string]int, rates *ExchangeRates) ([]Transaction, []string, error) {
 	required := []string{"product", "side", "created at", "size", "price", "fee", "total"}
 	for _, r := range required {
 		if _, ok := cols[r]; !ok {
@@ -227,15 +250,14 @@ func parseCoinbasePro(records [][]string, headerIdx int, cols map[string]int) ([
 			warnings = append(warnings, fmt.Sprintf("Coinbase Pro line %d: unrecognized product %q", i+1, product))
 			continue
 		}
-		asset := strings.ToUpper(parts[0])
-		quoteCurrency := strings.ToUpper(parts[1])
+		base := strings.ToUpper(parts[0])
+		quote := strings.ToUpper(parts[1])
 
 		if hasUnit && len(row) > unitCol {
-			quoteCurrency = strings.TrimSpace(strings.ToUpper(row[unitCol]))
-		}
-		if quoteCurrency != "GBP" {
-			warnings = append(warnings, fmt.Sprintf("Coinbase Pro line %d: non-GBP pair %s - skipped", i+1, product))
-			continue
+			u := strings.TrimSpace(strings.ToUpper(row[unitCol]))
+			if u != "" {
+				quote = u
+			}
 		}
 
 		side := strings.TrimSpace(strings.ToLower(row[sideCol]))
@@ -256,16 +278,67 @@ func parseCoinbasePro(records [][]string, headerIdx int, cols map[string]int) ([
 			continue
 		}
 
-		txns = append(txns, Transaction{
-			Date: ts, Type: side, Asset: asset, Quantity: qty,
-			TotalGBP: total, FeeGBP: fee, Source: "coinbase",
-		})
+		if quote == "GBP" {
+			// Direct GBP pair
+			txns = append(txns, Transaction{
+				Date: ts, Type: side, Asset: base, Quantity: qty,
+				TotalGBP: total, FeeGBP: fee, Source: "coinbase",
+				Notes: fmt.Sprintf("product=%s", product),
+			})
+			continue
+		}
+
+		// Non-GBP quote currency - convert
+		if !rates.HasRate(quote) {
+			warnings = append(warnings, fmt.Sprintf(
+				"Coinbase Pro line %d: no rate for %s (product %s) - skipped. Use --usd-gbp or --rates",
+				i+1, quote, product))
+			continue
+		}
+
+		totalGBP, _ := rates.ToGBP(total, quote, ts)
+		feeGBP, _ := rates.ToGBP(fee, quote, ts)
+
+		if side == "buy" {
+			// Buying base with quote
+			txns = append(txns, Transaction{
+				Date: ts, Type: "buy", Asset: base, Quantity: qty,
+				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase",
+				Notes: fmt.Sprintf("product=%s, cost=%.4f %s", product, total, quote),
+			})
+			if !isFiat(quote) {
+				txns = append(txns, Transaction{
+					Date: ts, Type: "sell", Asset: quote, Quantity: total,
+					TotalGBP: totalGBP, FeeGBP: 0, Source: "coinbase",
+					Notes: fmt.Sprintf("product=%s, exchanged for %s", product, base),
+				})
+			}
+		} else {
+			// Selling base for quote
+			txns = append(txns, Transaction{
+				Date: ts, Type: "sell", Asset: base, Quantity: qty,
+				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase",
+				Notes: fmt.Sprintf("product=%s, received=%.4f %s", product, total, quote),
+			})
+			if !isFiat(quote) {
+				netQuote := total // net quote received (total already accounts for fees in Pro format)
+				txns = append(txns, Transaction{
+					Date: ts, Type: "buy", Asset: quote, Quantity: netQuote,
+					TotalGBP: totalGBP, FeeGBP: 0, Source: "coinbase",
+					Notes: fmt.Sprintf("product=%s, received from %s sale", product, base),
+				})
+			}
+		}
 	}
 
 	return txns, warnings, nil
 }
 
 func parseTimestamp(s string) (time.Time, error) {
+	// Strip trailing timezone names (e.g. "UTC") - time.Parse needs explicit layout
+	s = strings.TrimSuffix(s, " UTC")
+	s = strings.TrimSuffix(s, " GMT")
+
 	formats := []string{
 		time.RFC3339,
 		time.RFC3339Nano,

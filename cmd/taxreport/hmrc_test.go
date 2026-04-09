@@ -249,6 +249,8 @@ func TestKrakenPairParsing(t *testing.T) {
 		{"XXBTZUSD", "BTC", "USD"},
 		{"XETHXXBT", "ETH", "BTC"},
 		{"MATICGBP", "MATIC", "GBP"},
+		{"BNBUSDT", "BNB", "USDT"},
+		{"ETHUSDC", "ETH", "USDC"},
 	}
 
 	for _, tt := range tests {
@@ -258,4 +260,111 @@ func TestKrakenPairParsing(t *testing.T) {
 				tt.pair, base, quote, tt.wantBase, tt.wantQuote)
 		}
 	}
+}
+
+func TestCryptoToCryptoTrade(t *testing.T) {
+	// Simulate: buy 100 USDT for £79, then trade USDT for BNB, then sell BNB for GBP
+	// USD/GBP rate = 0.79
+	//
+	// Buy 100 USDT at £79 total
+	// Buy 10 BNB with 100 USDT (cost=100, fee=0) at rate 0.80
+	//   -> BNB acquisition: 10 BNB at £80
+	//   -> USDT disposal: 100 USDT, proceeds £80
+	// Sell 10 BNB for £120 GBP
+	//
+	// USDT gain: £80 - £79 = £1
+	// BNB gain: £120 - £80 = £40
+	// Total: £41
+
+	txns := []Transaction{
+		{Date: date(2024, 1, 1), Type: "buy", Asset: "USDT", Quantity: 100, TotalGBP: 79},
+		// BNB/USDT buy creates two transactions:
+		{Date: date(2024, 6, 1), Type: "buy", Asset: "BNB", Quantity: 10, TotalGBP: 80},
+		{Date: date(2024, 6, 1), Type: "sell", Asset: "USDT", Quantity: 100, TotalGBP: 80},
+		// Sell BNB for GBP
+		{Date: date(2024, 9, 1), Type: "sell", Asset: "BNB", Quantity: 10, TotalGBP: 120},
+	}
+
+	yearStart := time.Date(2024, 4, 6, 0, 0, 0, 0, time.UTC)
+	yearEnd := time.Date(2025, 4, 5, 23, 59, 59, 0, time.UTC)
+
+	disposals := calculateCapitalGains(txns, yearStart, yearEnd)
+
+	// Should have 2 disposals in tax year: USDT and BNB
+	if len(disposals) != 2 {
+		t.Fatalf("expected 2 disposals, got %d", len(disposals))
+	}
+
+	totalGain := 0.0
+	for _, d := range disposals {
+		totalGain += d.Gain
+	}
+	assertClose(t, "total gain", totalGain, 41)
+}
+
+func TestExchangeRatesFixed(t *testing.T) {
+	rates := NewExchangeRates()
+	rates.SetFixedRate("USD", 0.79)
+
+	// Direct USD
+	gbp, ok := rates.ToGBP(100, "USD", date(2024, 6, 1))
+	if !ok {
+		t.Fatal("expected rate for USD")
+	}
+	assertClose(t, "USD to GBP", gbp, 79)
+
+	// USDT maps to USD
+	gbp, ok = rates.ToGBP(100, "USDT", date(2024, 6, 1))
+	if !ok {
+		t.Fatal("expected rate for USDT")
+	}
+	assertClose(t, "USDT to GBP", gbp, 79)
+
+	// USDC maps to USD
+	gbp, ok = rates.ToGBP(100, "USDC", date(2024, 6, 1))
+	if !ok {
+		t.Fatal("expected rate for USDC")
+	}
+	assertClose(t, "USDC to GBP", gbp, 79)
+
+	// GBP returns as-is
+	gbp, ok = rates.ToGBP(100, "GBP", date(2024, 6, 1))
+	if !ok {
+		t.Fatal("expected rate for GBP")
+	}
+	assertClose(t, "GBP to GBP", gbp, 100)
+
+	// Unknown currency
+	_, ok = rates.ToGBP(100, "BTC", date(2024, 6, 1))
+	if ok {
+		t.Fatal("expected no rate for BTC")
+	}
+}
+
+func TestExchangeRatesDaily(t *testing.T) {
+	rates := NewExchangeRates()
+	rates.daily["USD"] = []dateRate{
+		{date: date(2024, 1, 1), rate: 0.78},
+		{date: date(2024, 6, 1), rate: 0.80},
+		{date: date(2024, 12, 1), rate: 0.82},
+	}
+
+	// Exact date match
+	gbp, ok := rates.ToGBP(100, "USD", date(2024, 6, 1))
+	if !ok {
+		t.Fatal("expected rate")
+	}
+	assertClose(t, "exact date", gbp, 80)
+
+	// Between dates - uses earlier rate
+	gbp, _ = rates.ToGBP(100, "USD", date(2024, 8, 15))
+	assertClose(t, "between dates", gbp, 80)
+
+	// After all dates - uses latest
+	gbp, _ = rates.ToGBP(100, "USD", date(2025, 3, 1))
+	assertClose(t, "after all dates", gbp, 82)
+
+	// USDT uses USD rate
+	gbp, _ = rates.ToGBP(100, "USDT", date(2024, 6, 1))
+	assertClose(t, "USDT daily", gbp, 80)
 }
