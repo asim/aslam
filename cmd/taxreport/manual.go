@@ -13,9 +13,9 @@ import (
 //
 // Format:
 //
-//	date,type,asset,quantity,total_gbp,notes
-//	2024-03-15,buy,BTC,0.5,15000,Original purchase from Binance
-//	2023-01-10,buy,BNB,30,3000,Purchased on Binance
+//	date,type,asset,quantity,total_gbp,fee_gbp,notes
+//	2024-03-15,buy,BTC,0.5,15000,50,Original purchase from Binance
+//	2023-01-10,buy,BNB,30,3000,10,Purchased on Binance
 func parseManual(filepath string) ([]Transaction, []string, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
@@ -46,7 +46,7 @@ func parseManual(filepath string) ([]Transaction, []string, error) {
 	required := []string{"date", "type", "asset", "quantity", "total_gbp"}
 	for _, r := range required {
 		if _, ok := cols[r]; !ok {
-			return nil, nil, fmt.Errorf("missing required column: %q (expected: date,type,asset,quantity,total_gbp,notes)", r)
+			return nil, nil, fmt.Errorf("missing required column: %q (expected: date,type,asset,quantity,total_gbp,fee_gbp,notes)", r)
 		}
 	}
 
@@ -55,6 +55,7 @@ func parseManual(filepath string) ([]Transaction, []string, error) {
 	assetCol := cols["asset"]
 	qtyCol := cols["quantity"]
 	gbpCol := cols["total_gbp"]
+	feeCol, hasFee := cols["fee_gbp"]
 	notesCol, hasNotes := cols["notes"]
 
 	var txns []Transaction
@@ -94,6 +95,17 @@ func parseManual(filepath string) ([]Transaction, []string, error) {
 		}
 		totalGBP = math.Abs(totalGBP)
 
+		var feeGBP float64
+		if hasFee && len(row) > feeCol {
+			feeGBP, _ = parseNumber(row[feeCol])
+			feeGBP = math.Abs(feeGBP)
+		}
+
+		// For buys, include the fee in the total cost (allowable acquisition cost)
+		if txType == "buy" {
+			totalGBP += feeGBP
+		}
+
 		var notes string
 		if hasNotes && len(row) > notesCol {
 			notes = strings.TrimSpace(row[notesCol])
@@ -101,7 +113,7 @@ func parseManual(filepath string) ([]Transaction, []string, error) {
 
 		txns = append(txns, Transaction{
 			Date: ts, Type: txType, Asset: asset, Quantity: qty,
-			TotalGBP: totalGBP, FeeGBP: 0, Source: "manual", Notes: notes,
+			TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "manual", Notes: notes,
 		})
 	}
 
