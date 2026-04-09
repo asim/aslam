@@ -14,6 +14,7 @@ func main() {
 	taxYear := flag.Int("year", time.Now().Year()-1, "tax year (6 Apr YEAR to 5 Apr YEAR+1)")
 	usdGBP := flag.Float64("usd-gbp", 0, "fixed USD to GBP rate (e.g. 0.79) for USDT/USDC trades")
 	ratesFile := flag.String("rates", "", "CSV file with daily exchange rates (columns: date,USD,EUR,...)")
+	csvOut := flag.String("csv", "", "export disposals to CSV file for accountant")
 	flag.Parse()
 
 	if *coinbaseFile == "" && *krakenFile == "" {
@@ -101,4 +102,12 @@ func main() {
 
 	disposals := calculateCapitalGains(allTxns, yearStart, yearEnd)
 	printReport(disposals, *taxYear, yearStart, yearEnd, allTxns, warnings)
+
+	if *csvOut != "" {
+		if err := exportCSV(*csvOut, disposals, *taxYear); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing CSV: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "Exported %d disposals to %s\n", len(disposals), *csvOut)
+	}
 }
