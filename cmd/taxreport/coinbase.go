@@ -96,6 +96,8 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 	notesCol, hasNotes := cols["notes"]
 
 	convertRe := regexp.MustCompile(`(?i)([\d,.]+)\s+(\w+)\s+to\s+([\d,.]+)\s+(\w+)`)
+	// Matches "Sold X USDT for Y USDC" or "Bought X ETH for Y USDC" in Advanced Trade notes
+	advTradeRe := regexp.MustCompile(`(?i)(?:Sold|Bought)\s+([\d,.]+)\s+(\w+)\s+for\s+([\d,.]+)\s+(\w+)`)
 
 	var txns []Transaction
 	var warnings []string
@@ -185,11 +187,41 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 				Date: ts, Type: "buy", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
 			})
+			// For advanced trades, create counter-party disposal if paid with crypto
+			// e.g. "Bought 1.5 ETH for 4500 USDC" → also create USDC sell
+			if txTypeLower == "advanced trade buy" {
+				if m := advTradeRe.FindStringSubmatch(notes); m != nil {
+					counterQty, _ := strconv.ParseFloat(strings.ReplaceAll(m[3], ",", ""), 64)
+					counterAsset := strings.ToUpper(m[4])
+					if counterQty > 0 && !isFiat(counterAsset) {
+						txns = append(txns, Transaction{
+							Date: ts, Type: "sell", Asset: counterAsset, Quantity: counterQty,
+							TotalGBP: totalGBP, FeeGBP: 0, Source: "coinbase",
+							Notes: fmt.Sprintf("Exchanged for %s: %s", asset, notes),
+						})
+					}
+				}
+			}
 		case "sell", "advanced trade sell":
 			txns = append(txns, Transaction{
 				Date: ts, Type: "sell", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
 			})
+			// For advanced trades, create counter-party acquisition if received crypto
+			// e.g. "Sold 3851 USDT for 3854 USDC" → also create USDC buy
+			if txTypeLower == "advanced trade sell" {
+				if m := advTradeRe.FindStringSubmatch(notes); m != nil {
+					counterQty, _ := strconv.ParseFloat(strings.ReplaceAll(m[3], ",", ""), 64)
+					counterAsset := strings.ToUpper(m[4])
+					if counterQty > 0 && !isFiat(counterAsset) {
+						txns = append(txns, Transaction{
+							Date: ts, Type: "buy", Asset: counterAsset, Quantity: counterQty,
+							TotalGBP: totalGBP, FeeGBP: 0, Source: "coinbase",
+							Notes: fmt.Sprintf("Received from %s sale: %s", asset, notes),
+						})
+					}
+				}
+			}
 		case "convert":
 			// Disposal of the FROM asset
 			txns = append(txns, Transaction{
