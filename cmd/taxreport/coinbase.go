@@ -84,8 +84,15 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 	if !hasFee {
 		feeCol, hasFee = cols["fees"]
 	}
+	// Handle column name variations across Coinbase export versions
 	spotCol, hasSpot := cols["spot price at transaction"]
+	if !hasSpot {
+		spotCol, hasSpot = cols["price at transaction"]
+	}
 	spotCurrCol, hasSpotCurr := cols["spot price currency"]
+	if !hasSpotCurr {
+		spotCurrCol, hasSpotCurr = cols["price currency"]
+	}
 	notesCol, hasNotes := cols["notes"]
 
 	convertRe := regexp.MustCompile(`(?i)([\d,.]+)\s+(\w+)\s+to\s+([\d,.]+)\s+(\w+)`)
@@ -103,8 +110,10 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 		txType := strings.TrimSpace(row[typeCol])
 		asset := strings.TrimSpace(strings.ToUpper(row[assetCol]))
 
-		switch strings.ToLower(txType) {
-		case "buy", "sell", "convert":
+		txTypeLower := strings.ToLower(txType)
+		switch txTypeLower {
+		case "buy", "sell", "convert",
+			"advanced trade buy", "advanced trade sell":
 		default:
 			if txType != "" {
 				warnings = append(warnings, fmt.Sprintf("Coinbase line %d: skipped %q for %s", i+1, txType, asset))
@@ -170,13 +179,13 @@ func parseCoinbaseStandard(records [][]string, headerIdx int, cols map[string]in
 			notes = strings.TrimSpace(row[notesCol])
 		}
 
-		switch strings.ToLower(txType) {
-		case "buy":
+		switch txTypeLower {
+		case "buy", "advanced trade buy":
 			txns = append(txns, Transaction{
 				Date: ts, Type: "buy", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
 			})
-		case "sell":
+		case "sell", "advanced trade sell":
 			txns = append(txns, Transaction{
 				Date: ts, Type: "sell", Asset: asset, Quantity: qty,
 				TotalGBP: totalGBP, FeeGBP: feeGBP, Source: "coinbase", Notes: notes,
@@ -326,6 +335,10 @@ func parseCoinbasePro(records [][]string, headerIdx int, cols map[string]int, ra
 }
 
 func parseTimestamp(s string) (time.Time, error) {
+	// Strip trailing timezone names (e.g. "UTC") - time.Parse needs explicit layout
+	s = strings.TrimSuffix(s, " UTC")
+	s = strings.TrimSuffix(s, " GMT")
+
 	formats := []string{
 		time.RFC3339,
 		time.RFC3339Nano,
