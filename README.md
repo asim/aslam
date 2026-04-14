@@ -1,6 +1,6 @@
-# Aslam
+# Nasir
 
-A personal assistant for the family.
+A personal assistant for the family. *Nasir* is Arabic for "helper".
 
 ## What is this?
 
@@ -44,37 +44,37 @@ This is a centralised repository of knowledge, thoughts, and information for the
 
 ```bash
 # Clone
-git clone git@github.com:asim/aslam.git
-cd aslam
+git clone git@github.com:asim/nasir.git
+cd nasir
 
 # Create encryption key
-mkdir -p ~/.aslam
-openssl rand -base64 32 > ~/.aslam/.key
-chmod 600 ~/.aslam/.key
+mkdir -p ~/.nasir
+openssl rand -base64 32 > ~/.nasir/.key
+chmod 600 ~/.nasir/.key
 
 # Create .env file
 cat > .env << EOF
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
+GOOGLE_REDIRECT_URI=https://nasir.org/auth/callback
 ALLOWED_EMAILS=your@email.com
 BRAVE_API_KEY=your-brave-api-key
 EOF
 chmod 600 .env
 
 # Build and run
-go build -o aslam .
-./aslam
+go build -o nasir .
+./nasir
 ```
 
 ### Systemd Service
 
 ```bash
-sudo cp scripts/aslam.service /etc/systemd/system/
+sudo cp scripts/nasir.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable aslam
-sudo systemctl start aslam
+sudo systemctl enable nasir
+sudo systemctl start nasir
 ```
 
 ### Email Setup (Optional)
@@ -108,7 +108,7 @@ The assistant has access to these tools:
 - **reminder** - Search Islamic sources (Quran, Hadith)
 - **wikipedia** - Search Wikipedia for factual information
 - **www** - Web search via Brave Search API
-- **email_check** - Check assistant's inbox (assistant@aslam.org)
+- **email_check** - Check assistant's inbox (assistant@nasir.org)
 - **email_send** - Send email from assistant's address
 
 ## Trust Model
@@ -116,7 +116,7 @@ The assistant has access to these tools:
 The assistant operates on a levelled trust model. Access to personal accounts is earned over time as the system proves reliable and secure.
 
 ### Level 0: Sandbox (Current)
-- Assistant has its own identity (assistant@aslam.org)
+- Assistant has its own identity (assistant@nasir.org)
 - Own email inbox, cannot access user accounts
 - Users forward emails to assistant when they want it involved
 - Safe to experiment - assistant can't touch your stuff

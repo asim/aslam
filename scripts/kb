@@ -1,32 +1,32 @@
 #!/bin/bash
-# Aslam Knowledge Base CLI
+# Nasir Knowledge Base CLI
 # Usage: ./kb <command> [args]
 
 set -e
 
-DB_PATH="${ASLAM_DB:-$HOME/.aslam/aslam.db}"
+DB_PATH="${NASIR_DB:-$HOME/.nasir/nasir.db}"
 DB_DIR=$(dirname "$DB_PATH")
 
 # Ensure directory exists
 mkdir -p "$DB_DIR"
 
 # Check for passphrase
-if [ -z "$ASLAM_KEY" ]; then
-    echo "ASLAM_KEY environment variable not set."
-    echo "Export it with: export ASLAM_KEY='your-passphrase'"
+if [ -z "$NASIR_KEY" ]; then
+    echo "NASIR_KEY environment variable not set."
+    echo "Export it with: export NASIR_KEY='your-passphrase'"
     exit 1
 fi
 
 run_sql() {
     sqlcipher "$DB_PATH" <<EOF | grep -v '^ok$'
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 $1
 EOF
 }
 
 run_sql_pretty() {
     sqlcipher -header -column "$DB_PATH" <<EOF | grep -v '^ok$' | grep -v '^--$'
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 $1
 EOF
 }
@@ -39,32 +39,32 @@ case "${1:-help}" in
         fi
         SCRIPT_DIR=$(dirname "$0")
         sqlcipher "$DB_PATH" <<EOF
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 $(cat "$SCRIPT_DIR/schema.sql")
 EOF
         echo "Database initialized at $DB_PATH"
         ;;
-    
+
     add)
         TYPE="$2"
         TITLE="$3"
         CONTENT="$4"
         METADATA="${5:-{}}"
-        
+
         if [ -z "$TYPE" ] || [ -z "$TITLE" ]; then
             echo "Usage: kb add <type> <title> [content] [metadata]"
             echo "Types: thought, project, credential, contact, document, decision, instruction, note"
             exit 1
         fi
-        
+
         # Escape single quotes
         TITLE_ESC=$(echo "$TITLE" | sed "s/'/''/g")
         CONTENT_ESC=$(echo "$CONTENT" | sed "s/'/''/g")
         METADATA_ESC=$(echo "$METADATA" | sed "s/'/''/g")
-        
+
         run_sql "INSERT INTO entries (type, title, content, metadata) VALUES ('$TYPE', '$TITLE_ESC', '$CONTENT_ESC', '$METADATA_ESC'); SELECT last_insert_rowid();"
         ;;
-    
+
     search)
         QUERY="$2"
         if [ -z "$QUERY" ]; then
@@ -74,7 +74,7 @@ EOF
         QUERY_ESC=$(echo "$QUERY" | sed "s/'/''/g")
         run_sql_pretty "SELECT e.id, e.type, e.title, substr(e.content, 1, 50) as preview, e.created_at FROM entries e JOIN entries_fts fts ON e.id = fts.docid WHERE entries_fts MATCH '$QUERY_ESC' ORDER BY e.created_at DESC;"
         ;;
-    
+
     list)
         TYPE="$2"
         if [ -n "$TYPE" ]; then
@@ -84,7 +84,7 @@ EOF
             run_sql_pretty "SELECT id, type, title, substr(content, 1, 50) as preview, created_at FROM entries ORDER BY created_at DESC LIMIT 50;"
         fi
         ;;
-    
+
     get)
         ID="$2"
         if [ -z "$ID" ]; then
@@ -92,11 +92,11 @@ EOF
             exit 1
         fi
         sqlcipher -line "$DB_PATH" <<EOF | grep -v '^[[:space:]]*ok = ok$'
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 SELECT * FROM entries WHERE id=$ID;
 EOF
         ;;
-    
+
     update)
         ID="$2"
         FIELD="$3"
@@ -109,7 +109,7 @@ EOF
         run_sql "UPDATE entries SET $FIELD='$VALUE_ESC', updated_at=CURRENT_TIMESTAMP WHERE id=$ID;"
         echo "Updated entry $ID"
         ;;
-    
+
     delete)
         ID="$2"
         if [ -z "$ID" ]; then
@@ -119,7 +119,7 @@ EOF
         run_sql "DELETE FROM entries WHERE id=$ID;"
         echo "Deleted entry $ID"
         ;;
-    
+
     tag)
         ID="$2"
         TAG="$3"
@@ -131,7 +131,7 @@ EOF
         run_sql "INSERT OR IGNORE INTO tags (name) VALUES ('$TAG_ESC'); INSERT OR IGNORE INTO entry_tags (entry_id, tag_id) SELECT $ID, id FROM tags WHERE name='$TAG_ESC';"
         echo "Tagged entry $ID with '$TAG'"
         ;;
-    
+
     tags)
         ID="$2"
         if [ -n "$ID" ]; then
@@ -140,7 +140,7 @@ EOF
             run_sql_pretty "SELECT name, (SELECT COUNT(*) FROM entry_tags WHERE tag_id = tags.id) as count FROM tags ORDER BY count DESC;"
         fi
         ;;
-    
+
     bytag)
         TAG="$2"
         if [ -z "$TAG" ]; then
@@ -150,28 +150,28 @@ EOF
         TAG_ESC=$(echo "$TAG" | sed "s/'/''/g")
         run_sql_pretty "SELECT e.id, e.type, e.title, e.created_at FROM entries e JOIN entry_tags et ON e.id = et.entry_id JOIN tags t ON et.tag_id = t.id WHERE t.name = '$TAG_ESC' ORDER BY e.created_at DESC;"
         ;;
-    
+
     sql)
         shift
         run_sql "$*"
         ;;
-    
+
     shell)
         sqlcipher "$DB_PATH" <<EOF
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 EOF
         ;;
-    
+
     export)
         # Export to JSON (for backup)
         sqlcipher -json "$DB_PATH" <<EOF
-PRAGMA key='$ASLAM_KEY';
+PRAGMA key='$NASIR_KEY';
 SELECT * FROM entries;
 EOF
         ;;
-    
+
     help|*)
-        echo "Aslam Knowledge Base"
+        echo "Nasir Knowledge Base"
         echo ""
         echo "Usage: kb <command> [args]"
         echo ""
@@ -195,7 +195,7 @@ EOF
         echo "Types: thought, project, credential, contact, document, decision, instruction, note"
         echo ""
         echo "Environment:"
-        echo "  ASLAM_KEY               Database passphrase (required)"
-        echo "  ASLAM_DB                Database path (default: ~/.aslam/aslam.db)"
+        echo "  NASIR_KEY               Database passphrase (required)"
+        echo "  NASIR_DB                Database path (default: ~/.nasir/nasir.db)"
         ;;
 esac

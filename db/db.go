@@ -43,20 +43,20 @@ type Session struct {
 
 // Init initializes the database connection
 func Init() error {
-	dbKey := os.Getenv("ASLAM_KEY")
+	dbKey := os.Getenv("NASIR_KEY")
 	if dbKey == "" {
-		keyPath := filepath.Join(os.Getenv("HOME"), ".aslam", ".key")
+		keyPath := filepath.Join(os.Getenv("HOME"), ".nasir", ".key")
 		if data, err := os.ReadFile(keyPath); err == nil {
 			dbKey = strings.TrimSpace(string(data))
 		}
 	}
 	if dbKey == "" {
-		return fmt.Errorf("ASLAM_KEY not set and ~/.aslam/.key not found")
+		return fmt.Errorf("NASIR_KEY not set and ~/.nasir/.key not found")
 	}
 
-	dbPath := os.Getenv("ASLAM_DB")
+	dbPath := os.Getenv("NASIR_DB")
 	if dbPath == "" {
-		dbPath = filepath.Join(os.Getenv("HOME"), ".aslam", "aslam.db")
+		dbPath = filepath.Join(os.Getenv("HOME"), ".nasir", "nasir.db")
 	}
 
 	encodedKey := url.QueryEscape(dbKey)

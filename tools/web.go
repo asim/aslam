@@ -26,7 +26,7 @@ func FetchURL(url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Aslam/1.0)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Nasir/1.0)")
 
 	resp, err := client.Do(req)
 	if err != nil {

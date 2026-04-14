@@ -156,7 +156,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "email_check",
-			Description: "Check the assistant's email inbox (assistant@aslam.org). Returns recent emails with sender, subject, and body. Use this when the user asks about emails or wants to check their inbox.",
+			Description: "Check the assistant's email inbox (assistant@nasir.org). Returns recent emails with sender, subject, and body. Use this when the user asks about emails or wants to check their inbox.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -173,7 +173,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "email_send",
-			Description: "Send an email from assistant@aslam.org. Use this when the user wants to send an email or reply to someone.",
+			Description: "Send an email from assistant@nasir.org. Use this when the user wants to send an email or reply to someone.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{

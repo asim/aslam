@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"aslam/db"
-	"aslam/tools"
+	"nasir/db"
+	"nasir/tools"
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 )
@@ -169,7 +169,7 @@ func main() {
 	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
-	log.Printf("Aslam running on http://localhost:%s", port)
+	log.Printf("Nasir running on http://localhost:%s", port)
 
 	// Start background workers
 	startTaskProcessor()  // Handles pending tasks from any channel
@@ -309,8 +309,8 @@ func loadEnv() {
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Redirect www to non-www
-		if r.Host == "www.aslam.org" {
-			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
+		if r.Host == "www.nasir.org" {
+			http.Redirect(w, r, "https://nasir.org"+r.URL.Path, http.StatusMovedPermanently)
 			return
 		}
 
@@ -494,7 +494,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		Name:     "session",
 		Value:    token,
 		Path:     "/",
-		Domain:   "aslam.org",
+		Domain:   "nasir.org",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
@@ -515,7 +515,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "session",
 		Path:   "/",
-		Domain: "aslam.org",
+		Domain: "nasir.org",
 		MaxAge: -1,
 	})
 
@@ -838,7 +838,7 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 
 // AI functions
 
-var systemPromptTemplate = `You are Aslam, a personal assistant for the Aslam family.
+var systemPromptTemplate = `You are Nasir, a personal assistant for the family.
 
 Be concise, practical, and direct. Answer questions efficiently without unnecessary preamble.
 
@@ -859,7 +859,7 @@ When asked to send information about a topic, USE the research tools first (www,
 
 When sending emails, use this format:
 - Keep it concise and informative
-- Sign off with: "Best regards,\nAslam Assistant"
+- Sign off with: "Best regards,\nNasir Assistant"
 
 When responding to emails (via email reply), you're having a conversation - respond naturally like you would in chat. Don't summarize or describe what happened, just reply to what they said.
 
@@ -878,13 +878,13 @@ DO:
 
 ---
 
-ABOUT YOURSELF (for when users ask about Aslam, its development, or capabilities):
+ABOUT YOURSELF (for when users ask about Nasir, its development, or capabilities):
 
 %s
 
 ---
 
-DEVELOPMENT GUIDE (for technical discussions about extending Aslam):
+DEVELOPMENT GUIDE (for technical discussions about extending Nasir):
 
 %s`
 
@@ -1269,7 +1269,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		{
 			"Name":        "Gmail (Assistant Inbox)",
 			"Key":         "gmail",
-			"Description": "Email via IMAP/SMTP for assistant@aslam.org",
+			"Description": "Email via IMAP/SMTP for assistant@nasir.org",
 			"Configured":  os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != "",
 			"Enabled":     os.Getenv("GMAIL_USER") != "" && db.GetSetting("gmail_enabled") != "false",
 			"Toggleable":  true,
