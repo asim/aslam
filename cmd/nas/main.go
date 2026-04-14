@@ -50,9 +50,9 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`Nasir CLI - Family Assistant
+	fmt.Println(`nas - Nasir CLI
 
-Usage: nasir-cli <command> [args]
+Usage: nas <command> [args]
 
 Commands:
   chat [id]          Start or continue a chat (interactive mode)
@@ -173,7 +173,7 @@ func handleChats() {
 
 func handleSearch(args []string) {
 	if len(args) == 0 {
-		fmt.Println("Usage: nasir-cli search <query>")
+		fmt.Println("Usage: nas search <query>")
 		os.Exit(1)
 	}
 
@@ -220,7 +220,7 @@ func handleNewChat() {
 		os.Exit(1)
 	}
 	fmt.Printf("Created conversation #%d\n", convID)
-	fmt.Printf("Start chatting with: nasir-cli chat %d\n", convID)
+	fmt.Printf("Start chatting with: nas chat %d\n", convID)
 }
 
 func createConversation() (int64, error) {

@@ -26,7 +26,7 @@ nasir/
 │   ├── nasir.service # Systemd service file
 │   └── kb            # CLI tool for database operations
 ├── cmd/
-│   ├── nasir-cli/    # Command line client
+│   ├── nas/          # Command line client (binary: nas)
 │   └── taxreport/    # HMRC capital gains report tool
 ├── ARCHITECTURE.md   # System architecture docs
 ├── .env              # Configuration (not committed)
