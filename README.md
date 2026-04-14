@@ -1,6 +1,8 @@
 # Nasir
 
-A personal assistant for the family. *Nasir* is Arabic for "helper".
+A personal assistant for the family. 
+
+*Nasir* is Arabic for "helper".
 
 ## What is this?
 
@@ -116,7 +118,7 @@ The assistant has access to these tools:
 The assistant operates on a levelled trust model. Access to personal accounts is earned over time as the system proves reliable and secure.
 
 ### Level 0: Sandbox (Current)
-- Assistant has its own identity (assistant@nasir.org)
+- Assistant has its own identity (assistant@yourdomain.com)
 - Own email inbox, cannot access user accounts
 - Users forward emails to assistant when they want it involved
 - Safe to experiment - assistant can't touch your stuff
