@@ -110,7 +110,7 @@ The assistant has access to these tools:
 - **reminder** - Search Islamic sources (Quran, Hadith)
 - **wikipedia** - Search Wikipedia for factual information
 - **www** - Web search via Brave Search API
-- **email_check** - Check assistant's inbox (assistant@nasir.org)
+- **email_check** - Check assistant's inbox (assistant@yourdomain.com)
 - **email_send** - Send email from assistant's address
 
 ## Trust Model
