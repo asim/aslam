@@ -18,7 +18,7 @@
 *.sqlite3
 
 # Binary
-/aslam
+/nasir
 /main
-/aslam-cli
+/nas
 /taxreport

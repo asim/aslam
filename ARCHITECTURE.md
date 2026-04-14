@@ -1,4 +1,4 @@
-# Aslam Architecture
+# Nasir Architecture
 
 ## Core Principle
 
@@ -111,11 +111,11 @@ If transferring to someone else:
 3. Share access to:
    - This server (exe.dev VM)
    - Password manager containing service passwords
-   - Domain registrar for aslam.org
+   - Domain registrar for nasir.org
    - GitHub repo for code
 4. They should update `.env` with their own API keys if needed
 
 ### Database Location
 
-All data is in `~/.aslam/aslam.db`, encrypted with the key in `~/.aslam/.key`.
+All data is in `~/.nasir/nasir.db`, encrypted with the key in `~/.nasir/.key`.
 Backup both files to preserve all data.

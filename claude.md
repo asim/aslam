@@ -1,13 +1,13 @@
-# Aslam - Development Guide
+# Nasir - Development Guide
 
-Personal assistant for the Aslam family. Hosted at [aslam.org](https://aslam.org).
+Personal assistant for the family. Hosted at [nasir.org](https://nasir.org). Nasir is Arabic for "helper".
 
 ## Architecture
 
 See `ARCHITECTURE.md` for full details. Key principle: **single agent, multiple channels**.
 
 ```
-aslam/
+nasir/
 ├── main.go           # HTTP server, routes, Anthropic integration
 ├── email_worker.go   # Email channel (IMAP polling)
 ├── task_processor.go # Unified task queue processor
@@ -23,15 +23,16 @@ aslam/
 │   └── search.go     # Web search (Brave API)
 ├── html/             # HTML templates (embedded at build)
 ├── scripts/
-│   ├── aslam.service # Systemd service file
+│   ├── nasir.service # Systemd service file
 │   └── kb            # CLI tool for database operations
 ├── cmd/
-│   └── aslam-cli/    # Command line client
+│   ├── nas/          # Command line client (binary: nas)
+│   └── taxreport/    # HMRC capital gains report tool
 ├── ARCHITECTURE.md   # System architecture docs
 ├── .env              # Configuration (not committed)
-└── ~/.aslam/
+└── ~/.nasir/
     ├── .key          # Database encryption key
-    └── aslam.db      # Encrypted SQLite database
+    └── nasir.db      # Encrypted SQLite database
 ```
 
 ## Key Files
@@ -59,7 +60,7 @@ aslam/
 Templates are embedded at build time (`//go:embed`). After ANY change:
 
 ```bash
-cd /home/exedev/aslam && go build -o aslam . && sudo systemctl restart aslam
+cd /home/exedev/nasir && go build -o nasir . && sudo systemctl restart nasir
 ```
 
 ## Environment Variables
@@ -69,7 +70,7 @@ Required in `.env`:
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
+GOOGLE_REDIRECT_URI=https://nasir.org/auth/callback
 ALLOWED_EMAILS=email1@example.com,email2@example.com
 ```
 
@@ -88,8 +89,8 @@ GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
 
 - Google OAuth with allowed email whitelist
 - Sessions stored in DB, 30-day expiry
-- Cookie set on `aslam.org` domain (covers www subdomain)
-- www.aslam.org redirects to aslam.org
+- Cookie set on `nasir.org` domain (covers www subdomain)
+- www.nasir.org redirects to nasir.org
 
 ## Tools System
 
@@ -120,13 +121,13 @@ Requires `BRAVE_API_KEY` in `.env`.
 
 ```bash
 # View logs
-sudo journalctl -u aslam -f
+sudo journalctl -u nasir -f
 
 # Restart service
-sudo systemctl restart aslam
+sudo systemctl restart nasir
 
 # Query database
-export ASLAM_KEY=$(cat ~/.aslam/.key)
+export NASIR_KEY=$(cat ~/.nasir/.key)
 ./scripts/kb sql "SELECT * FROM conversations LIMIT 5;"
 
 # List sessions
@@ -141,7 +142,7 @@ None currently.
 
 See README.md for full details. Summary:
 
-- **Level 0 (current):** Assistant has own email (assistant@aslam.org), no access to user accounts
+- **Level 0 (current):** Assistant has own email (assistant@nasir.org), no access to user accounts
 - **Level 1:** Read user's calendar (requires OAuth)
 - **Level 2:** Read user's email (requires OAuth + security hardening)
 - **Level 3:** Send as user, create events (requires confirmation flows + audit)

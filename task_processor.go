@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"aslam/db"
-	"aslam/tools"
+	"nasir/db"
+	"nasir/tools"
 )
 
 // startTaskProcessor runs on startup and periodically to process pending tasks
@@ -171,7 +171,7 @@ func processEmailTask(task db.PendingTask) error {
 	}
 
 	// Log outbound email
-	db.LogEmail(outboundMsgID, meta.ThreadID, "outbound", "assistant@aslam.org", meta.From, replySubject, response, "processed")
+	db.LogEmail(outboundMsgID, meta.ThreadID, "outbound", "assistant@nasir.org", meta.From, replySubject, response, "processed")
 
 	// Create thread mapping for outbound message so replies to it continue the conversation
 	db.CreateEmailThread(outboundMsgID, task.ConversationID, outboundMsgID)

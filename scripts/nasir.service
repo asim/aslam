@@ -1,12 +1,12 @@
 [Unit]
-Description=Aslam Knowledge Base
+Description=Nasir Knowledge Base
 After=network.target
 
 [Service]
 Type=simple
 User=exedev
-WorkingDirectory=/home/exedev/aslam
-ExecStart=/home/exedev/aslam/aslam
+WorkingDirectory=/home/exedev/nasir
+ExecStart=/home/exedev/nasir/nasir
 Restart=always
 RestartSec=5
 Environment=HOME=/home/exedev

@@ -70,7 +70,7 @@ func getWikiSummary(title string) (string, error) {
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, _ := http.NewRequest("GET", summaryURL, nil)
-	req.Header.Set("User-Agent", "Aslam/1.0 (personal assistant)")
+	req.Header.Set("User-Agent", "Nasir/1.0 (personal assistant)")
 
 	resp, err := client.Do(req)
 	if err != nil {

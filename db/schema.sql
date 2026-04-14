@@ -1,4 +1,4 @@
--- Aslam Knowledge Base Schema
+-- Nasir Knowledge Base Schema
 -- Database is encrypted with SQLCipher (AES-256)
 
 -- Main entries table

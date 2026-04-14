@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"aslam/db"
-	"aslam/tools"
+	"nasir/db"
+	"nasir/tools"
 )
 
 var emailAllowedSenders map[string]bool

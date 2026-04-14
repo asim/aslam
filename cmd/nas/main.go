@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-var baseURL = getEnv("ASLAM_URL", "http://localhost:8000")
-var apiKey = os.Getenv("ASLAM_API_KEY")
+var baseURL = getEnv("NASIR_URL", "http://localhost:8000")
+var apiKey = os.Getenv("NASIR_API_KEY")
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -50,9 +50,9 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`Aslam CLI - Family Assistant
+	fmt.Println(`nas - Nasir CLI
 
-Usage: aslam-cli <command> [args]
+Usage: nas <command> [args]
 
 Commands:
   chat [id]          Start or continue a chat (interactive mode)
@@ -63,8 +63,8 @@ Commands:
   help               Show this help
 
 Environment:
-  ASLAM_API_KEY      API key for authentication
-  ASLAM_URL          Base URL (default: http://localhost:8000)`)
+  NASIR_API_KEY      API key for authentication
+  NASIR_URL          Base URL (default: http://localhost:8000)`)
 }
 
 func handleChat(args []string) {
@@ -173,7 +173,7 @@ func handleChats() {
 
 func handleSearch(args []string) {
 	if len(args) == 0 {
-		fmt.Println("Usage: aslam-cli search <query>")
+		fmt.Println("Usage: nas search <query>")
 		os.Exit(1)
 	}
 
@@ -220,7 +220,7 @@ func handleNewChat() {
 		os.Exit(1)
 	}
 	fmt.Printf("Created conversation #%d\n", convID)
-	fmt.Printf("Start chatting with: aslam-cli chat %d\n", convID)
+	fmt.Printf("Start chatting with: nas chat %d\n", convID)
 }
 
 func createConversation() (int64, error) {
@@ -258,7 +258,7 @@ func sendMessage(convID int64, message string) (string, error) {
 	}
 
 	if result.Error != "" {
-		return "", fmt.Errorf(result.Error)
+		return "", fmt.Errorf("%s", result.Error)
 	}
 	return result.Response, nil
 }
