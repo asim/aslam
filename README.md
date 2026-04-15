@@ -1,38 +1,81 @@
 # Nasir
 
-An AI assistant for the family. 
+An AI assistant for the family.
 
 *Nasir* is Arabic for "helper".
 
 ## What is this?
 
-This is a centralised repository of knowledge, thoughts, and information for the family. It exists to solve a simple problem: life accumulates information across too many places—email, docs, notes, browser bookmarks, memory—and none of it is searchable, organised, or transferable.
+Nasir is, first and foremost, an **AI assistant**. You chat with it — over the web, over email, or via the CLI — and it helps you get things done: answering questions, researching topics, drafting emails, looking things up.
+
+Everything you ever ask it, and everything you ever tell it to remember, is quietly captured into an encrypted, **searchable knowledge base** running in the background. Over time, that knowledge base becomes a second brain: not just a record of conversations with an AI, but the place where passwords, credentials, contacts, decisions, and important notes all live — searchable in one place.
+
+You don't have to go back to the assistant to recover what you know. You can just search for it.
+
+## How it works
+
+```
+   ┌──────────────────────────────────┐
+   │       Ask Nasir (chat)           │
+   │   - Web, email, CLI, API         │
+   └──────────────┬───────────────────┘
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │         AI Assistant              │
+   │   Claude + tools (search, fetch,  │
+   │   remember, recall, vault, …)     │
+   └──────────────┬───────────────────┘
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │      Knowledge Base (SQLCipher)   │
+   │                                   │
+   │   chats · messages · entries      │
+   │   notes · URLs · vault items      │
+   │   credentials · contacts · docs   │
+   └──────────────┬───────────────────┘
+                  │
+                  ▼
+   ┌──────────────────────────────────┐
+   │            Search                 │
+   │   One box across everything you   │
+   │   have ever said, saved, or       │
+   │   stored.                         │
+   └──────────────────────────────────┘
+```
+
+The assistant is the front door. The knowledge base runs silently behind it.
 
 ## Why?
 
 - **Gmail is identity, not knowledge.** 10+ years of email is a graveyard, not a resource.
 - **Shared docs are flat.** A Google Doc works for lists, but not for interconnected knowledge.
 - **Memory is unreliable.** Things get forgotten. Context gets lost.
+- **AI chats are ephemeral.** A great answer from ChatGPT is useless if you can't find it next week.
 - **Continuity matters.** If I die tomorrow, what do people need to know?
 
-## What goes here?
+Nasir is the fix: a helper you can talk to *and* a searchable archive of every helpful thing it, or you, ever produced.
 
-- **Thoughts & ideas** — things worth remembering, half-formed or complete
-- **Projects** — what I'm working on, why, and where things stand
-- **Assets & accounts** — passwords, credentials, important accounts (encrypted)
-- **Contacts & relationships** — people, context, history
-- **Documents** — important files, records, references
-- **Decisions** — why certain choices were made
-- **Instructions** — how to do things that only I know how to do
+## What lives in the knowledge base?
+
+- **Chats** — every question you've ever asked and every answer given
+- **Notes & memories** — things you told Nasir to remember
+- **Fetched pages** — URLs the assistant has pulled and cached
+- **Vault items** — passwords, credentials, accounts, important contacts (encrypted at rest)
+- **Entries** — thoughts, projects, decisions, instructions, documents
+
+All of it indexed. All of it searchable from `/search`.
 
 ## Principles
 
-1. **Searchable** — if you can't find it, it doesn't exist
-2. **Structured** — tagged, categorised, linked
-3. **Secure** — sensitive data encrypted at rest
-4. **Simple** — easy to add, easy to retrieve
-5. **Shareable** — family can access what they need
-6. **Durable** — outlives any single service or platform
+1. **Assistant first** — the primary action is asking Nasir a question
+2. **Everything is captured** — conversations and memories flow into the knowledge base automatically
+3. **Searchable** — if you can't find it, it doesn't exist
+4. **Secure** — sensitive data encrypted at rest (SQLCipher / AES-256)
+5. **Simple** — easy to add, easy to retrieve
+6. **Shareable** — family can access what they need
+7. **Durable** — outlives any single service or platform
 
 ## Installation
 
@@ -96,22 +139,26 @@ To enable the assistant's own email inbox:
 ### First Run
 
 1. Visit your domain and log in with Google
-2. Go to `/admin` to document your service accounts
-3. Add any additional admins (family members)
-4. Start chatting or send an email to the assistant
+2. Start chatting from the home page — just type your question
+3. Use `/search` to find anything you've ever asked or saved
+4. Use `/vault` to store credentials and accounts
+5. Go to `/admin` to document service accounts and add family admins
 
 ## Tools
 
 The assistant has access to these tools:
 
-- **fetch** - Fetch URL content and save to memory
-- **recall** - Search memory/knowledge base
-- **remember** - Save notes to memory
-- **reminder** - Search Islamic sources (Quran, Hadith)
-- **wikipedia** - Search Wikipedia for factual information
-- **www** - Web search via Brave Search API
-- **email_check** - Check assistant's inbox (assistant@yourdomain.com)
-- **email_send** - Send email from assistant's address
+- **fetch** — Fetch URL content and save to memory
+- **recall** — Search memory/knowledge base
+- **remember** — Save notes to memory
+- **reminder** — Search Islamic sources (Quran, Hadith)
+- **wikipedia** — Search Wikipedia for factual information
+- **www** — Web search via Brave Search API
+- **email_check** — Check assistant's inbox
+- **email_send** — Send email from assistant's address
+- **vault_add / vault_search / vault_update** — Manage vault items
+
+Every tool call contributes to the knowledge base: fetched URLs are cached, remembered notes become searchable entries, vault writes become searchable vault items.
 
 ## Trust Model
 
@@ -121,7 +168,7 @@ The assistant operates on a levelled trust model. Access to personal accounts is
 - Assistant has its own identity (assistant@yourdomain.com)
 - Own email inbox, cannot access user accounts
 - Users forward emails to assistant when they want it involved
-- Safe to experiment - assistant can't touch your stuff
+- Safe to experiment — assistant can't touch your stuff
 
 ### Level 1: Read Calendar (Future)
 - Assistant can read your Google Calendar (read-only)
@@ -155,14 +202,16 @@ The assistant operates on a levelled trust model. Access to personal accounts is
 
 ## Purpose
 
-This exists for two reasons:
+Nasir exists for two reasons:
 
-**1. A second brain while alive**
-- Searchable, organised knowledge
-- Things that would otherwise be forgotten
-- Decisions documented, context preserved
+**1. A helpful assistant today**
+- An AI you can ask anything, over any channel
+- Tools that actually do things — fetch, search, remember, email
+- A conversation that isn't lost the moment you close the tab
 
-**2. A digital estate when gone**
+**2. A second brain and digital estate**
+
+Because every conversation and every memory lands in the knowledge base, over time Nasir becomes the map of your digital life — and, when the time comes, the map that your family can follow.
 
 We live in a purely digital world. When someone dies, their family must navigate:
 - Multiple email accounts
@@ -172,7 +221,7 @@ We live in a purely digital world. When someone dies, their family must navigate
 - Passwords and credentials
 - Digital assets with real value
 
-This system aims to be the map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
+This system aims to be that map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
 
 > *"When a man dies, his deeds come to an end except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for him."*
 > — Prophet Muhammad ﷺ (Sahih Muslim)
@@ -181,4 +230,4 @@ This is the knowledge left behind.
 
 ---
 
-*A second brain, a family vault, a digital estate.*
+*A helper, a second brain, a family vault, a digital estate.*

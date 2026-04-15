@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -469,6 +470,87 @@ func SearchMessages(query string) ([]map[string]interface{}, error) {
 			"Title":          title,
 		})
 	}
+	return results, nil
+}
+
+// SearchAll runs a query across chats, entries, and vault items and returns a
+// unified list of results. Each result has a "Kind" field ("chat", "entry",
+// "vault") that the UI uses to render the right kind of link.
+//
+// This is the backbone of the knowledge base: anything the user has ever asked
+// the assistant, anything the assistant remembered, and anything stored in the
+// vault can be found with a single query.
+func SearchAll(query string) ([]map[string]interface{}, error) {
+	if strings.TrimSpace(query) == "" {
+		return nil, nil
+	}
+
+	var results []map[string]interface{}
+
+	// Chats (messages + conversation title)
+	if msgs, err := SearchMessages(query); err == nil {
+		for _, m := range msgs {
+			createdAt, _ := m["CreatedAt"].(time.Time)
+			results = append(results, map[string]interface{}{
+				"Kind":      "chat",
+				"Title":     m["Title"],
+				"Content":   m["Content"],
+				"Role":      m["Role"],
+				"URL":       fmt.Sprintf("/chat/%d", m["ConversationID"]),
+				"CreatedAt": createdAt,
+			})
+		}
+	}
+
+	// Entries (notes, remembered facts, fetched URLs)
+	if entries, err := SearchEntries(query); err == nil {
+		for _, e := range entries {
+			createdAt, _ := e["CreatedAt"].(time.Time)
+			typ, _ := e["Type"].(string)
+			results = append(results, map[string]interface{}{
+				"Kind":      "entry",
+				"Title":     e["Title"],
+				"Content":   e["Content"],
+				"Role":      typ,
+				"URL":       fmt.Sprintf("/entries/%d", e["ID"]),
+				"CreatedAt": createdAt,
+			})
+		}
+	}
+
+	// Vault items (credentials, accounts, contacts, instructions, documents)
+	if items, err := SearchVault(query); err == nil {
+		for _, v := range items {
+			// Build a short content snippet from the available fields.
+			parts := []string{}
+			if v.Description != "" {
+				parts = append(parts, v.Description)
+			}
+			if v.Details != "" {
+				parts = append(parts, v.Details)
+			}
+			if v.Notes != "" {
+				parts = append(parts, v.Notes)
+			}
+			snippet := strings.Join(parts, " · ")
+			results = append(results, map[string]interface{}{
+				"Kind":      "vault",
+				"Title":     v.Name,
+				"Content":   snippet,
+				"Role":      v.Category,
+				"URL":       fmt.Sprintf("/vault/edit/%d", v.ID),
+				"CreatedAt": v.UpdatedAt,
+			})
+		}
+	}
+
+	// Sort newest first.
+	sort.SliceStable(results, func(i, j int) bool {
+		ti, _ := results[i]["CreatedAt"].(time.Time)
+		tj, _ := results[j]["CreatedAt"].(time.Time)
+		return ti.After(tj)
+	})
+
 	return results, nil
 }
 

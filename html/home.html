@@ -6,17 +6,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Nasir</title>
     {{template "style"}}
+    <style>
+        .ask-hero {
+            padding: 40px 0 20px 0;
+            text-align: center;
+        }
+        .ask-hero h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .ask-hero p {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .ask-form {
+            display: flex;
+            gap: 8px;
+            max-width: 640px;
+            margin: 0 auto 12px auto;
+            align-items: flex-end;
+        }
+        .ask-form textarea {
+            flex: 1;
+            min-height: 52px;
+            max-height: 200px;
+            padding: 12px 14px;
+            resize: none;
+            font-size: 15px;
+            font-family: inherit;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+        }
+        .ask-form textarea:focus { outline: none; border-color: #999; }
+        .ask-form button {
+            height: 52px;
+            padding: 0 18px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .ask-form button:hover { background: #333; }
+        .ask-hint {
+            max-width: 640px;
+            margin: 0 auto 28px auto;
+            text-align: left;
+            color: #888;
+            font-size: 12px;
+        }
+        .ask-hint a { color: #666; }
+    </style>
 </head>
 <body>
     <div class="app">
         {{template "header"}}
         <main class="app-content">
-            <h2>Home</h2>
-            <p class="muted" style="margin-bottom: 20px">Family assistant</p>
+            <section class="ask-hero">
+                <h2>Ask Nasir</h2>
+                <p>Your family helper. Every question and answer is saved, searchable, forever.</p>
 
-            <form action="/chat/new" method="POST" style="margin-bottom: 30px">
-                <button type="submit" style="padding: 10px 16px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer;">+ New Chat</button>
-            </form>
+                <form class="ask-form" id="ask-form">
+                    <textarea id="ask-input" name="message" placeholder="Ask anything…" autofocus></textarea>
+                    <button type="submit">Ask</button>
+                </form>
+                <div class="ask-hint">
+                    Or <a href="/search">search</a> everything you've ever asked or saved · <a href="/vault">vault</a> · <a href="/chat">past chats</a>
+                </div>
+            </section>
 
             {{if .Conversations}}
             <h3 style="margin-bottom: 10px">Recent Chats</h3>
@@ -28,24 +89,62 @@
                 </li>
                 {{end}}
             </ul>
-            <script>
-            function timeAgo(timestamp) {
-                const seconds = Math.floor((Date.now() / 1000) - timestamp);
-                if (seconds < 60) return 'just now';
-                if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
-                if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
-                if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
-                return Math.floor(seconds / 604800) + 'w ago';
-            }
-            document.querySelectorAll('[data-time]').forEach(el => {
-                el.textContent = timeAgo(parseInt(el.dataset.time));
-            });
-            </script>
             {{else}}
-            <p class="muted">No chats yet.</p>
+            <p class="muted">No chats yet. Start by asking a question above.</p>
             {{end}}
         </main>
     </div>
+
+    <script>
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() / 1000) - timestamp);
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+            return Math.floor(seconds / 604800) + 'w ago';
+        }
+        document.querySelectorAll('[data-time]').forEach(el => {
+            el.textContent = timeAgo(parseInt(el.dataset.time));
+        });
+
+        // Ask form: create a new chat, then redirect to it with the message
+        // pre-queued so it auto-sends on load.
+        const askForm = document.getElementById('ask-form');
+        const askInput = document.getElementById('ask-input');
+        const askBtn = askForm.querySelector('button');
+
+        askInput.addEventListener('input', () => {
+            askInput.style.height = 'auto';
+            askInput.style.height = Math.min(askInput.scrollHeight, 200) + 'px';
+        });
+        askInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        askForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = askInput.value.trim();
+            if (!message) return;
+            askInput.disabled = true;
+            askBtn.disabled = true;
+            try {
+                const resp = await fetch('/api/chat/new', { method: 'POST' });
+                const data = await resp.json();
+                if (!data.id) throw new Error('Failed to start chat');
+                // Stash the pending question so chat.html auto-sends it.
+                try { sessionStorage.setItem('nasir_pending_q_' + data.id, message); } catch (_) {}
+                window.location = '/chat/' + data.id;
+            } catch (err) {
+                alert('Could not start chat: ' + err.message);
+                askInput.disabled = false;
+                askBtn.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>
 {{end}}
