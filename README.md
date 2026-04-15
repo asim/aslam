@@ -1,6 +1,6 @@
 # Nasir
 
-A personal assistant for the family. 
+An AI assistant for the family. 
 
 *Nasir* is Arabic for "helper".
 
