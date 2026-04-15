@@ -9,6 +9,24 @@
     <style>
         .loading { opacity: 0.5; }
         #search-btn:disabled { opacity: 0.5; }
+        .kind-tag {
+            display: inline-block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-right: 6px;
+            vertical-align: 1px;
+        }
+        .kind-chat  { background: #e8f0ff; color: #264a9e; }
+        .kind-entry { background: #eef7e8; color: #2d6b20; }
+        .kind-vault { background: #fdecec; color: #8a2020; }
+        .result-role {
+            font-size: 11px;
+            color: #888;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -16,9 +34,12 @@
         {{template "header"}}
         <main class="app-content">
             <h2>Search</h2>
+            <p class="muted" style="margin: -10px 0 16px 0; font-size: 12px;">
+                One box across every chat, note, remembered fact, fetched page and vault item.
+            </p>
 
             <form class="search-form" id="search-form">
-                <input type="text" name="q" id="search-input" value="{{.Query}}" placeholder="Search chats..." autofocus>
+                <input type="text" name="q" id="search-input" value="{{.Query}}" placeholder="Search chats, notes, vault…" autofocus>
                 <button type="submit" id="search-btn">Search</button>
             </form>
 
@@ -29,8 +50,9 @@
             <ul>
                 {{range .Results}}
                 <li>
-                    <a href="/chat/{{index . "ConversationID"}}">{{index . "Title"}}</a>
-                    <span class="muted">[{{index . "Role"}}]</span>
+                    <span class="kind-tag kind-{{index . "Kind"}}">{{index . "Kind"}}</span>
+                    <a href="{{index . "URL"}}">{{index . "Title"}}</a>
+                    <span class="result-role">[{{index . "Role"}}]</span>
                     <span class="time">{{formatTime (index . "CreatedAt")}}</span>
                     <div class="muted" style="margin-top: 5px">{{truncate (index . "Content") 200}}</div>
                 </li>
@@ -54,11 +76,12 @@
 
         function escapeHtml(text) {
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = text == null ? '' : String(text);
             return div.innerHTML;
         }
 
         function truncate(str, n) {
+            if (!str) return '';
             return str.length > n ? str.slice(0, n) + '...' : str;
         }
 
@@ -80,10 +103,13 @@
                 } else if (data.results && data.results.length > 0) {
                     let html = '<p class="muted">' + data.results.length + ' results</p><ul>';
                     for (const r of data.results) {
+                        const kind = r.Kind || 'chat';
+                        const url = r.URL || '#';
                         html += `
                             <li>
-                                <a href="/chat/${r.ConversationID}">${escapeHtml(r.Title)}</a>
-                                <span class="muted">[${r.Role}]</span>
+                                <span class="kind-tag kind-${escapeHtml(kind)}">${escapeHtml(kind)}</span>
+                                <a href="${escapeHtml(url)}">${escapeHtml(r.Title || '(untitled)')}</a>
+                                <span class="result-role">[${escapeHtml(r.Role || '')}]</span>
                                 <div class="muted" style="margin-top: 5px">${escapeHtml(truncate(r.Content, 200))}</div>
                             </li>
                         `;
