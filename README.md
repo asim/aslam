@@ -2,8 +2,6 @@
 
 An AI assistant for the family.
 
-*Aslam* is Arabic for "safest" or "most secure".
-
 ## What is this?
 
 Aslam is, first and foremost, an **AI assistant**. You chat with it — over the web, over email, or via the CLI — and it helps you get things done: answering questions, researching topics, drafting emails, looking things up.
