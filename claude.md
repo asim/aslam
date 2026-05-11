@@ -1,6 +1,6 @@
 # Aslam - Development Guide
 
-Personal AI assistant for the family. Hosted at [nasir.org](https://nasir.org). Aslam is Arabic for "safest/most secure".
+Personal AI assistant for the family. Hosted at [nasir.org](https://nasir.org).
 
 ## Architecture
 
