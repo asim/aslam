@@ -1,13 +1,13 @@
-# Nasir - Development Guide
+# Aslam - Development Guide
 
-Personal assistant for the family. Hosted at [nasir.org](https://nasir.org). Nasir is Arabic for "helper".
+Personal AI assistant for the family. Hosted at [nasir.org](https://nasir.org). Aslam is Arabic for "safest/most secure".
 
 ## Architecture
 
 See `ARCHITECTURE.md` for full details. Key principle: **single agent, multiple channels**.
 
 ```
-nasir/
+aslam/
 ├── main.go           # HTTP server, routes, Anthropic integration
 ├── email_worker.go   # Email channel (IMAP polling)
 ├── task_processor.go # Unified task queue processor
@@ -30,9 +30,9 @@ nasir/
 │   └── taxreport/    # HMRC capital gains report tool
 ├── ARCHITECTURE.md   # System architecture docs
 ├── .env              # Configuration (not committed)
-└── ~/.nasir/
+└── ~/.aslam/
     ├── .key          # Database encryption key
-    └── nasir.db      # Encrypted SQLite database
+    └── aslam.db      # Encrypted SQLite database
 ```
 
 ## Key Files
@@ -60,7 +60,7 @@ nasir/
 Templates are embedded at build time (`//go:embed`). After ANY change:
 
 ```bash
-cd /home/exedev/nasir && go build -o nasir . && sudo systemctl restart nasir
+cd /home/exedev/aslam && go build -o aslam . && sudo systemctl restart aslam
 ```
 
 ## Environment Variables
@@ -121,13 +121,13 @@ Requires `BRAVE_API_KEY` in `.env`.
 
 ```bash
 # View logs
-sudo journalctl -u nasir -f
+sudo journalctl -u aslam -f
 
 # Restart service
-sudo systemctl restart nasir
+sudo systemctl restart aslam
 
 # Query database
-export NASIR_KEY=$(cat ~/.nasir/.key)
+export ASLAM_KEY=$(cat ~/.aslam/.key)
 ./scripts/kb sql "SELECT * FROM conversations LIMIT 5;"
 
 # List sessions

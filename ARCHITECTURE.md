@@ -1,4 +1,4 @@
-# Nasir Architecture
+# Aslam Architecture
 
 ## Core Principle
 
@@ -117,5 +117,5 @@ If transferring to someone else:
 
 ### Database Location
 
-All data is in `~/.nasir/nasir.db`, encrypted with the key in `~/.nasir/.key`.
+All data is in `~/.aslam/aslam.db`, encrypted with the key in `~/.aslam/.key`.
 Backup both files to preserve all data.

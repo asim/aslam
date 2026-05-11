@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-var baseURL = getEnv("NASIR_URL", "http://localhost:8000")
-var apiKey = os.Getenv("NASIR_API_KEY")
+var baseURL = getEnv("ASLAM_URL", "http://localhost:8000")
+var apiKey = os.Getenv("ASLAM_API_KEY")
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -50,7 +50,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`nas - Nasir CLI
+	fmt.Println(`nas - Aslam CLI
 
 Usage: nas <command> [args]
 
@@ -63,8 +63,8 @@ Commands:
   help               Show this help
 
 Environment:
-  NASIR_API_KEY      API key for authentication
-  NASIR_URL          Base URL (default: http://localhost:8000)`)
+  ASLAM_API_KEY      API key for authentication
+  ASLAM_URL          Base URL (default: http://localhost:8000)`)
 }
 
 func handleChat(args []string) {

@@ -1,12 +1,12 @@
-# Nasir
+# Aslam
 
 An AI assistant for the family.
 
-*Nasir* is Arabic for "helper".
+*Aslam* is Arabic for "safest" or "most secure".
 
 ## What is this?
 
-Nasir is, first and foremost, an **AI assistant**. You chat with it — over the web, over email, or via the CLI — and it helps you get things done: answering questions, researching topics, drafting emails, looking things up.
+Aslam is, first and foremost, an **AI assistant**. You chat with it — over the web, over email, or via the CLI — and it helps you get things done: answering questions, researching topics, drafting emails, looking things up.
 
 Everything you ever ask it, and everything you ever tell it to remember, is quietly captured into an encrypted, **searchable knowledge base** running in the background. Over time, that knowledge base becomes a second brain: not just a record of conversations with an AI, but the place where passwords, credentials, contacts, decisions, and important notes all live — searchable in one place.
 
@@ -16,7 +16,7 @@ You don't have to go back to the assistant to recover what you know. You can jus
 
 ```
    ┌──────────────────────────────────┐
-   │       Ask Nasir (chat)           │
+   │       Ask Aslam (chat)           │
    │   - Web, email, CLI, API         │
    └──────────────┬───────────────────┘
                   │
@@ -55,12 +55,12 @@ The assistant is the front door. The knowledge base runs silently behind it.
 - **AI chats are ephemeral.** A great answer from ChatGPT is useless if you can't find it next week.
 - **Continuity matters.** If I die tomorrow, what do people need to know?
 
-Nasir is the fix: a helper you can talk to *and* a searchable archive of every helpful thing it, or you, ever produced.
+Aslam is the fix: a helper you can talk to *and* a searchable archive of every helpful thing it, or you, ever produced.
 
 ## What lives in the knowledge base?
 
 - **Chats** — every question you've ever asked and every answer given
-- **Notes & memories** — things you told Nasir to remember
+- **Notes & memories** — things you told Aslam to remember
 - **Fetched pages** — URLs the assistant has pulled and cached
 - **Vault items** — passwords, credentials, accounts, important contacts (encrypted at rest)
 - **Entries** — thoughts, projects, decisions, instructions, documents
@@ -69,7 +69,7 @@ All of it indexed. All of it searchable from `/search`.
 
 ## Principles
 
-1. **Assistant first** — the primary action is asking Nasir a question
+1. **Assistant first** — the primary action is asking Aslam a question
 2. **Everything is captured** — conversations and memories flow into the knowledge base automatically
 3. **Searchable** — if you can't find it, it doesn't exist
 4. **Secure** — sensitive data encrypted at rest (SQLCipher / AES-256)
@@ -90,12 +90,12 @@ All of it indexed. All of it searchable from `/search`.
 ```bash
 # Clone
 git clone git@github.com:asim/nasir.git
-cd nasir
+cd aslam
 
 # Create encryption key
-mkdir -p ~/.nasir
-openssl rand -base64 32 > ~/.nasir/.key
-chmod 600 ~/.nasir/.key
+mkdir -p ~/.aslam
+openssl rand -base64 32 > ~/.aslam/.key
+chmod 600 ~/.aslam/.key
 
 # Create .env file
 cat > .env << EOF
@@ -109,17 +109,17 @@ EOF
 chmod 600 .env
 
 # Build and run
-go build -o nasir .
-./nasir
+go build -o aslam .
+./aslam
 ```
 
 ### Systemd Service
 
 ```bash
-sudo cp scripts/nasir.service /etc/systemd/system/
+sudo cp scripts/nasir.service /etc/systemd/system/aslam.service
 sudo systemctl daemon-reload
-sudo systemctl enable nasir
-sudo systemctl start nasir
+sudo systemctl enable aslam
+sudo systemctl start aslam
 ```
 
 ### Email Setup (Optional)
@@ -202,7 +202,7 @@ The assistant operates on a levelled trust model. Access to personal accounts is
 
 ## Purpose
 
-Nasir exists for two reasons:
+Aslam exists for two reasons:
 
 **1. A helpful assistant today**
 - An AI you can ask anything, over any channel
@@ -211,7 +211,7 @@ Nasir exists for two reasons:
 
 **2. A second brain and digital estate**
 
-Because every conversation and every memory lands in the knowledge base, over time Nasir becomes the map of your digital life — and, when the time comes, the map that your family can follow.
+Because every conversation and every memory lands in the knowledge base, over time Aslam becomes the map of your digital life — and, when the time comes, the map that your family can follow.
 
 We live in a purely digital world. When someone dies, their family must navigate:
 - Multiple email accounts

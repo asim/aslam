@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>Nasir</title>
+    <title>Aslam</title>
     {{template "style"}}
     <style>
         .ask-hero {
@@ -67,8 +67,8 @@
         {{template "header"}}
         <main class="app-content">
             <section class="ask-hero">
-                <h2>Ask Nasir</h2>
-                <p>Your family helper. Every question and answer is saved, searchable, forever.</p>
+                <h2>Ask Aslam</h2>
+                <p>Your family assistant. Every question and answer is saved, searchable, forever.</p>
 
                 <form class="ask-form" id="ask-form">
                     <textarea id="ask-input" name="message" placeholder="Ask anything…" autofocus></textarea>
@@ -136,7 +136,7 @@
                 const data = await resp.json();
                 if (!data.id) throw new Error('Failed to start chat');
                 // Stash the pending question so chat.html auto-sends it.
-                try { sessionStorage.setItem('nasir_pending_q_' + data.id, message); } catch (_) {}
+                try { sessionStorage.setItem('aslam_pending_q_' + data.id, message); } catch (_) {}
                 window.location = '/chat/' + data.id;
             } catch (err) {
                 alert('Could not start chat: ' + err.message);
