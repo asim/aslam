@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
-	"nasir/db"
-	"nasir/tools"
+	"aslam/db"
+	"aslam/tools"
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 )
@@ -169,7 +169,7 @@ func main() {
 	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
-	log.Printf("Nasir running on http://localhost:%s", port)
+	log.Printf("Aslam running on http://localhost:%s", port)
 
 	// Start background workers
 	startTaskProcessor()  // Handles pending tasks from any channel
@@ -839,7 +839,7 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 
 // AI functions
 
-var systemPromptTemplate = `You are Nasir, a personal assistant for the family. Nasir is Arabic for "helper" — your first job is always to help.
+var systemPromptTemplate = `You are Aslam, a personal assistant for the family. Aslam is Arabic for "safest/most secure" — your job is to help, protect, and serve the family.
 
 Be concise, practical, and direct. Answer questions efficiently without unnecessary preamble.
 
@@ -867,7 +867,7 @@ When asked to send information about a topic, USE the research tools first (www,
 
 When sending emails, use this format:
 - Keep it concise and informative
-- Sign off with: "Best regards,\nNasir Assistant"
+- Sign off with: "Best regards,\nAslam"
 
 When responding to emails (via email reply), you're having a conversation - respond naturally like you would in chat. Don't summarize or describe what happened, just reply to what they said.
 
@@ -878,7 +878,7 @@ Do NOT:
 - Be preachy or moralizing
 
 DO:
-- Be helpful and direct — live up to the name Nasir (helper)
+- Be helpful and direct — live up to the name Aslam
 - Give practical, actionable answers
 - Use tools to fetch real information when relevant
 - Quietly capture useful facts, credentials and references into the knowledge base so the user can find them again later
@@ -887,13 +887,13 @@ DO:
 
 ---
 
-ABOUT YOURSELF (for when users ask about Nasir, its development, or capabilities):
+ABOUT YOURSELF (for when users ask about Aslam, its development, or capabilities):
 
 %s
 
 ---
 
-DEVELOPMENT GUIDE (for technical discussions about extending Nasir):
+DEVELOPMENT GUIDE (for technical discussions about extending Aslam):
 
 %s`
 

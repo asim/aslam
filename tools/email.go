@@ -199,7 +199,7 @@ func SendEmailThreaded(to, subject, body, inReplyTo, references string) (string,
 
 	// Build headers
 	var headers strings.Builder
-	headers.WriteString(fmt.Sprintf("From: Nasir Assistant <%s>\r\n", user))
+	headers.WriteString(fmt.Sprintf("From: Aslam <%s>\r\n", user))
 	headers.WriteString(fmt.Sprintf("To: %s\r\n", to))
 	headers.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	headers.WriteString(fmt.Sprintf("Message-ID: %s\r\n", msgID))

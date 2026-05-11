@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>{{.Conversation.Title}} - Nasir</title>
+    <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
     <style>
         .typing { opacity: 0.6; }
@@ -273,9 +273,9 @@
         // Scroll to bottom on load
         scrollToBottom();
 
-        // If arriving from the home page "Ask Nasir" box, send the pending question.
+        // If arriving from the home page "Ask Aslam" box, send the pending question.
         try {
-            const pendingKey = 'nasir_pending_q_' + convId;
+            const pendingKey = 'aslam_pending_q_' + convId;
             const pending = sessionStorage.getItem(pendingKey);
             if (pending) {
                 sessionStorage.removeItem(pendingKey);
