@@ -12,6 +12,15 @@ set -e
 ASLAM_DIR="/home/aslam"
 LOG_TAG="aslam-deploy"
 
+# Make sure the Go toolchain is on PATH. systemd/root shells often don't have
+# /usr/local/go/bin, which is where the standard tarball install lands.
+export PATH="/usr/local/go/bin:$HOME/go/bin:/usr/local/bin:$PATH"
+if ! command -v go >/dev/null 2>&1; then
+    logger -t "$LOG_TAG" "ERROR: go not found on PATH"
+    echo "go not found on PATH (looked in /usr/local/go/bin etc.)" >&2
+    exit 1
+fi
+
 BRANCH="main"
 FORCE=false
 for arg in "$@"; do
