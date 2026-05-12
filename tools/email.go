@@ -195,7 +195,7 @@ func SendEmailThreaded(to, subject, body, inReplyTo, references string) (string,
 	}
 
 	// Generate Message-ID
-	msgID := fmt.Sprintf("<%d.%s@nasir.org>", time.Now().UnixNano(), randomString(8))
+	msgID := fmt.Sprintf("<%d.%s@aslam.org>", time.Now().UnixNano(), randomString(8))
 
 	// Build headers
 	var headers strings.Builder

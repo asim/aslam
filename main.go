@@ -309,8 +309,8 @@ func loadEnv() {
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Redirect www to non-www
-		if r.Host == "www.nasir.org" {
-			http.Redirect(w, r, "https://nasir.org"+r.URL.Path, http.StatusMovedPermanently)
+		if r.Host == "www.aslam.org" {
+			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
 			return
 		}
 
@@ -494,7 +494,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		Name:     "session",
 		Value:    token,
 		Path:     "/",
-		Domain:   "nasir.org",
+		Domain:   "aslam.org",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
@@ -515,7 +515,7 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "session",
 		Path:   "/",
-		Domain: "nasir.org",
+		Domain: "aslam.org",
 		MaxAge: -1,
 	})
 
@@ -1278,7 +1278,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		{
 			"Name":        "Gmail (Assistant Inbox)",
 			"Key":         "gmail",
-			"Description": "Email via IMAP/SMTP for assistant@nasir.org",
+			"Description": "Email via IMAP/SMTP for assistant@aslam.org",
 			"Configured":  os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != "",
 			"Enabled":     os.Getenv("GMAIL_USER") != "" && db.GetSetting("gmail_enabled") != "false",
 			"Toggleable":  true,

@@ -1,6 +1,6 @@
 # Aslam - Development Guide
 
-Personal AI assistant for the family. Hosted at [nasir.org](https://nasir.org).
+Personal AI assistant for the family. Hosted at [aslam.org](https://aslam.org).
 
 ## Architecture
 
@@ -23,7 +23,7 @@ aslam/
 │   └── search.go     # Web search (Brave API)
 ├── html/             # HTML templates (embedded at build)
 ├── scripts/
-│   ├── nasir.service # Systemd service file
+│   ├── aslam.service # Systemd service file
 │   └── kb            # CLI tool for database operations
 ├── cmd/
 │   ├── nas/          # Command line client (binary: nas)
@@ -70,7 +70,7 @@ Required in `.env`:
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://nasir.org/auth/callback
+GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
 ALLOWED_EMAILS=email1@example.com,email2@example.com
 ```
 
@@ -89,8 +89,8 @@ GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
 
 - Google OAuth with allowed email whitelist
 - Sessions stored in DB, 30-day expiry
-- Cookie set on `nasir.org` domain (covers www subdomain)
-- www.nasir.org redirects to nasir.org
+- Cookie set on `aslam.org` domain (covers www subdomain)
+- www.aslam.org redirects to aslam.org
 
 ## Tools System
 
@@ -142,7 +142,7 @@ None currently.
 
 See README.md for full details. Summary:
 
-- **Level 0 (current):** Assistant has own email (assistant@nasir.org), no access to user accounts
+- **Level 0 (current):** Assistant has own email (assistant@aslam.org), no access to user accounts
 - **Level 1:** Read user's calendar (requires OAuth)
 - **Level 2:** Read user's email (requires OAuth + security hardening)
 - **Level 3:** Send as user, create events (requires confirmation flows + audit)
