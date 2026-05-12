@@ -35,7 +35,12 @@ fi
 logger -t "$LOG_TAG" "Deploying $BRANCH: $LOCAL -> $REMOTE (force=$FORCE)"
 
 git reset --hard "origin/$BRANCH"
-go build -o "$ASLAM_DIR/aslam" .
+go build -buildvcs=false -o "$ASLAM_DIR/aslam" .
+
+# This script typically runs as root (via aslam-update.service) so fix up
+# ownership of anything git/go touched, otherwise the aslam user can't build
+# or git-fetch next time (git exits 128 -> "error obtaining VCS status").
+chown -R aslam:aslam "$ASLAM_DIR"
 
 logger -t "$LOG_TAG" "Build complete, restarting service"
 systemctl restart aslam
