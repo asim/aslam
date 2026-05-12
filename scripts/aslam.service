@@ -11,7 +11,9 @@ ExecStart=/home/aslam/aslam
 Restart=always
 RestartSec=5
 Environment=HOME=/home/aslam
-EnvironmentFile=/home/aslam/.env
+# Config is read from /home/aslam/.env by the app itself (loadEnv).
+# `export KEY=value`, quotes and comments are all tolerated there, so we do
+# NOT use systemd's EnvironmentFile (which only accepts plain KEY=value).
 
 [Install]
 WantedBy=multi-user.target

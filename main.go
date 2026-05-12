@@ -56,7 +56,7 @@ func main() {
 	anthropicKey = os.Getenv("ANTHROPIC_API_KEY")
 	anthropicModel = os.Getenv("ANTHROPIC_MODEL")
 	if anthropicModel == "" {
-		anthropicModel = "claude-3-haiku-20240307"
+		anthropicModel = "claude-haiku-4-5-20251001"
 	}
 
 	// OAuth config
@@ -287,6 +287,10 @@ func vaultItemsToMaps(items []db.VaultItem) []map[string]interface{} {
 	return result
 }
 
+// loadEnv reads key=value pairs from a .env file in the working directory and
+// sets them as process environment variables (without overwriting any that are
+// already set). It tolerates `export KEY=value`, surrounding quotes, and
+// `# comments`, so a file that also works when `source`d in a shell is fine.
 func loadEnv() {
 	data, err := os.ReadFile(".env")
 	if err != nil {
@@ -297,9 +301,24 @@ func loadEnv() {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+		line = strings.TrimPrefix(line, "export ")
 		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			os.Setenv(parts[0], parts[1])
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		// Strip matching surrounding quotes.
+		if len(val) >= 2 {
+			if (val[0] == '"' && val[len(val)-1] == '"') || (val[0] == '\'' && val[len(val)-1] == '\'') {
+				val = val[1 : len(val)-1]
+			}
+		}
+		if key == "" {
+			continue
+		}
+		if _, exists := os.LookupEnv(key); !exists {
+			os.Setenv(key, val)
 		}
 	}
 }

@@ -91,7 +91,7 @@ ALLOWED_EMAILS=email1@example.com,email2@example.com
 
 Optional:
 ```
-ANTHROPIC_MODEL=claude-3-haiku-20240307  # Default model
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001  # Default model
 PORT=8000                                  # Server port
 API_KEY=...                               # For CLI/API access
 DEV_TOKEN=...                             # Dev bypass token
