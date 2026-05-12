@@ -87,7 +87,7 @@ All of it indexed. All of it searchable from `/search`.
 
 ```bash
 # Clone
-git clone git@github.com:asim/nasir.git
+git clone git@github.com:asim/aslam.git
 cd aslam
 
 # Create encryption key
@@ -100,7 +100,7 @@ cat > .env << EOF
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://nasir.org/auth/callback
+GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
 ALLOWED_EMAILS=your@email.com
 BRAVE_API_KEY=your-brave-api-key
 EOF
@@ -114,7 +114,7 @@ go build -o aslam .
 ### Systemd Service
 
 ```bash
-sudo cp scripts/nasir.service /etc/systemd/system/aslam.service
+sudo cp scripts/aslam.service /etc/systemd/system/aslam.service
 sudo systemctl daemon-reload
 sudo systemctl enable aslam
 sudo systemctl start aslam

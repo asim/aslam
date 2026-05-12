@@ -111,7 +111,7 @@ If transferring to someone else:
 3. Share access to:
    - This server (exe.dev VM)
    - Password manager containing service passwords
-   - Domain registrar for nasir.org
+   - Domain registrar for aslam.org
    - GitHub repo for code
 4. They should update `.env` with their own API keys if needed
 
