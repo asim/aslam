@@ -32,6 +32,11 @@ done
 
 cd "$ASLAM_DIR"
 
+# When running as root, git refuses to operate on a directory owned by another
+# user unless it's marked safe. This persists in ~/.gitconfig so it's a one-time
+# fix, but harmless to repeat.
+git config --global --add safe.directory "$ASLAM_DIR" 2>/dev/null || true
+
 git fetch origin "$BRANCH" 2>/dev/null
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse "origin/$BRANCH")
