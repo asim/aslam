@@ -4,12 +4,14 @@ After=network.target
 
 [Service]
 Type=simple
-User=exedev
-WorkingDirectory=/home/exedev/aslam
-ExecStart=/home/exedev/aslam/aslam
+User=aslam
+Group=aslam
+WorkingDirectory=/home/aslam
+ExecStart=/home/aslam/aslam
 Restart=always
 RestartSec=5
-Environment=HOME=/home/exedev
+Environment=HOME=/home/aslam
+EnvironmentFile=/home/aslam/.env
 
 [Install]
 WantedBy=multi-user.target

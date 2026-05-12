@@ -1,32 +1,32 @@
 #!/bin/bash
-# Nasir Knowledge Base CLI
+# Aslam Knowledge Base CLI
 # Usage: ./kb <command> [args]
 
 set -e
 
-DB_PATH="${NASIR_DB:-$HOME/.nasir/nasir.db}"
+DB_PATH="${ASLAM_DB:-$HOME/.aslam/aslam.db}"
 DB_DIR=$(dirname "$DB_PATH")
 
 # Ensure directory exists
 mkdir -p "$DB_DIR"
 
 # Check for passphrase
-if [ -z "$NASIR_KEY" ]; then
-    echo "NASIR_KEY environment variable not set."
-    echo "Export it with: export NASIR_KEY='your-passphrase'"
+if [ -z "$ASLAM_KEY" ]; then
+    echo "ASLAM_KEY environment variable not set."
+    echo "Export it with: export ASLAM_KEY='your-passphrase'"
     exit 1
 fi
 
 run_sql() {
     sqlcipher "$DB_PATH" <<EOF | grep -v '^ok$'
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 $1
 EOF
 }
 
 run_sql_pretty() {
     sqlcipher -header -column "$DB_PATH" <<EOF | grep -v '^ok$' | grep -v '^--$'
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 $1
 EOF
 }
@@ -39,7 +39,7 @@ case "${1:-help}" in
         fi
         SCRIPT_DIR=$(dirname "$0")
         sqlcipher "$DB_PATH" <<EOF
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 $(cat "$SCRIPT_DIR/schema.sql")
 EOF
         echo "Database initialized at $DB_PATH"
@@ -92,7 +92,7 @@ EOF
             exit 1
         fi
         sqlcipher -line "$DB_PATH" <<EOF | grep -v '^[[:space:]]*ok = ok$'
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 SELECT * FROM entries WHERE id=$ID;
 EOF
         ;;
@@ -158,20 +158,20 @@ EOF
 
     shell)
         sqlcipher "$DB_PATH" <<EOF
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 EOF
         ;;
 
     export)
         # Export to JSON (for backup)
         sqlcipher -json "$DB_PATH" <<EOF
-PRAGMA key='$NASIR_KEY';
+PRAGMA key='$ASLAM_KEY';
 SELECT * FROM entries;
 EOF
         ;;
 
     help|*)
-        echo "Nasir Knowledge Base"
+        echo "Aslam Knowledge Base"
         echo ""
         echo "Usage: kb <command> [args]"
         echo ""
@@ -195,7 +195,7 @@ EOF
         echo "Types: thought, project, credential, contact, document, decision, instruction, note"
         echo ""
         echo "Environment:"
-        echo "  NASIR_KEY               Database passphrase (required)"
-        echo "  NASIR_DB                Database path (default: ~/.nasir/nasir.db)"
+        echo "  ASLAM_KEY               Database passphrase (required)"
+        echo "  ASLAM_DB                Database path (default: ~/.aslam/aslam.db)"
         ;;
 esac

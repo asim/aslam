@@ -23,8 +23,11 @@ aslam/
 │   └── search.go     # Web search (Brave API)
 ├── html/             # HTML templates (embedded at build)
 ├── scripts/
-│   ├── aslam.service # Systemd service file
-│   └── kb            # CLI tool for database operations
+│   ├── aslam.service        # Systemd service file
+│   ├── aslam-update.service # Auto-update oneshot service
+│   ├── aslam-update.timer   # Checks for updates every 5 minutes
+│   ├── deploy.sh            # Pull, build, restart
+│   └── kb                   # CLI tool for database operations
 ├── cmd/
 │   ├── nas/          # Command line client (binary: nas)
 │   └── taxreport/    # HMRC capital gains report tool
@@ -55,12 +58,24 @@ aslam/
 - `islam.go` - Islamic sources search
 - `web.go` - URL fetching with HTML-to-text conversion
 
-## Deploying Changes
+## Deployment
+
+Hosted on a DigitalOcean VM. Runs as the `aslam` user from `/home/aslam`.
+
+### Auto-update
+
+A systemd timer (`aslam-update.timer`) checks GitHub every 5 minutes. If there
+are new commits on `main`, it pulls, rebuilds, and restarts the service
+automatically. Logs: `journalctl -t aslam-deploy`.
+
+### Manual deploy
 
 Templates are embedded at build time (`//go:embed`). After ANY change:
 
 ```bash
-cd /home/exedev/aslam && go build -o aslam . && sudo systemctl restart aslam
+/home/aslam/scripts/deploy.sh
+# or manually:
+cd /home/aslam && git pull && go build -o aslam . && sudo systemctl restart aslam
 ```
 
 ## Environment Variables
