@@ -221,37 +221,38 @@
                 {{end}}
             </div>
 
-            <!-- Admins Section -->
+            <!-- Users Section -->
             <div class="admin-section">
-                <h3>Administrators</h3>
-                <p class="muted" style="margin-bottom: 16px;">Users who can access the system. Add family members or trusted parties for continuity.</p>
-                
-                {{range .Admins}}
+                <h3>Users</h3>
+                <p class="muted" style="margin-bottom: 16px;">People who can access the system. Add family members or trusted parties.</p>
+
+                {{range .Users}}
                 <div class="item-card">
                     <div class="item-header">
                         <div>
                             <span class="item-title">{{.Email}}</span>
                             {{if .Name}}<span class="muted"> ({{.Name}})</span>{{end}}
+                            <span class="muted"> [{{.Role}}]</span>
                         </div>
                         {{if ne .Email $.CurrentUser}}
-                        <form class="inline" method="POST" action="/admin/remove-admin" onsubmit="return confirm('Remove this admin?');">
+                        <form class="inline" method="POST" action="/admin/remove-user" onsubmit="return confirm('Remove this user?');">
                             <input type="hidden" name="id" value="{{.ID}}">
                             <button type="submit" class="btn btn-danger btn-small">Remove</button>
                         </form>
                         {{end}}
                     </div>
                     <div class="item-meta">
-                        Role: {{.Role}} | Added: {{.CreatedAt.Format "2006-01-02"}}
+                        Added: {{.CreatedAt.Format "2006-01-02"}}
                         {{if .AddedBy}} by {{.AddedBy}}{{end}}
                     </div>
                 </div>
                 {{else}}
-                <p class="muted">No admins configured. Using ALLOWED_EMAILS from environment.</p>
+                <p class="muted">No users configured.</p>
                 {{end}}
-                
+
                 <details style="margin-top: 16px;">
-                    <summary style="cursor: pointer;">Add Administrator</summary>
-                    <form method="POST" action="/admin/add-admin" style="margin-top: 12px;">
+                    <summary style="cursor: pointer;">Add User</summary>
+                    <form method="POST" action="/admin/add-user" style="margin-top: 12px;">
                         <div class="form-row">
                             <label>Email Address</label>
                             <input type="email" name="email" required placeholder="family@example.com">
@@ -260,7 +261,14 @@
                             <label>Name (optional)</label>
                             <input type="text" name="name" placeholder="Name">
                         </div>
-                        <button type="submit" class="btn">Add Admin</button>
+                        <div class="form-row">
+                            <label>Role</label>
+                            <select name="role" style="padding: 8px; border: 1px solid #333; border-radius: 4px; font-family: inherit;">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn">Add User</button>
                     </form>
                 </details>
             </div>
@@ -268,7 +276,7 @@
             <!-- Accounts Section -->
             <div class="admin-section">
                 <h3>Service Accounts & Credentials</h3>
-                <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations). For family accounts and assets, use the <a href="/vault">Vault</a>.</p>
+                <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations). For family accounts and assets, use <a href="/notes">Notes</a>.</p>
                 
                 {{range .Accounts}}
                 <div class="item-card">

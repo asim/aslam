@@ -246,9 +246,9 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN api_key TEXT`)
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN url TEXT`)
 
-	// Admins - users who can administer the system
+	// Users - people who can access the system
 	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS admins (
+		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			email TEXT UNIQUE NOT NULL,
 			name TEXT,
@@ -260,6 +260,9 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+
+	// Migrate data from legacy admins table if it exists
+	DB.Exec(`INSERT OR IGNORE INTO users SELECT * FROM admins`)
 
 	// Settings - key/value store for configuration
 	_, err = DB.Exec(`
@@ -273,9 +276,9 @@ func Migrate() error {
 		return err
 	}
 
-	// Vault - things to keep track of (assets, accounts, people, instructions, documents)
+	// Notes - things to keep track of (assets, accounts, people, instructions, documents)
 	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS vault (
+		CREATE TABLE IF NOT EXISTS notes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			category TEXT NOT NULL,
 			name TEXT NOT NULL,
@@ -291,8 +294,10 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
-	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_vault_category ON vault(category)`)
-	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_vault_status ON vault(status)`)
+	// Migrate data from vault table if it exists
+	DB.Exec(`INSERT OR IGNORE INTO notes SELECT * FROM vault`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_status ON notes(status)`)
 
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
@@ -473,13 +478,13 @@ func SearchMessages(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-// SearchAll runs a query across chats, entries, and vault items and returns a
+// SearchAll runs a query across chats, entries, and note items and returns a
 // unified list of results. Each result has a "Kind" field ("chat", "entry",
-// "vault") that the UI uses to render the right kind of link.
+// "notes") that the UI uses to render the right kind of link.
 //
 // This is the backbone of the knowledge base: anything the user has ever asked
-// the assistant, anything the assistant remembered, and anything stored in the
-// vault can be found with a single query.
+// the assistant, anything the assistant remembered, and anything stored in
+// notes can be found with a single query.
 func SearchAll(query string) ([]map[string]interface{}, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, nil
@@ -518,8 +523,8 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 		}
 	}
 
-	// Vault items (credentials, accounts, contacts, instructions, documents)
-	if items, err := SearchVault(query); err == nil {
+	// Note items (credentials, accounts, contacts, instructions, documents)
+	if items, err := SearchNotes(query); err == nil {
 		for _, v := range items {
 			// Build a short content snippet from the available fields.
 			parts := []string{}
@@ -534,11 +539,11 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 			}
 			snippet := strings.Join(parts, " · ")
 			results = append(results, map[string]interface{}{
-				"Kind":      "vault",
+				"Kind":      "notes",
 				"Title":     v.Name,
 				"Content":   snippet,
 				"Role":      v.Category,
-				"URL":       fmt.Sprintf("/vault/edit/%d", v.ID),
+				"URL":       fmt.Sprintf("/notes/edit/%d", v.ID),
 				"CreatedAt": v.UpdatedAt,
 			})
 		}
@@ -1036,9 +1041,9 @@ func DeleteAccount(id int64) error {
 	return err
 }
 
-// Admin functions
+// User functions
 
-type Admin struct {
+type User struct {
 	ID        int64
 	Email     string
 	Name      string
@@ -1047,43 +1052,55 @@ type Admin struct {
 	CreatedAt time.Time
 }
 
-func GetAdmins() ([]Admin, error) {
-	rows, err := DB.Query(`SELECT id, email, name, role, added_by, created_at FROM admins ORDER BY created_at`)
+func GetUsers() ([]User, error) {
+	rows, err := DB.Query(`SELECT id, email, name, role, added_by, created_at FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var admins []Admin
+	var users []User
 	for rows.Next() {
-		var a Admin
+		var u User
 		var name, addedBy sql.NullString
-		err := rows.Scan(&a.ID, &a.Email, &name, &a.Role, &addedBy, &a.CreatedAt)
+		err := rows.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &u.CreatedAt)
 		if err != nil {
 			continue
 		}
-		a.Name = name.String
-		a.AddedBy = addedBy.String
-		admins = append(admins, a)
+		u.Name = name.String
+		u.AddedBy = addedBy.String
+		users = append(users, u)
 	}
-	return admins, nil
+	return users, nil
 }
 
-func AddAdmin(email, name, role, addedBy string) error {
-	_, err := DB.Exec(`INSERT INTO admins (email, name, role, added_by) VALUES (?, ?, ?, ?)`,
+func AddUser(email, name, role, addedBy string) error {
+	_, err := DB.Exec(`INSERT INTO users (email, name, role, added_by) VALUES (?, ?, ?, ?)`,
 		email, name, role, addedBy)
 	return err
 }
 
-func RemoveAdmin(id int64) error {
-	_, err := DB.Exec(`DELETE FROM admins WHERE id = ?`, id)
+func RemoveUser(id int64) error {
+	_, err := DB.Exec(`DELETE FROM users WHERE id = ?`, id)
 	return err
 }
 
 func IsAdmin(email string) bool {
 	var id int64
-	err := DB.QueryRow(`SELECT id FROM admins WHERE email = ?`, email).Scan(&id)
+	err := DB.QueryRow(`SELECT id FROM users WHERE email = ? AND role = 'admin'`, email).Scan(&id)
 	return err == nil
+}
+
+func IsUser(email string) bool {
+	var id int64
+	err := DB.QueryRow(`SELECT id FROM users WHERE email = ?`, email).Scan(&id)
+	return err == nil
+}
+
+func UserCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count)
+	return count
 }
 
 // Settings functions
@@ -1199,9 +1216,9 @@ func GetRecentTasks(limit int) ([]PendingTask, error) {
 	return tasks, nil
 }
 
-// Vault functions
+// Note functions
 
-type VaultItem struct {
+type NoteItem struct {
 	ID          int64
 	Category    string
 	Name        string
@@ -1214,27 +1231,27 @@ type VaultItem struct {
 	UpdatedAt   time.Time
 }
 
-func GetVaultItems(category string) ([]VaultItem, error) {
+func GetNoteItems(category string) ([]NoteItem, error) {
 	var query string
 	var args []interface{}
 	if category != "" {
 		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-			FROM vault WHERE category = ? ORDER BY name`
+			FROM notes WHERE category = ? ORDER BY name`
 		args = []interface{}{category}
 	} else {
 		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-			FROM vault ORDER BY category, name`
+			FROM notes ORDER BY category, name`
 	}
-	
+
 	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var items []VaultItem
+	var items []NoteItem
 	for rows.Next() {
-		var v VaultItem
+		var v NoteItem
 		var desc, details, creds, notes sql.NullString
 		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
@@ -1249,12 +1266,12 @@ func GetVaultItems(category string) ([]VaultItem, error) {
 	return items, nil
 }
 
-func GetVaultItem(id int64) (*VaultItem, error) {
-	var v VaultItem
+func GetNoteItem(id int64) (*NoteItem, error) {
+	var v NoteItem
 	var desc, details, creds, notes sql.NullString
 	err := DB.QueryRow(`
 		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-		FROM vault WHERE id = ?
+		FROM notes WHERE id = ?
 	`, id).Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -1266,9 +1283,9 @@ func GetVaultItem(id int64) (*VaultItem, error) {
 	return &v, nil
 }
 
-func AddVaultItem(category, name, description, details, credentials, notes string) (int64, error) {
+func AddNoteItem(category, name, description, details, credentials, notes string) (int64, error) {
 	result, err := DB.Exec(`
-		INSERT INTO vault (category, name, description, details, credentials, notes)
+		INSERT INTO notes (category, name, description, details, credentials, notes)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`, category, name, description, details, credentials, notes)
 	if err != nil {
@@ -1277,23 +1294,23 @@ func AddVaultItem(category, name, description, details, credentials, notes strin
 	return result.LastInsertId()
 }
 
-func UpdateVaultItem(id int64, category, name, description, details, credentials, notes, status string) error {
+func UpdateNoteItem(id int64, category, name, description, details, credentials, notes, status string) error {
 	_, err := DB.Exec(`
-		UPDATE vault SET category=?, name=?, description=?, details=?, credentials=?, notes=?, status=?, updated_at=CURRENT_TIMESTAMP
+		UPDATE notes SET category=?, name=?, description=?, details=?, credentials=?, notes=?, status=?, updated_at=CURRENT_TIMESTAMP
 		WHERE id=?
 	`, category, name, description, details, credentials, notes, status, id)
 	return err
 }
 
-func DeleteVaultItem(id int64) error {
-	_, err := DB.Exec(`DELETE FROM vault WHERE id = ?`, id)
+func DeleteNoteItem(id int64) error {
+	_, err := DB.Exec(`DELETE FROM notes WHERE id = ?`, id)
 	return err
 }
 
-func SearchVault(query string) ([]VaultItem, error) {
+func SearchNotes(query string) ([]NoteItem, error) {
 	rows, err := DB.Query(`
 		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-		FROM vault 
+		FROM notes
 		WHERE name LIKE ? OR description LIKE ? OR details LIKE ? OR notes LIKE ?
 		ORDER BY category, name
 	`, "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
@@ -1302,9 +1319,9 @@ func SearchVault(query string) ([]VaultItem, error) {
 	}
 	defer rows.Close()
 
-	var items []VaultItem
+	var items []NoteItem
 	for rows.Next() {
-		var v VaultItem
+		var v NoteItem
 		var desc, details, creds, notes sql.NullString
 		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
@@ -1319,13 +1336,13 @@ func SearchVault(query string) ([]VaultItem, error) {
 	return items, nil
 }
 
-func GetVaultCategories() ([]string, error) {
-	rows, err := DB.Query(`SELECT DISTINCT category FROM vault ORDER BY category`)
+func GetNoteCategories() ([]string, error) {
+	rows, err := DB.Query(`SELECT DISTINCT category FROM notes ORDER BY category`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var categories []string
 	for rows.Next() {
 		var cat string

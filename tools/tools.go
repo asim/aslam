@@ -14,26 +14,26 @@ type Storage interface {
 	SearchEntries(query string) ([]map[string]interface{}, error)
 }
 
-// VaultStorage interface for vault operations
-type VaultStorage interface {
-	AddVaultItem(category, name, description, details, credentials, notes string) (int64, error)
-	SearchVault(query string) ([]map[string]interface{}, error)
-	GetVaultItems(category string) ([]map[string]interface{}, error)
-	GetVaultItem(id int64) (map[string]interface{}, error)
-	UpdateVaultItem(id int64, updates map[string]interface{}) error
+// NoteStorage interface for note operations
+type NoteStorage interface {
+	AddNoteItem(category, name, description, details, credentials, notes string) (int64, error)
+	SearchNotes(query string) ([]map[string]interface{}, error)
+	GetNoteItems(category string) ([]map[string]interface{}, error)
+	GetNoteItem(id int64) (map[string]interface{}, error)
+	UpdateNoteItem(id int64, updates map[string]interface{}) error
 }
 
 var store Storage
-var vaultStore VaultStorage
+var noteStore NoteStorage
 
 // SetStorage sets the storage backend
 func SetStorage(s Storage) {
 	store = s
 }
 
-// SetVaultStorage sets the vault storage backend
-func SetVaultStorage(v VaultStorage) {
-	vaultStore = v
+// SetNoteStorage sets the note storage backend
+func SetNoteStorage(v NoteStorage) {
+	noteStore = v
 }
 
 // IntegrationChecker checks if an integration is enabled
@@ -194,8 +194,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "vault_add",
-			Description: "Add a family asset, account, contact, or important information to the vault. Use this when the user mentions something they own, have access to, or need to remember - bank accounts, property, crypto wallets, important people, instructions for family. Categories: asset, account, person, instruction, document.",
+			Name:        "note_add",
+			Description: "Add a family asset, account, contact, or important information to notes. Use this when the user mentions something they own, have access to, or need to remember - bank accounts, property, crypto wallets, important people, instructions for family. Categories: asset, account, person, instruction, document.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -228,8 +228,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "vault_search",
-			Description: "Search the family vault for assets, accounts, contacts, or important information. Use when the user asks about what they own, their accounts, important contacts, or stored instructions.",
+			Name:        "note_search",
+			Description: "Search the family notes for assets, accounts, contacts, or important information. Use when the user asks about what they own, their accounts, important contacts, or stored instructions.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -245,8 +245,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "vault_update",
-			Description: "Update an existing item in the family vault. Use when the user wants to change details, add credentials, or update status of a tracked asset, account, or contact.",
+			Name:        "note_update",
+			Description: "Update an existing item in the family notes. Use when the user wants to change details, add credentials, or update status of a tracked asset, account, or contact.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -304,12 +304,12 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeEmailCheck(input)
 	case "email_send":
 		return executeEmailSend(input)
-	case "vault_add":
-		return executeVaultAdd(input)
-	case "vault_search":
-		return executeVaultSearch(input)
-	case "vault_update":
-		return executeVaultUpdate(input)
+	case "note_add":
+		return executeNoteAdd(input)
+	case "note_search":
+		return executeNoteSearch(input)
+	case "note_update":
+		return executeNoteUpdate(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -486,51 +486,51 @@ func executeEmailSend(input map[string]interface{}) (string, error) {
 	return fmt.Sprintf("Email sent to %s with subject: %s", to, subject), nil
 }
 
-func executeVaultAdd(input map[string]interface{}) (string, error) {
-	if vaultStore == nil {
-		return "", fmt.Errorf("vault storage not available")
+func executeNoteAdd(input map[string]interface{}) (string, error) {
+	if noteStore == nil {
+		return "", fmt.Errorf("note storage not available")
 	}
-	
+
 	category, _ := input["category"].(string)
 	name, _ := input["name"].(string)
 	description, _ := input["description"].(string)
 	details, _ := input["details"].(string)
 	credentials, _ := input["credentials"].(string)
 	notes, _ := input["notes"].(string)
-	
+
 	if category == "" || name == "" {
 		return "", fmt.Errorf("category and name are required")
 	}
-	
-	id, err := vaultStore.AddVaultItem(category, name, description, details, credentials, notes)
+
+	id, err := noteStore.AddNoteItem(category, name, description, details, credentials, notes)
 	if err != nil {
 		return "", err
 	}
-	
-	return fmt.Sprintf("Added to vault: %s '%s' (ID: %d)", category, name, id), nil
+
+	return fmt.Sprintf("Added to notes: %s '%s' (ID: %d)", category, name, id), nil
 }
 
-func executeVaultSearch(input map[string]interface{}) (string, error) {
-	if vaultStore == nil {
-		return "", fmt.Errorf("vault storage not available")
+func executeNoteSearch(input map[string]interface{}) (string, error) {
+	if noteStore == nil {
+		return "", fmt.Errorf("note storage not available")
 	}
-	
+
 	query, _ := input["query"].(string)
 	category, _ := input["category"].(string)
-	
+
 	var items []map[string]interface{}
 	var err error
-	
+
 	if query != "" {
-		items, err = vaultStore.SearchVault(query)
+		items, err = noteStore.SearchNotes(query)
 	} else {
-		items, err = vaultStore.GetVaultItems(category)
+		items, err = noteStore.GetNoteItems(category)
 	}
-	
+
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(items) == 0 {
 		if query != "" {
 			return fmt.Sprintf("No items found matching '%s'", query), nil
@@ -538,9 +538,9 @@ func executeVaultSearch(input map[string]interface{}) (string, error) {
 		if category != "" {
 			return fmt.Sprintf("No items in category '%s'", category), nil
 		}
-		return "Vault is empty.", nil
+		return "Notes are empty.", nil
 	}
-	
+
 	var result string
 	for _, item := range items {
 		result += fmt.Sprintf("[%v] %s: %s\n", item["ID"], item["Category"], item["Name"])
@@ -555,27 +555,27 @@ func executeVaultSearch(input map[string]interface{}) (string, error) {
 		}
 		result += "\n"
 	}
-	
+
 	return result, nil
 }
 
-func executeVaultUpdate(input map[string]interface{}) (string, error) {
-	if vaultStore == nil {
-		return "", fmt.Errorf("vault storage not available")
+func executeNoteUpdate(input map[string]interface{}) (string, error) {
+	if noteStore == nil {
+		return "", fmt.Errorf("note storage not available")
 	}
-	
+
 	idFloat, ok := input["id"].(float64)
 	if !ok {
 		return "", fmt.Errorf("id is required")
 	}
 	id := int64(idFloat)
-	
+
 	// Get existing item
-	existing, err := vaultStore.GetVaultItem(id)
+	existing, err := noteStore.GetNoteItem(id)
 	if err != nil {
 		return "", fmt.Errorf("item not found: %w", err)
 	}
-	
+
 	// Build updates
 	updates := make(map[string]interface{})
 	for _, field := range []string{"name", "description", "details", "credentials", "notes", "status"} {
@@ -583,15 +583,15 @@ func executeVaultUpdate(input map[string]interface{}) (string, error) {
 			updates[field] = v
 		}
 	}
-	
+
 	if len(updates) == 0 {
 		return "No updates provided", nil
 	}
-	
-	err = vaultStore.UpdateVaultItem(id, updates)
+
+	err = noteStore.UpdateNoteItem(id, updates)
 	if err != nil {
 		return "", err
 	}
-	
-	return fmt.Sprintf("Updated vault item: %s", existing["Name"]), nil
+
+	return fmt.Sprintf("Updated note item: %s", existing["Name"]), nil
 }

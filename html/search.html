@@ -21,7 +21,7 @@
         }
         .kind-chat  { background: #e8f0ff; color: #264a9e; }
         .kind-entry { background: #eef7e8; color: #2d6b20; }
-        .kind-vault { background: #fdecec; color: #8a2020; }
+        .kind-notes { background: #fdecec; color: #8a2020; }
         .result-role {
             font-size: 11px;
             color: #888;
@@ -35,11 +35,11 @@
         <main class="app-content">
             <h2>Search</h2>
             <p class="muted" style="margin: -10px 0 16px 0; font-size: 12px;">
-                One box across every chat, note, remembered fact, fetched page and vault item.
+                One box across every chat, note, remembered fact, fetched page and notes item.
             </p>
 
             <form class="search-form" id="search-form">
-                <input type="text" name="q" id="search-input" value="{{.Query}}" placeholder="Search chats, notes, vault…" autofocus>
+                <input type="text" name="q" id="search-input" value="{{.Query}}" placeholder="Search chats, entries, notes…" autofocus>
                 <button type="submit" id="search-btn">Search</button>
             </form>
 

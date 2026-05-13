@@ -41,7 +41,6 @@ var (
 	googleClientID     string
 	googleClientSecret string
 	googleRedirectURI  string
-	allowedEmails      map[string]bool
 	sessionSecret      []byte
 	devToken           string
 	apiKey             string
@@ -67,15 +66,6 @@ func main() {
 		googleRedirectURI = "http://localhost:8000/auth/callback"
 	}
 
-	// Parse allowed emails
-	allowedEmails = make(map[string]bool)
-	for _, email := range strings.Split(os.Getenv("ALLOWED_EMAILS"), ",") {
-		email = strings.TrimSpace(strings.ToLower(email))
-		if email != "" {
-			allowedEmails[email] = true
-		}
-	}
-
 	// Session secret
 	sessionSecret = []byte(os.Getenv("SESSION_SECRET"))
 	if len(sessionSecret) == 0 {
@@ -93,6 +83,8 @@ func main() {
 		log.Fatal("Database init failed:", err)
 	}
 	defer db.Close()
+
+	seedUsers()
 
 	// Parse templates
 	funcs := template.FuncMap{
@@ -130,15 +122,15 @@ func main() {
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
-	http.HandleFunc("/admin/add-admin", requireAuth(requireAdmin(handleAddAdmin)))
-	http.HandleFunc("/admin/remove-admin", requireAuth(requireAdmin(handleRemoveAdmin)))
+	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
+	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
-	http.HandleFunc("/vault", requireAuth(handleVault))
-	http.HandleFunc("/vault/add", requireAuth(handleVaultAdd))
-	http.HandleFunc("/vault/edit/", requireAuth(handleVaultEdit))
-	http.HandleFunc("/vault/delete/", requireAuth(handleVaultDelete))
+	http.HandleFunc("/notes", requireAuth(handleNotes))
+	http.HandleFunc("/notes/add", requireAuth(handleNoteAdd))
+	http.HandleFunc("/notes/edit/", requireAuth(handleNoteEdit))
+	http.HandleFunc("/notes/delete/", requireAuth(handleNoteDelete))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -147,7 +139,7 @@ func main() {
 	
 	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
-	tools.SetVaultStorage(&vaultStorage{})
+	tools.SetNoteStorage(&noteStorage{})
 	tools.SetIntegrationChecker(func(name string) bool {
 		switch name {
 		case "brave_search":
@@ -193,44 +185,44 @@ func (s *dbStorage) SearchEntries(query string) ([]map[string]interface{}, error
 	return db.SearchEntries(query)
 }
 
-// vaultStorage implements tools.VaultStorage interface
-type vaultStorage struct{}
+// noteStorage implements tools.NoteStorage interface
+type noteStorage struct{}
 
-func (v *vaultStorage) AddVaultItem(category, name, description, details, credentials, notes string) (int64, error) {
-	return db.AddVaultItem(category, name, description, details, credentials, notes)
+func (v *noteStorage) AddNoteItem(category, name, description, details, credentials, notes string) (int64, error) {
+	return db.AddNoteItem(category, name, description, details, credentials, notes)
 }
 
-func (v *vaultStorage) SearchVault(query string) ([]map[string]interface{}, error) {
-	items, err := db.SearchVault(query)
+func (v *noteStorage) SearchNotes(query string) ([]map[string]interface{}, error) {
+	items, err := db.SearchNotes(query)
 	if err != nil {
 		return nil, err
 	}
-	return vaultItemsToMaps(items), nil
+	return noteItemsToMaps(items), nil
 }
 
-func (v *vaultStorage) GetVaultItems(category string) ([]map[string]interface{}, error) {
-	items, err := db.GetVaultItems(category)
+func (v *noteStorage) GetNoteItems(category string) ([]map[string]interface{}, error) {
+	items, err := db.GetNoteItems(category)
 	if err != nil {
 		return nil, err
 	}
-	return vaultItemsToMaps(items), nil
+	return noteItemsToMaps(items), nil
 }
 
-func (v *vaultStorage) GetVaultItem(id int64) (map[string]interface{}, error) {
-	item, err := db.GetVaultItem(id)
+func (v *noteStorage) GetNoteItem(id int64) (map[string]interface{}, error) {
+	item, err := db.GetNoteItem(id)
 	if err != nil {
 		return nil, err
 	}
-	return vaultItemToMap(item), nil
+	return noteItemToMap(item), nil
 }
 
-func (v *vaultStorage) UpdateVaultItem(id int64, updates map[string]interface{}) error {
+func (v *noteStorage) UpdateNoteItem(id int64, updates map[string]interface{}) error {
 	// Get current item, apply updates
-	item, err := db.GetVaultItem(id)
+	item, err := db.GetNoteItem(id)
 	if err != nil {
 		return err
 	}
-	
+
 	// Apply updates
 	if val, ok := updates["name"].(string); ok && val != "" {
 		item.Name = val
@@ -253,11 +245,11 @@ func (v *vaultStorage) UpdateVaultItem(id int64, updates map[string]interface{})
 	if val, ok := updates["category"].(string); ok && val != "" {
 		item.Category = val
 	}
-	
-	return db.UpdateVaultItem(id, item.Category, item.Name, item.Description, item.Details, item.Credentials, item.Notes, item.Status)
+
+	return db.UpdateNoteItem(id, item.Category, item.Name, item.Description, item.Details, item.Credentials, item.Notes, item.Status)
 }
 
-func vaultItemToMap(item *db.VaultItem) map[string]interface{} {
+func noteItemToMap(item *db.NoteItem) map[string]interface{} {
 	return map[string]interface{}{
 		"ID":          item.ID,
 		"Category":    item.Category,
@@ -270,7 +262,7 @@ func vaultItemToMap(item *db.VaultItem) map[string]interface{} {
 	}
 }
 
-func vaultItemsToMaps(items []db.VaultItem) []map[string]interface{} {
+func noteItemsToMaps(items []db.NoteItem) []map[string]interface{} {
 	result := make([]map[string]interface{}, len(items))
 	for i, item := range items {
 		result[i] = map[string]interface{}{
@@ -285,6 +277,26 @@ func vaultItemsToMaps(items []db.VaultItem) []map[string]interface{} {
 		}
 	}
 	return result
+}
+
+func seedUsers() {
+	if db.UserCount() > 0 {
+		return
+	}
+	emails := os.Getenv("ALLOWED_EMAILS")
+	if emails == "" {
+		return
+	}
+	for _, email := range strings.Split(emails, ",") {
+		email = strings.TrimSpace(strings.ToLower(email))
+		if email != "" {
+			if err := db.AddUser(email, "", "admin", "seed"); err != nil {
+				log.Printf("Failed to seed user %s: %v", email, err)
+			} else {
+				log.Printf("Seeded admin user: %s", email)
+			}
+		}
+	}
 }
 
 // loadEnv reads key=value pairs from a .env file in the working directory and
@@ -357,6 +369,10 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 		session := getSession(r)
 		if session == nil {
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			return
+		}
+		if !db.IsUser(session.Email) {
+			http.Error(w, "Unauthorized: your email is not allowed", http.StatusForbidden)
 			return
 		}
 		handler(w, r)
@@ -498,9 +514,8 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if email is allowed
 	email := strings.ToLower(userInfo.Email)
-	if len(allowedEmails) > 0 && !allowedEmails[email] {
+	if !db.IsUser(email) {
 		log.Printf("Unauthorized login attempt: %s", email)
 		http.Error(w, "Unauthorized: your email is not allowed", 403)
 		return
@@ -798,7 +813,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Unified search across chats, entries, and vault.
+	// Unified search across chats, entries, and notes.
 	results, err := db.SearchAll(query)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
@@ -867,9 +882,9 @@ Context: This is a Muslim family in the UK. You don't need to mention Islam in e
 You are BOTH an assistant and the keeper of the family's knowledge base. Every conversation is automatically saved and indexed, so the user can search their past questions and your answers later from /search. But you also have tools to deliberately capture important things so they become first-class, searchable entries:
 
 - remember: When the user shares a fact worth keeping (a decision, a name, an address, a preference, a process), save it. Use a short descriptive title.
-- vault_add: When the user shares an account, credential, password, key, contact, document, asset, or important instruction, put it in the vault. Prefer this over plain notes for anything that belongs in a "password manager / family vault" category.
+- note_add: When the user shares an account, credential, password, key, contact, document, asset, or important instruction, put it in notes. Prefer this over plain remembered facts for anything that belongs in a structured notes category.
 - fetch: When you pull a URL, it is automatically cached, so the user can search it later.
-- recall / vault_search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
+- recall / note_search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
 
 You have tools available:
 - fetch: Fetch websites, GitHub repos, docs. Content is saved to memory.
@@ -880,7 +895,7 @@ You have tools available:
 - www: Search the web for current information.
 - email_check: Check the assistant's inbox.
 - email_send: Send an email. When the user asks you to send them an email, USE THIS TOOL to actually send it - don't just write out what the email would say. Actually call the tool.
-- vault_add / vault_search / vault_update: Manage the family vault (accounts, credentials, contacts, documents, instructions).
+- note_add / note_search / note_update: Manage family notes (accounts, credentials, contacts, documents, instructions).
 
 When asked to send information about a topic, USE the research tools first (www, wikipedia, reminder) to gather accurate information, then send the email with that information.
 
@@ -1247,7 +1262,7 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 		}
 		
 		// Check if user is admin (either in admins table or in ALLOWED_EMAILS as fallback)
-		if !db.IsAdmin(session.Email) && !allowedEmails[strings.ToLower(session.Email)] {
+		if !db.IsAdmin(session.Email) {
 			http.Error(w, "Admin access required", http.StatusForbidden)
 			return
 		}
@@ -1259,7 +1274,7 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	session := getSession(r)
 	accounts, _ := db.GetAccounts()
-	admins, _ := db.GetAdmins()
+	users, _ := db.GetUsers()
 	toolDefs := tools.GetTools()
 	
 	// Build integrations with enable/disable state
@@ -1317,7 +1332,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	
 	tmpl.ExecuteTemplate(w, "admin.html", map[string]interface{}{
 		"Accounts":     accounts,
-		"Admins":       admins,
+		"Users":        users,
 		"Integrations": integrations,
 		"Tools":        toolDefs,
 		"TaskStats":    taskStats,
@@ -1330,47 +1345,48 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleAddAdmin(w http.ResponseWriter, r *http.Request) {
+func handleAddUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
-	
+
 	session := getSession(r)
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	name := strings.TrimSpace(r.FormValue("name"))
-	
+	role := strings.TrimSpace(r.FormValue("role"))
+
 	if email == "" {
 		http.Redirect(w, r, "/admin?error=Email+required", http.StatusSeeOther)
 		return
 	}
-	
-	err := db.AddAdmin(email, name, "admin", session.Email)
+	if role != "admin" && role != "user" {
+		role = "user"
+	}
+
+	err := db.AddUser(email, name, role, session.Email)
 	if err != nil {
-		http.Redirect(w, r, "/admin?error=Failed+to+add+admin", http.StatusSeeOther)
+		http.Redirect(w, r, "/admin?error=Failed+to+add+user", http.StatusSeeOther)
 		return
 	}
-	
-	// Also add to allowed emails for this session
-	allowedEmails[email] = true
-	
-	http.Redirect(w, r, "/admin?msg=Admin+added", http.StatusSeeOther)
+
+	http.Redirect(w, r, "/admin?msg=User+added", http.StatusSeeOther)
 }
 
-func handleRemoveAdmin(w http.ResponseWriter, r *http.Request) {
+func handleRemoveUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
-	
+
 	id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
 	if id == 0 {
 		http.Redirect(w, r, "/admin?error=Invalid+ID", http.StatusSeeOther)
 		return
 	}
-	
-	db.RemoveAdmin(id)
-	http.Redirect(w, r, "/admin?msg=Admin+removed", http.StatusSeeOther)
+
+	db.RemoveUser(id)
+	http.Redirect(w, r, "/admin?msg=User+removed", http.StatusSeeOther)
 }
 
 func handleAddAccount(w http.ResponseWriter, r *http.Request) {
@@ -1440,63 +1456,63 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
 }
 
-// Vault handlers
+// Notes handlers
 
-func handleVault(w http.ResponseWriter, r *http.Request) {
+func handleNotes(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
-	
-	items, err := db.GetVaultItems(category)
+
+	items, err := db.GetNoteItems(category)
 	if err != nil {
-		http.Error(w, "Failed to get vault items", http.StatusInternalServerError)
+		http.Error(w, "Failed to get note items", http.StatusInternalServerError)
 		return
 	}
-	
-	categories, _ := db.GetVaultCategories()
-	
+
+	categories, _ := db.GetNoteCategories()
+
 	data := map[string]interface{}{
 		"Items":      items,
 		"Categories": categories,
 		"Category":   category,
 	}
-	
-	tmpl.ExecuteTemplate(w, "vault.html", data)
+
+	tmpl.ExecuteTemplate(w, "notes.html", data)
 }
 
-func handleVaultAdd(w http.ResponseWriter, r *http.Request) {
+func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 		return
 	}
-	
+
 	category := strings.TrimSpace(r.FormValue("category"))
 	name := strings.TrimSpace(r.FormValue("name"))
 	description := strings.TrimSpace(r.FormValue("description"))
 	details := strings.TrimSpace(r.FormValue("details"))
 	credentials := r.FormValue("credentials") // Don't trim
 	notes := strings.TrimSpace(r.FormValue("notes"))
-	
+
 	if category == "" || name == "" {
-		http.Redirect(w, r, "/vault?error=Category+and+name+required", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes?error=Category+and+name+required", http.StatusSeeOther)
 		return
 	}
-	
-	_, err := db.AddVaultItem(category, name, description, details, credentials, notes)
+
+	_, err := db.AddNoteItem(category, name, description, details, credentials, notes)
 	if err != nil {
-		http.Redirect(w, r, "/vault?error=Failed+to+add+item", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes?error=Failed+to+add+item", http.StatusSeeOther)
 		return
 	}
-	
-	http.Redirect(w, r, "/vault?category="+category, http.StatusSeeOther)
+
+	http.Redirect(w, r, "/notes?category="+category, http.StatusSeeOther)
 }
 
-func handleVaultEdit(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/vault/edit/")
+func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/notes/edit/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil || id == 0 {
-		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 		return
 	}
-	
+
 	if r.Method == "POST" {
 		category := strings.TrimSpace(r.FormValue("category"))
 		name := strings.TrimSpace(r.FormValue("name"))
@@ -1505,42 +1521,42 @@ func handleVaultEdit(w http.ResponseWriter, r *http.Request) {
 		credentials := r.FormValue("credentials")
 		notes := strings.TrimSpace(r.FormValue("notes"))
 		status := strings.TrimSpace(r.FormValue("status"))
-		
-		err := db.UpdateVaultItem(id, category, name, description, details, credentials, notes, status)
+
+		err := db.UpdateNoteItem(id, category, name, description, details, credentials, notes, status)
 		if err != nil {
-			http.Redirect(w, r, "/vault?error=Failed+to+update", http.StatusSeeOther)
+			http.Redirect(w, r, "/notes?error=Failed+to+update", http.StatusSeeOther)
 			return
 		}
-		
-		http.Redirect(w, r, "/vault?category="+category, http.StatusSeeOther)
+
+		http.Redirect(w, r, "/notes?category="+category, http.StatusSeeOther)
 		return
 	}
-	
-	item, err := db.GetVaultItem(id)
+
+	item, err := db.GetNoteItem(id)
 	if err != nil {
-		http.Redirect(w, r, "/vault?error=Item+not+found", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes?error=Item+not+found", http.StatusSeeOther)
 		return
 	}
-	
+
 	data := map[string]interface{}{
 		"Item": item,
 	}
-	tmpl.ExecuteTemplate(w, "vault_edit.html", data)
+	tmpl.ExecuteTemplate(w, "notes_edit.html", data)
 }
 
-func handleVaultDelete(w http.ResponseWriter, r *http.Request) {
+func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 		return
 	}
-	
-	idStr := strings.TrimPrefix(r.URL.Path, "/vault/delete/")
+
+	idStr := strings.TrimPrefix(r.URL.Path, "/notes/delete/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil || id == 0 {
-		http.Redirect(w, r, "/vault", http.StatusSeeOther)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 		return
 	}
-	
-	db.DeleteVaultItem(id)
-	http.Redirect(w, r, "/vault?msg=Item+deleted", http.StatusSeeOther)
+
+	db.DeleteNoteItem(id)
+	http.Redirect(w, r, "/notes?msg=Item+deleted", http.StatusSeeOther)
 }

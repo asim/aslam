@@ -12,15 +12,7 @@ import (
 	"aslam/tools"
 )
 
-var emailAllowedSenders map[string]bool
-
 func startEmailWorker() {
-	// Build allowed senders map
-	emailAllowedSenders = make(map[string]bool)
-	for email := range allowedEmails {
-		emailAllowedSenders[email] = true
-	}
-
 	// Check if email is configured
 	if os.Getenv("GMAIL_USER") == "" || os.Getenv("GMAIL_APP_PASSWORD") == "" {
 		log.Println("Email worker: GMAIL credentials not configured, skipping")
@@ -80,7 +72,7 @@ func processEmail(email tools.Email) {
 	}
 	
 	// Check if sender is allowed
-	if !emailAllowedSenders[strings.ToLower(senderEmail)] {
+	if !db.IsUser(strings.ToLower(senderEmail)) {
 		log.Printf("Email worker: ignoring email from unauthorized sender: %s", senderEmail)
 		return
 	}

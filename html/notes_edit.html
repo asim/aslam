@@ -1,10 +1,10 @@
-{{define "vault_edit.html"}}
+{{define "notes_edit.html"}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Vault Item - Aslam</title>
+    <title>Edit Note - Aslam</title>
     {{template "style"}}
     <style>
         .edit-form label {
@@ -50,9 +50,9 @@
         {{template "header"}}
         <main class="app-content">
             <h2>Edit: {{.Item.Name}}</h2>
-            <p class="muted" style="margin-bottom: 20px"><a href="/vault">← back to vault</a></p>
+            <p class="muted" style="margin-bottom: 20px"><a href="/notes">← back to notes</a></p>
 
-            <form action="/vault/edit/{{.Item.ID}}" method="POST" class="edit-form">
+            <form action="/notes/edit/{{.Item.ID}}" method="POST" class="edit-form">
                 <label>Category
                     <select name="category" required>
                         <option value="asset" {{if eq .Item.Category "asset"}}selected{{end}}>Asset</option>
@@ -86,11 +86,11 @@
                 </label>
                 <div class="buttons">
                     <button type="submit">Save Changes</button>
-                    <a href="/vault"><button type="button">Cancel</button></a>
+                    <a href="/notes"><button type="button">Cancel</button></a>
                 </div>
             </form>
 
-            <form action="/vault/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                 <p class="muted">Danger zone</p>
                 <button type="submit" class="delete-btn" onclick="return confirm('Delete this item permanently?')">Delete Item</button>
             </form>
