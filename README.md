@@ -1,36 +1,33 @@
 # Aslam
 
-An AI assistant for the family.
+A knowledge base for the family.
 
 ## What is this?
 
-Aslam is, first and foremost, an **AI assistant**. You chat with it — over the web, over email, or via the CLI — and it helps you get things done: answering questions, researching topics, drafting emails, looking things up.
+Aslam is a **family knowledge base**. You save notes, credentials, thoughts, and information — and it's all encrypted, searchable, and organised in one place. AI works in the background to help organise, connect to sources, and retrieve what you need.
 
-Everything you ever ask it, and everything you ever tell it to remember, is quietly captured into an encrypted, **searchable knowledge base** running in the background. Over time, that knowledge base becomes a second brain: not just a record of conversations with an AI, but the place where passwords, credentials, contacts, decisions, and important notes all live — searchable in one place.
-
-You don't have to go back to the assistant to recover what you know. You can just search for it.
+Everything is stored in an encrypted database (SQLCipher / AES-256). You search it, you browse it, you own it.
 
 ## How it works
 
 ```
    ┌──────────────────────────────────┐
-   │       Ask Aslam (chat)           │
+   │           Input                   │
    │   - Web, email, CLI, API         │
    └──────────────┬───────────────────┘
                   │
                   ▼
    ┌──────────────────────────────────┐
-   │         AI Assistant              │
-   │   Claude + tools (search, fetch,  │
-   │   remember, recall, vault, …)     │
+   │         AI (background)           │
+   │   Organises, fetches, connects    │
+   │   to sources (Quran, Hadith, web) │
    └──────────────┬───────────────────┘
                   │
                   ▼
    ┌──────────────────────────────────┐
    │      Knowledge Base (SQLCipher)   │
    │                                   │
-   │   chats · messages · entries      │
-   │   notes · URLs · vault items      │
+   │   chats · notes · entries         │
    │   credentials · contacts · docs   │
    └──────────────┬───────────────────┘
                   │
@@ -38,42 +35,43 @@ You don't have to go back to the assistant to recover what you know. You can jus
    ┌──────────────────────────────────┐
    │            Search                 │
    │   One box across everything you   │
-   │   have ever said, saved, or       │
-   │   stored.                         │
+   │   have ever saved or stored.      │
    └──────────────────────────────────┘
 ```
-
-The assistant is the front door. The knowledge base runs silently behind it.
 
 ## Why?
 
 - **Gmail is identity, not knowledge.** 10+ years of email is a graveyard, not a resource.
 - **Shared docs are flat.** A Google Doc works for lists, but not for interconnected knowledge.
 - **Memory is unreliable.** Things get forgotten. Context gets lost.
-- **AI chats are ephemeral.** A great answer from ChatGPT is useless if you can't find it next week.
 - **Continuity matters.** If I die tomorrow, what do people need to know?
-
-Aslam is the fix: a helper you can talk to *and* a searchable archive of every helpful thing it, or you, ever produced.
 
 ## What lives in the knowledge base?
 
-- **Chats** — every question you've ever asked and every answer given
-- **Notes & memories** — things you told Aslam to remember
-- **Fetched pages** — URLs the assistant has pulled and cached
-- **Vault items** — passwords, credentials, accounts, important contacts (encrypted at rest)
-- **Entries** — thoughts, projects, decisions, instructions, documents
+- **Chats** — interactions with the tool, stored and searchable
+- **Notes** — credentials, accounts, contacts, instructions, documents, anything worth keeping
+- **Entries** — thoughts, memories, fetched URLs, saved references
 
 All of it indexed. All of it searchable from `/search`.
 
 ## Principles
 
-1. **Assistant first** — the primary action is asking Aslam a question
-2. **Everything is captured** — conversations and memories flow into the knowledge base automatically
+1. **Save, search, retrieve** — the primary actions
+2. **Everything is captured** — notes, chats and entries flow into the knowledge base
 3. **Searchable** — if you can't find it, it doesn't exist
-4. **Secure** — sensitive data encrypted at rest (SQLCipher / AES-256)
+4. **Secure** — all data encrypted at rest (SQLCipher / AES-256)
 5. **Simple** — easy to add, easy to retrieve
-6. **Shareable** — family can access what they need
+6. **Shareable** — family members can access what they need
 7. **Durable** — outlives any single service or platform
+
+## Users
+
+Access is managed through a users table with two roles:
+
+- **admin** — full access including user management and system configuration
+- **user** — access to chats, notes, and search
+
+On first run, `ALLOWED_EMAILS` seeds the initial admin(s). After that, admins add users from `/admin`.
 
 ## Installation
 
@@ -120,96 +118,47 @@ sudo systemctl enable aslam
 sudo systemctl start aslam
 ```
 
-### Email Setup (Optional)
+### Auto-deploy
 
-To enable the assistant's own email inbox:
+A deploy script checks GitHub for changes, rebuilds, and restarts:
 
-1. Create a Google Workspace user (e.g., assistant@yourdomain.com)
-2. Enable 2FA on that account
-3. Generate an App Password (Security → App Passwords)
-4. Add to `.env`:
-   ```
-   GMAIL_USER=assistant@yourdomain.com
-   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-   ```
-5. Add to systemd service or restart
+```bash
+# Add to cron (every 5 minutes)
+(crontab -l 2>/dev/null; echo "*/5 * * * * /home/aslam/scripts/deploy.sh >> /home/aslam/deploy.log 2>&1") | crontab -
+```
 
 ### First Run
 
 1. Visit your domain and log in with Google
-2. Start chatting from the home page — just type your question
-3. Use `/search` to find anything you've ever asked or saved
-4. Use `/vault` to store credentials and accounts
-5. Go to `/admin` to document service accounts and add family admins
+2. Use the home page input to interact with the tool
+3. Use `/search` to find anything you've saved
+4. Use `/notes` to store credentials, accounts, and important info
+5. Go to `/admin` to manage users and service accounts
 
 ## Tools
 
-The assistant has access to these tools:
+The AI has access to these tools to help organise and retrieve:
 
-- **fetch** — Fetch URL content and save to memory
-- **recall** — Search memory/knowledge base
-- **remember** — Save notes to memory
+- **fetch** — Fetch URL content and save to the knowledge base
+- **recall** — Search the knowledge base
+- **remember** — Save a note or fact
 - **reminder** — Search Islamic sources (Quran, Hadith)
-- **wikipedia** — Search Wikipedia for factual information
+- **wikipedia** — Look up factual information
 - **www** — Web search via Brave Search API
-- **email_check** — Check assistant's inbox
-- **email_send** — Send email from assistant's address
-- **vault_add / vault_search / vault_update** — Manage vault items
-
-Every tool call contributes to the knowledge base: fetched URLs are cached, remembered notes become searchable entries, vault writes become searchable vault items.
-
-## Trust Model
-
-The assistant operates on a levelled trust model. Access to personal accounts is earned over time as the system proves reliable and secure.
-
-### Level 0: Sandbox (Current)
-- Assistant has its own identity (assistant@yourdomain.com)
-- Own email inbox, cannot access user accounts
-- Users forward emails to assistant when they want it involved
-- Safe to experiment — assistant can't touch your stuff
-
-### Level 1: Read Calendar (Future)
-- Assistant can read your Google Calendar (read-only)
-- Can answer "What's on my schedule today?"
-- Cannot create, modify, or delete events
-- Requires: OAuth consent with calendar.readonly scope
-
-### Level 2: Read Email (Future)
-- Assistant can read your Gmail inbox
-- Can summarise emails, find information, track threads
-- Cannot send, delete, or modify emails
-- Requires: OAuth consent with gmail.readonly scope
-- Requires: Prompt injection defenses, audit logging
-
-### Level 3: Act As You (Future)
-- Assistant can send emails as you
-- Can create calendar events
-- Full delegation of digital identity
-- Requires: Explicit confirmation flows ("Send this email? Y/N")
-- Requires: Rate limits, scope limits, comprehensive audit trail
-- Requires: Battle-tested prompt injection defenses
-
-### Security Requirements (Before Advancing)
-- [ ] Input sanitisation and validation
-- [ ] Output validation (assistant can't leak data)
-- [ ] Audit logging (every action logged with context)
-- [ ] Confirmation flows for destructive actions
-- [ ] Rate limiting
-- [ ] Scope limiting (e.g., only last 7 days of email)
-- [ ] Regular security review
+- **email_check** — Check the inbox
+- **email_send** — Send email
+- **note_add / note_search / note_update** — Manage notes (credentials, accounts, contacts, docs)
 
 ## Purpose
 
 Aslam exists for two reasons:
 
-**1. A helpful assistant today**
-- An AI you can ask anything, over any channel
-- Tools that actually do things — fetch, search, remember, email
-- A conversation that isn't lost the moment you close the tab
+**1. A family knowledge base today**
+- A single place for everything worth keeping
+- Credentials, contacts, decisions, instructions — searchable and encrypted
+- Islamic knowledge sources built in
 
-**2. A second brain and digital estate**
-
-Because every conversation and every memory lands in the knowledge base, over time Aslam becomes the map of your digital life — and, when the time comes, the map that your family can follow.
+**2. A digital estate when needed**
 
 We live in a purely digital world. When someone dies, their family must navigate:
 - Multiple email accounts
@@ -219,7 +168,7 @@ We live in a purely digital world. When someone dies, their family must navigate
 - Passwords and credentials
 - Digital assets with real value
 
-This system aims to be that map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
+This system aims to be the map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
 
 > *"When a man dies, his deeds come to an end except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for him."*
 > — Prophet Muhammad ﷺ (Sahih Muslim)
@@ -228,4 +177,4 @@ This is the knowledge left behind.
 
 ---
 
-*A helper, a second brain, a family vault, a digital estate.*
+*A family knowledge base.*
