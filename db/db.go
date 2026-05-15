@@ -1409,6 +1409,11 @@ func GetNoteCategories() ([]string, error) {
 
 // IslamQA functions
 
+func ClearIslamQA() {
+	DB.Exec(`DELETE FROM islamqa`)
+	DB.Exec(`DELETE FROM islamqa_fts`)
+}
+
 func IslamQACount() int {
 	var count int
 	DB.QueryRow(`SELECT COUNT(*) FROM islamqa`).Scan(&count)

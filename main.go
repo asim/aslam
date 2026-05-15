@@ -309,11 +309,16 @@ func seedUsers() {
 	}
 }
 
+const islamqaVersion = "2"
+
 func loadIslamQA() {
-	if db.IslamQACount() > 0 {
-		log.Printf("IslamQA already loaded (%d entries)", db.IslamQACount())
+	if db.GetSetting("islamqa_version") == islamqaVersion {
+		log.Printf("IslamQA v%s already loaded (%d entries)", islamqaVersion, db.IslamQACount())
 		return
 	}
+
+	log.Printf("IslamQA dataset changed (want v%s), reloading...", islamqaVersion)
+	db.ClearIslamQA()
 
 	r, err := zip.NewReader(bytes.NewReader(islamqaZip), int64(len(islamqaZip)))
 	if err != nil {
@@ -359,7 +364,8 @@ func loadIslamQA() {
 		}
 	}
 
-	log.Printf("Loaded %d IslamQA entries", total)
+	db.SetSetting("islamqa_version", islamqaVersion)
+	log.Printf("Loaded %d IslamQA entries (v%s)", total, islamqaVersion)
 }
 
 // loadEnv reads key=value pairs from a .env file in the working directory and
