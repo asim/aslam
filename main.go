@@ -327,9 +327,6 @@ func loadIslamQA() {
 			continue
 		}
 
-		category := strings.TrimSuffix(filepath.Base(f.Name), ".json")
-		category = strings.ReplaceAll(category, "-", " ")
-
 		rc, err := f.Open()
 		if err != nil {
 			log.Printf("Failed to open %s in zip: %v", f.Name, err)
@@ -339,6 +336,7 @@ func loadIslamQA() {
 		var entries []struct {
 			Question string `json:"question"`
 			Answer   string `json:"answer"`
+			Category string `json:"category"`
 		}
 		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
 			rc.Close()
@@ -348,6 +346,11 @@ func loadIslamQA() {
 		rc.Close()
 
 		for _, e := range entries {
+			category := e.Category
+			if category == "" {
+				category = strings.TrimSuffix(filepath.Base(f.Name), ".json")
+				category = strings.ReplaceAll(category, "-", " ")
+			}
 			if err := db.InsertIslamQA(category, e.Question, e.Answer); err != nil {
 				log.Printf("Failed to insert IslamQA entry: %v", err)
 			} else {
