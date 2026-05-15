@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"crypto/rand"
 	"embed"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +33,9 @@ var readmeContent string
 
 //go:embed claude.md
 var claudeContent string
+
+//go:embed archive.zip
+var islamqaZip []byte
 
 var (
 	tmpl           *template.Template
@@ -85,6 +90,7 @@ func main() {
 	defer db.Close()
 
 	seedUsers()
+	loadIslamQA()
 
 	// Parse templates
 	funcs := template.FuncMap{
@@ -183,6 +189,10 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 
 func (s *dbStorage) SearchEntries(query string) ([]map[string]interface{}, error) {
 	return db.SearchEntries(query)
+}
+
+func (s *dbStorage) SearchIslamQA(query string) ([]map[string]interface{}, error) {
+	return db.SearchIslamQA(query)
 }
 
 // noteStorage implements tools.NoteStorage interface
@@ -297,6 +307,56 @@ func seedUsers() {
 			}
 		}
 	}
+}
+
+func loadIslamQA() {
+	if db.IslamQACount() > 0 {
+		log.Printf("IslamQA already loaded (%d entries)", db.IslamQACount())
+		return
+	}
+
+	r, err := zip.NewReader(bytes.NewReader(islamqaZip), int64(len(islamqaZip)))
+	if err != nil {
+		log.Printf("Failed to open embedded archive.zip: %v", err)
+		return
+	}
+
+	total := 0
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() || !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+
+		category := strings.TrimSuffix(filepath.Base(f.Name), ".json")
+		category = strings.ReplaceAll(category, "-", " ")
+
+		rc, err := f.Open()
+		if err != nil {
+			log.Printf("Failed to open %s in zip: %v", f.Name, err)
+			continue
+		}
+
+		var entries []struct {
+			Question string `json:"question"`
+			Answer   string `json:"answer"`
+		}
+		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
+			rc.Close()
+			log.Printf("Failed to decode %s: %v", f.Name, err)
+			continue
+		}
+		rc.Close()
+
+		for _, e := range entries {
+			if err := db.InsertIslamQA(category, e.Question, e.Answer); err != nil {
+				log.Printf("Failed to insert IslamQA entry: %v", err)
+			} else {
+				total++
+			}
+		}
+	}
+
+	log.Printf("Loaded %d IslamQA entries", total)
 }
 
 // loadEnv reads key=value pairs from a .env file in the working directory and

@@ -338,6 +338,42 @@ func Migrate() error {
 		INSERT INTO entries_fts(docid, title, content) VALUES (new.id, new.title, new.content);
 	END`)
 
+	// IslamQA
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS islamqa (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			category TEXT NOT NULL,
+			question TEXT NOT NULL,
+			answer TEXT NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	// FTS for islamqa
+	_, err = DB.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS islamqa_fts USING fts4(
+			question,
+			answer,
+			content='islamqa'
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS islamqa_ai AFTER INSERT ON islamqa BEGIN
+		INSERT INTO islamqa_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS islamqa_ad AFTER DELETE ON islamqa BEGIN
+		DELETE FROM islamqa_fts WHERE docid = old.id;
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS islamqa_au AFTER UPDATE ON islamqa BEGIN
+		DELETE FROM islamqa_fts WHERE docid = old.id;
+		INSERT INTO islamqa_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
+	END`)
+
 	// Tags
 	DB.Exec(`
 		CREATE TABLE IF NOT EXISTS tags (
@@ -519,6 +555,25 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 				"Role":      typ,
 				"URL":       fmt.Sprintf("/entries/%d", e["ID"]),
 				"CreatedAt": createdAt,
+			})
+		}
+	}
+
+	// IslamQA results
+	if qaResults, err := SearchIslamQA(query); err == nil {
+		for _, q := range qaResults {
+			question, _ := q["Question"].(string)
+			answer, _ := q["Answer"].(string)
+			category, _ := q["Category"].(string)
+			if len(answer) > 500 {
+				answer = answer[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "islamqa",
+				"Title":   question,
+				"Content": answer,
+				"Role":    category,
+				"URL":     "",
 			})
 		}
 	}
@@ -1350,4 +1405,46 @@ func GetNoteCategories() ([]string, error) {
 		categories = append(categories, cat)
 	}
 	return categories, nil
+}
+
+// IslamQA functions
+
+func IslamQACount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM islamqa`).Scan(&count)
+	return count
+}
+
+func InsertIslamQA(category, question, answer string) error {
+	_, err := DB.Exec(`INSERT INTO islamqa (category, question, answer) VALUES (?, ?, ?)`,
+		category, question, answer)
+	return err
+}
+
+func SearchIslamQA(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT i.id, i.category, i.question, i.answer
+		FROM islamqa i
+		JOIN islamqa_fts fts ON i.id = fts.docid
+		WHERE islamqa_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var category, question, answer string
+		rows.Scan(&id, &category, &question, &answer)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Category": category,
+			"Question": question,
+			"Answer":   answer,
+		})
+	}
+	return results, nil
 }

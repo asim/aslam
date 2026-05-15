@@ -12,6 +12,7 @@ type Storage interface {
 	SaveEntry(entryType, title, content, metadata string) (int64, error)
 	GetEntryByTitle(entryType, title string) (map[string]interface{}, error)
 	SearchEntries(query string) ([]map[string]interface{}, error)
+	SearchIslamQA(query string) ([]map[string]interface{}, error)
 }
 
 // NoteStorage interface for note operations
@@ -282,6 +283,20 @@ func GetTools() []ToolDefinition {
 				"required": []string{"id"},
 			},
 		},
+		{
+			Name:        "islamqa",
+			Description: "Search IslamQA for scholarly answers to Islamic questions. Returns answers from Sheikh Muhammed Salih Al-Munajjid's Q&A archive covering faith, fiqh, family, history, and more. Use this when the user asks about Islamic rulings, practices, or questions that scholars have already answered.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The Islamic question or topic to search for",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
@@ -310,6 +325,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeNoteSearch(input)
 	case "note_update":
 		return executeNoteUpdate(input)
+	case "islamqa":
+		return executeIslamQA(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -594,4 +611,32 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 	}
 
 	return fmt.Sprintf("Updated note item: %s", existing["Name"]), nil
+}
+
+func executeIslamQA(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	if store == nil {
+		return "IslamQA not available", nil
+	}
+	results, err := store.SearchIslamQA(query)
+	if err != nil {
+		return "", err
+	}
+	if len(results) == 0 {
+		return "No results found in IslamQA.", nil
+	}
+	var output string
+	for i, r := range results {
+		question, _ := r["Question"].(string)
+		answer, _ := r["Answer"].(string)
+		category, _ := r["Category"].(string)
+		if len(answer) > 2000 {
+			answer = answer[:2000] + "..."
+		}
+		output += fmt.Sprintf("[%d] Category: %s\nQ: %s\nA: %s\n\n", i+1, category, question, answer)
+	}
+	return output, nil
 }
