@@ -1,0 +1,51 @@
+{{define "islamqa.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{index . "Question"}} - Aslam</title>
+    {{template "style"}}
+    <style>
+        .qa-category {
+            display: inline-block;
+            font-size: 12px;
+            background: #f0f0f0;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+        .qa-question {
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .qa-answer {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .qa-source {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header"}}
+        <main class="app-content">
+            <p style="margin-bottom: 12px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
+            <span class="qa-category">{{index . "Category"}}</span>
+            <h2 class="qa-question">{{index . "Question"}}</h2>
+            <div class="qa-answer">{{index . "Answer"}}</div>
+            <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

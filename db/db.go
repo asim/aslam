@@ -573,7 +573,7 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 				"Title":   question,
 				"Content": answer,
 				"Role":    category,
-				"URL":     "",
+				"URL":     fmt.Sprintf("/islamqa/%d", q["ID"]),
 			})
 		}
 	}
@@ -1452,4 +1452,18 @@ func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 		})
 	}
 	return results, nil
+}
+
+func GetIslamQA(id int64) (map[string]interface{}, error) {
+	var category, question, answer string
+	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa WHERE id = ?`, id).Scan(&id, &category, &question, &answer)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":       id,
+		"Category": category,
+		"Question": question,
+		"Answer":   answer,
+	}, nil
 }

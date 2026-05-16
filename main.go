@@ -133,6 +133,7 @@ func main() {
 	http.HandleFunc("/search", requireAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
+	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
@@ -936,6 +937,21 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "entries.html", map[string]interface{}{
 		"Entries": entries,
 	})
+}
+
+func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/islamqa/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetIslamQA(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	tmpl.ExecuteTemplate(w, "islamqa.html", item)
 }
 
 func handleEntryView(w http.ResponseWriter, r *http.Request) {
