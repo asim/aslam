@@ -1,10 +1,10 @@
 # Aslam
 
-A knowledge base for the family.
+An Islamic knowledge base for Muslims.
 
 ## What is this?
 
-Aslam is a **family knowledge base**. You save notes, credentials, thoughts, and information — and it's all encrypted, searchable, and organised in one place. AI works in the background to help organise, connect to sources, and retrieve what you need.
+Aslam is a **knowledge base for seeking Islamic knowledge**. It connects you to authentic sources — Quran, Hadith, scholarly Q&A — and gives you a place to save reflections, notes, and references. AI works in the background to help find, organise, and connect information.
 
 Everything is stored in an encrypted database (SQLCipher / AES-256). You search it, you browse it, you own it.
 
@@ -41,27 +41,28 @@ Everything is stored in an encrypted database (SQLCipher / AES-256). You search 
 
 ## Why?
 
-- **Gmail is identity, not knowledge.** 10+ years of email is a graveyard, not a resource.
-- **Shared docs are flat.** A Google Doc works for lists, but not for interconnected knowledge.
-- **Memory is unreliable.** Things get forgotten. Context gets lost.
-- **Continuity matters.** If I die tomorrow, what do people need to know?
+- **Islamic knowledge is scattered.** Across apps, websites, books, bookmarks, memory.
+- **AI gives answers without sources.** You need to know *where* an answer comes from.
+- **What you learn gets lost.** Notes, reflections, references — gone the moment you close the tab.
+- **Authentic sources need to be accessible.** Quran, Hadith, scholarly rulings — searchable in one place.
 
 ## What lives in the knowledge base?
 
-- **Chats** — interactions with the tool, stored and searchable
-- **Notes** — credentials, accounts, contacts, instructions, documents, anything worth keeping
-- **Entries** — thoughts, memories, fetched URLs, saved references
+- **Islamic sources** — 4,200+ IslamQA scholarly Q&As, Quran, Hadith, Names of Allah (via reminder)
+- **Chats** — questions you've asked, answers with cited sources
+- **Notes** — your reflections, references, shared knowledge
+- **Entries** — saved facts, fetched URLs, stored information
 
 All of it indexed. All of it searchable from `/search`.
 
 ## Principles
 
-1. **Save, search, retrieve** — the primary actions
-2. **Everything is captured** — notes, chats and entries flow into the knowledge base
+1. **Authentic sources first** — Quran, Hadith, scholarly answers — not AI opinions
+2. **Save, search, retrieve** — the primary actions
 3. **Searchable** — if you can't find it, it doesn't exist
 4. **Secure** — all data encrypted at rest (SQLCipher / AES-256)
 5. **Simple** — easy to add, easy to retrieve
-6. **Shareable** — family members can access what they need
+6. **Shareable** — community members can access and contribute
 7. **Durable** — outlives any single service or platform
 
 ## Users
@@ -141,7 +142,7 @@ The AI has access to these tools to help organise and retrieve:
 
 - **fetch** — Fetch URL content and save to the knowledge base
 - **recall** — Search the knowledge base
-- **remember** — Save a note or fact
+- **store** — Save a note or fact
 - **reminder** — Search Islamic sources (Quran, Hadith)
 - **wikipedia** — Look up factual information
 - **www** — Web search via Brave Search API
@@ -151,30 +152,15 @@ The AI has access to these tools to help organise and retrieve:
 
 ## Purpose
 
-Aslam exists for two reasons:
+A place to seek, save, and share Islamic knowledge.
 
-**1. A family knowledge base today**
-- A single place for everything worth keeping
-- Credentials, contacts, decisions, instructions — searchable and encrypted
-- Islamic knowledge sources built in
-
-**2. A digital estate when needed**
-
-We live in a purely digital world. When someone dies, their family must navigate:
-- Multiple email accounts
-- Cryptocurrency wallets and keys
-- Subscriptions and services
-- Documents scattered across cloud storage
-- Passwords and credentials
-- Digital assets with real value
-
-This system aims to be the map. Not just a list of accounts, but the knowledge of how to access them, what matters, what can be ignored, and what needs to be done.
+The Quran and Hadith are the foundation. Scholarly answers provide context. Your reflections and notes build on top. Search ties it all together.
 
 > *"When a man dies, his deeds come to an end except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for him."*
 > — Prophet Muhammad ﷺ (Sahih Muslim)
 
-This is the knowledge left behind.
+This is beneficial knowledge, made searchable.
 
 ---
 
-*A family knowledge base.*
+*An Islamic knowledge base for Muslims.*
