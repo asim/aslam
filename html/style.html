@@ -1,16 +1,24 @@
 {{define "style"}}
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
         height: 100dvh;
         overflow: hidden;
-        font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 14px;
-        line-height: 1.5;
+        line-height: 1.6;
         background: #fff;
-        color: #000;
+        color: #1a1a1a;
     }
-    a { color: #000; }
+    a { color: #1a1a1a; }
     a:hover { opacity: 0.7; }
 
     /* Layout */
@@ -58,7 +66,7 @@
         max-height: 120px;
         padding: 10px 12px;
         resize: none;
-        font-size: 16px;
+        font-size: 15px;
         font-family: inherit;
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -117,4 +125,9 @@
         cursor: pointer;
     }
 </style>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+}
+</script>
 {{end}}

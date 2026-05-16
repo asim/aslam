@@ -112,6 +112,12 @@ func main() {
 	http.HandleFunc("/auth/callback", handleOAuthCallback)
 	http.HandleFunc("/auth/logout", handleLogout)
 
+	// PWA static files (no auth)
+	http.HandleFunc("/manifest.json", handleStatic("manifest.json", "application/json"))
+	http.HandleFunc("/sw.js", handleStatic("sw.js", "application/javascript"))
+	http.HandleFunc("/icon-192.png", handleStatic("icon-192.png", "image/png"))
+	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
+
 	// Protected routes
 	http.HandleFunc("/", requireAuth(handleHome))
 	http.HandleFunc("/chat", requireAuth(handleChat))
@@ -287,6 +293,18 @@ func noteItemsToMaps(items []db.NoteItem) []map[string]interface{} {
 		}
 	}
 	return result
+}
+
+func handleStatic(name, contentType string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := templates.ReadFile("html/" + name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Write(data)
+	}
 }
 
 func seedUsers() {
