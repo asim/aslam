@@ -96,18 +96,18 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "remember",
-			Description: "Save something to memory for later recall. Use this to store important facts, notes, or information the user wants you to remember.",
+			Name:        "store",
+			Description: "Save something to the knowledge base for later retrieval. Use this to store facts, notes, or information the user wants kept.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"title": map[string]interface{}{
 						"type":        "string",
-						"description": "Short title or key for this memory",
+						"description": "Short title or key for this entry",
 					},
 					"content": map[string]interface{}{
 						"type":        "string",
-						"description": "The information to remember",
+						"description": "The information to store",
 					},
 				},
 				"required": []string{"title", "content"},
@@ -307,7 +307,7 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeFetchURL(input)
 	case "recall":
 		return executeRecall(input)
-	case "remember":
+	case "store":
 		return executeRemember(input)
 	case "reminder":
 		return executeIslamicSearch(input)
