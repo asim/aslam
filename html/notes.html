@@ -7,103 +7,102 @@
     <title>Notes - Aslam</title>
     {{template "style"}}
     <style>
-        .notes-grid {
-            display: grid;
-            gap: 16px;
+        .note-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
         }
-        .note-item {
-            border: 1px solid var(--border-color);
+        .note-form input[type="text"] {
+            font-size: 16px;
+            font-weight: 500;
+            padding: 10px 14px;
+            border: 1px solid #999;
             border-radius: 8px;
-            padding: 16px;
         }
-        .note-item h3 {
-            margin: 0 0 8px 0;
-            font-size: 1.1em;
+        .note-form textarea {
+            min-height: 80px;
+            max-height: 300px;
+            padding: 10px 14px;
+            resize: vertical;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.6;
+            border: 1px solid #999;
+            border-radius: 8px;
         }
-        .note-item .category {
-            display: inline-block;
-            font-size: 0.75em;
-            background: var(--border-color);
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        .note-item .description {
-            color: var(--muted-text);
-            margin-bottom: 8px;
-        }
-        .note-item .details {
-            font-size: 0.9em;
-            white-space: pre-wrap;
-            background: var(--background-color);
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 8px;
-        }
-        .note-item .meta {
-            font-size: 0.8em;
-            color: var(--muted-text);
-            margin-top: 8px;
-        }
-        .filters {
-            margin-bottom: 20px;
+        .note-form textarea:focus, .note-form input:focus { outline: none; border-color: #333; }
+        .note-form-footer {
             display: flex;
             gap: 8px;
+            align-items: center;
+        }
+        .note-form-footer select {
+            padding: 8px 12px;
+            border: 1px solid #999;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            background: #fff;
+        }
+        .note-form-footer button {
+            padding: 8px 20px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: auto;
+        }
+        .note-form-footer button:hover { background: #333; }
+        .notes-grid { display: grid; gap: 12px; }
+        .note-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .note-item h3 { margin: 0 0 4px 0; font-size: 15px; }
+        .note-item .category {
+            display: inline-block;
+            font-size: 11px;
+            background: #f0f0f0;
+            padding: 1px 8px;
+            border-radius: 3px;
+            margin-bottom: 6px;
+        }
+        .note-item .description { color: #666; font-size: 13px; margin-bottom: 6px; }
+        .note-item .details {
+            font-size: 13px;
+            white-space: pre-wrap;
+            background: #fafafa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+        .note-item .meta { font-size: 12px; color: #999; margin-top: 8px; }
+        .filters {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 6px;
             flex-wrap: wrap;
         }
         .filters a {
             padding: 4px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             text-decoration: none;
-            font-size: 0.9em;
+            font-size: 13px;
         }
         .filters a.active {
             background: #000;
             color: #fff;
             border-color: #000;
         }
-        .add-form {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        .add-form summary {
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .add-form label {
-            display: block;
-            margin-top: 12px;
-            font-size: 0.9em;
-        }
-        .add-form input, .add-form select, .add-form textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-family: inherit;
-        }
-        .add-form textarea {
-            min-height: 80px;
-        }
-        .add-form button {
-            margin-top: 16px;
-            padding: 10px 20px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .status-closed {
-            opacity: 0.6;
-        }
+        .status-closed { opacity: 0.5; }
         .status-badge {
-            font-size: 0.7em;
-            padding: 2px 6px;
+            font-size: 11px;
+            padding: 1px 6px;
             border-radius: 3px;
             margin-left: 8px;
         }
@@ -116,45 +115,30 @@
         {{template "header"}}
         <main class="app-content">
             <h2>Notes</h2>
-            <p class="muted" style="margin-bottom: 20px">Family assets, accounts, contacts, and important information to keep track of</p>
 
+            <form class="note-form" action="/notes/add" method="POST">
+                <input type="text" name="name" required placeholder="Title" autofocus>
+                <textarea name="details" placeholder="Write your note…"></textarea>
+                <div class="note-form-footer">
+                    <select name="category">
+                        <option value="note">Note</option>
+                        <option value="credential">Credential</option>
+                        <option value="instruction">Instruction</option>
+                        <option value="contact">Contact</option>
+                        <option value="document">Document</option>
+                    </select>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+
+            {{if .Categories}}
             <div class="filters">
                 <a href="/notes" {{if not .Category}}class="active"{{end}}>All</a>
                 {{range .Categories}}
                 <a href="/notes?category={{.}}" {{if eq . $.Category}}class="active"{{end}}>{{.}}</a>
                 {{end}}
             </div>
-
-            <details class="add-form">
-                <summary>+ Add new item</summary>
-                <form action="/notes/add" method="POST">
-                    <label>Category
-                        <select name="category" required>
-                            <option value="asset">Asset</option>
-                            <option value="account">Account</option>
-                            <option value="person">Person</option>
-                            <option value="instruction">Instruction</option>
-                            <option value="document">Document</option>
-                        </select>
-                    </label>
-                    <label>Name
-                        <input type="text" name="name" required placeholder="e.g. AWS Account, Bitcoin Wallet">
-                    </label>
-                    <label>Description
-                        <input type="text" name="description" placeholder="Brief description">
-                    </label>
-                    <label>Details
-                        <textarea name="details" placeholder="Additional information, instructions, etc."></textarea>
-                    </label>
-                    <label>Credentials
-                        <textarea name="credentials" placeholder="Login info, account numbers, keys (stored encrypted)"></textarea>
-                    </label>
-                    <label>Notes
-                        <textarea name="notes" placeholder="Any other notes"></textarea>
-                    </label>
-                    <button type="submit">Add to Notes</button>
-                </form>
-            </details>
+            {{end}}
 
             {{if .Items}}
             <div class="notes-grid">
@@ -165,17 +149,16 @@
                     <h3>{{.Name}}</h3>
                     {{if .Description}}<div class="description">{{.Description}}</div>{{end}}
                     {{if .Details}}<div class="details">{{.Details}}</div>{{end}}
-                    {{if .Credentials}}<details><summary style="cursor:pointer;font-size:0.9em;color:var(--muted-text)">Show credentials</summary><div class="details">{{.Credentials}}</div></details>{{end}}
-                    {{if .Notes}}<div class="meta">Notes: {{.Notes}}</div>{{end}}
+                    {{if .Credentials}}<details><summary style="cursor:pointer;font-size:12px;color:#999">Show credentials</summary><div class="details">{{.Credentials}}</div></details>{{end}}
                     <div class="meta">
-                        Added <span data-time="{{.CreatedAt.Unix}}"></span>
+                        <span data-time="{{.CreatedAt.Unix}}"></span>
                         · <a href="/notes/edit/{{.ID}}">edit</a>
                     </div>
                 </div>
                 {{end}}
             </div>
             {{else}}
-            <p class="muted">No items in notes{{if .Category}} for category "{{.Category}}"{{end}}. Add something above or ask the assistant to track things for you.</p>
+            <p class="muted">No notes yet.</p>
             {{end}}
         </main>
     </div>
