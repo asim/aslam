@@ -205,20 +205,12 @@ func (s *dbStorage) SearchIslamQA(query string) ([]map[string]interface{}, error
 // noteStorage implements tools.NoteStorage interface
 type noteStorage struct{}
 
-func (v *noteStorage) AddNoteItem(category, name, description, details, credentials, notes string) (int64, error) {
-	return db.AddNoteItem(category, name, description, details, credentials, notes)
+func (v *noteStorage) AddNoteItem(title, content string) (int64, error) {
+	return db.AddNoteItem(title, content)
 }
 
 func (v *noteStorage) SearchNotes(query string) ([]map[string]interface{}, error) {
 	items, err := db.SearchNotes(query)
-	if err != nil {
-		return nil, err
-	}
-	return noteItemsToMaps(items), nil
-}
-
-func (v *noteStorage) GetNoteItems(category string) ([]map[string]interface{}, error) {
-	items, err := db.GetNoteItems(category)
 	if err != nil {
 		return nil, err
 	}
@@ -240,42 +232,24 @@ func (v *noteStorage) UpdateNoteItem(id int64, updates map[string]interface{}) e
 		return err
 	}
 
-	// Apply updates
-	if val, ok := updates["name"].(string); ok && val != "" {
-		item.Name = val
+	title := item.Title
+	content := item.Content
+
+	if val, ok := updates["title"].(string); ok && val != "" {
+		title = val
 	}
-	if val, ok := updates["description"].(string); ok {
-		item.Description = val
-	}
-	if val, ok := updates["details"].(string); ok {
-		item.Details = val
-	}
-	if val, ok := updates["credentials"].(string); ok {
-		item.Credentials = val
-	}
-	if val, ok := updates["notes"].(string); ok {
-		item.Notes = val
-	}
-	if val, ok := updates["status"].(string); ok && val != "" {
-		item.Status = val
-	}
-	if val, ok := updates["category"].(string); ok && val != "" {
-		item.Category = val
+	if val, ok := updates["content"].(string); ok {
+		content = val
 	}
 
-	return db.UpdateNoteItem(id, item.Category, item.Name, item.Description, item.Details, item.Credentials, item.Notes, item.Status)
+	return db.UpdateNoteItem(id, title, content)
 }
 
 func noteItemToMap(item *db.NoteItem) map[string]interface{} {
 	return map[string]interface{}{
-		"ID":          item.ID,
-		"Category":    item.Category,
-		"Name":        item.Name,
-		"Description": item.Description,
-		"Details":     item.Details,
-		"Credentials": item.Credentials,
-		"Notes":       item.Notes,
-		"Status":      item.Status,
+		"ID":      item.ID,
+		"Title":   item.Title,
+		"Content": item.Content,
 	}
 }
 
@@ -283,14 +257,9 @@ func noteItemsToMaps(items []db.NoteItem) []map[string]interface{} {
 	result := make([]map[string]interface{}, len(items))
 	for i, item := range items {
 		result[i] = map[string]interface{}{
-			"ID":          item.ID,
-			"Category":    item.Category,
-			"Name":        item.Name,
-			"Description": item.Description,
-			"Details":     item.Details,
-			"Credentials": item.Credentials,
-			"Notes":       item.Notes,
-			"Status":      item.Status,
+			"ID":      item.ID,
+			"Title":   item.Title,
+			"Content": item.Content,
 		}
 	}
 	return result
@@ -985,7 +954,7 @@ Context: This is a Muslim family in the UK. You don't need to mention Islam in e
 You are BOTH an assistant and the keeper of the family's knowledge base. Every conversation is automatically saved and indexed, so the user can search their past questions and your answers later from /search. But you also have tools to deliberately capture important things so they become first-class, searchable entries:
 
 - store: When the user shares a fact worth keeping (a decision, a name, an address, a preference, a process), save it. Use a short descriptive title.
-- note_add: When the user shares an account, credential, password, key, contact, document, asset, or important instruction, put it in notes. Prefer this over plain stored facts for anything that belongs in a structured notes category.
+- note_add: When the user shares something worth keeping as a note - accounts, credentials, contacts, instructions, or any text they want to save - put it in notes with a title and content.
 - fetch: When you pull a URL, it is automatically cached, so the user can search it later.
 - recall / note_search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
 
@@ -998,7 +967,7 @@ You have tools available:
 - www: Search the web for current information.
 - email_check: Check the assistant's inbox.
 - email_send: Send an email. When the user asks you to send them an email, USE THIS TOOL to actually send it - don't just write out what the email would say. Actually call the tool.
-- note_add / note_search / note_update: Manage family notes (accounts, credentials, contacts, documents, instructions).
+- note_add / note_search / note_update: Manage family notes (just title and content).
 
 When asked to send information about a topic, USE the research tools first (www, wikipedia, reminder) to gather accurate information, then send the email with that information.
 
@@ -1562,20 +1531,14 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 // Notes handlers
 
 func handleNotes(w http.ResponseWriter, r *http.Request) {
-	category := r.URL.Query().Get("category")
-
-	items, err := db.GetNoteItems(category)
+	items, err := db.GetNoteItems()
 	if err != nil {
 		http.Error(w, "Failed to get note items", http.StatusInternalServerError)
 		return
 	}
 
-	categories, _ := db.GetNoteCategories()
-
 	data := map[string]interface{}{
-		"Items":      items,
-		"Categories": categories,
-		"Category":   category,
+		"Items": items,
 	}
 
 	tmpl.ExecuteTemplate(w, "notes.html", data)
@@ -1587,25 +1550,27 @@ func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category := strings.TrimSpace(r.FormValue("category"))
-	name := strings.TrimSpace(r.FormValue("name"))
-	description := strings.TrimSpace(r.FormValue("description"))
-	details := strings.TrimSpace(r.FormValue("details"))
-	credentials := r.FormValue("credentials") // Don't trim
-	notes := strings.TrimSpace(r.FormValue("notes"))
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		title = strings.TrimSpace(r.FormValue("name"))
+	}
+	content := strings.TrimSpace(r.FormValue("content"))
+	if content == "" {
+		content = strings.TrimSpace(r.FormValue("details"))
+	}
 
-	if category == "" || name == "" {
-		http.Redirect(w, r, "/notes?error=Category+and+name+required", http.StatusSeeOther)
+	if title == "" {
+		http.Redirect(w, r, "/notes?error=Title+required", http.StatusSeeOther)
 		return
 	}
 
-	_, err := db.AddNoteItem(category, name, description, details, credentials, notes)
+	_, err := db.AddNoteItem(title, content)
 	if err != nil {
 		http.Redirect(w, r, "/notes?error=Failed+to+add+item", http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, "/notes?category="+category, http.StatusSeeOther)
+	http.Redirect(w, r, "/notes", http.StatusSeeOther)
 }
 
 func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
@@ -1617,21 +1582,16 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		category := strings.TrimSpace(r.FormValue("category"))
-		name := strings.TrimSpace(r.FormValue("name"))
-		description := strings.TrimSpace(r.FormValue("description"))
-		details := strings.TrimSpace(r.FormValue("details"))
-		credentials := r.FormValue("credentials")
-		notes := strings.TrimSpace(r.FormValue("notes"))
-		status := strings.TrimSpace(r.FormValue("status"))
+		title := strings.TrimSpace(r.FormValue("title"))
+		content := strings.TrimSpace(r.FormValue("content"))
 
-		err := db.UpdateNoteItem(id, category, name, description, details, credentials, notes, status)
+		err := db.UpdateNoteItem(id, title, content)
 		if err != nil {
 			http.Redirect(w, r, "/notes?error=Failed+to+update", http.StatusSeeOther)
 			return
 		}
 
-		http.Redirect(w, r, "/notes?category="+category, http.StatusSeeOther)
+		http.Redirect(w, r, "/notes", http.StatusSeeOther)
 		return
 	}
 

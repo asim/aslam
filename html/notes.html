@@ -32,20 +32,7 @@
             border-radius: 8px;
         }
         .note-form textarea:focus, .note-form input:focus { outline: none; border-color: #333; }
-        .note-form-footer {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .note-form-footer select {
-            padding: 8px 12px;
-            border: 1px solid #999;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 13px;
-            background: #fff;
-        }
-        .note-form-footer button {
+        .note-form button {
             padding: 8px 20px;
             background: #000;
             color: #fff;
@@ -53,9 +40,9 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            margin-left: auto;
+            align-self: flex-end;
         }
-        .note-form-footer button:hover { background: #333; }
+        .note-form button:hover { background: #333; }
         .notes-grid { display: grid; gap: 12px; }
         .note-item {
             border: 1px solid #eee;
@@ -63,51 +50,8 @@
             padding: 14px;
         }
         .note-item h3 { margin: 0 0 4px 0; font-size: 15px; }
-        .note-item .category {
-            display: inline-block;
-            font-size: 11px;
-            background: #f0f0f0;
-            padding: 1px 8px;
-            border-radius: 3px;
-            margin-bottom: 6px;
-        }
         .note-item .description { color: #666; font-size: 13px; margin-bottom: 6px; }
-        .note-item .details {
-            font-size: 13px;
-            white-space: pre-wrap;
-            background: #fafafa;
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 6px;
-        }
         .note-item .meta { font-size: 12px; color: #999; margin-top: 8px; }
-        .filters {
-            margin-bottom: 16px;
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .filters a {
-            padding: 4px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 13px;
-        }
-        .filters a.active {
-            background: #000;
-            color: #fff;
-            border-color: #000;
-        }
-        .status-closed { opacity: 0.5; }
-        .status-badge {
-            font-size: 11px;
-            padding: 1px 6px;
-            border-radius: 3px;
-            margin-left: 8px;
-        }
-        .status-badge.closed { background: #fee; color: #c00; }
-        .status-badge.archived { background: #eee; color: #666; }
     </style>
 </head>
 <body>
@@ -117,41 +61,19 @@
             <h2>Notes</h2>
 
             <form class="note-form" action="/notes/add" method="POST">
-                <input type="text" name="name" required placeholder="Title" autofocus>
-                <textarea name="details" placeholder="Write your note…"></textarea>
-                <div class="note-form-footer">
-                    <select name="category">
-                        <option value="note">Note</option>
-                        <option value="credential">Credential</option>
-                        <option value="instruction">Instruction</option>
-                        <option value="contact">Contact</option>
-                        <option value="document">Document</option>
-                    </select>
-                    <button type="submit">Save</button>
-                </div>
+                <input type="text" name="title" required placeholder="Title" autofocus>
+                <textarea name="content" placeholder="Write your note..."></textarea>
+                <button type="submit">Save</button>
             </form>
-
-            {{if .Categories}}
-            <div class="filters">
-                <a href="/notes" {{if not .Category}}class="active"{{end}}>All</a>
-                {{range .Categories}}
-                <a href="/notes?category={{.}}" {{if eq . $.Category}}class="active"{{end}}>{{.}}</a>
-                {{end}}
-            </div>
-            {{end}}
 
             {{if .Items}}
             <div class="notes-grid">
                 {{range .Items}}
-                <div class="note-item {{if eq .Status "closed"}}status-closed{{end}}">
-                    <span class="category">{{.Category}}</span>
-                    {{if ne .Status "active"}}<span class="status-badge {{.Status}}">{{.Status}}</span>{{end}}
-                    <h3>{{.Name}}</h3>
-                    {{if .Description}}<div class="description">{{.Description}}</div>{{end}}
-                    {{if .Details}}<div class="details">{{.Details}}</div>{{end}}
-                    {{if .Credentials}}<details><summary style="cursor:pointer;font-size:12px;color:#999">Show credentials</summary><div class="details">{{.Credentials}}</div></details>{{end}}
+                <div class="note-item">
+                    <h3>{{.Title}}</h3>
+                    {{if .Content}}<div class="description">{{truncate .Content 200}}</div>{{end}}
                     <div class="meta">
-                        <span data-time="{{.CreatedAt.Unix}}"></span>
+                        <span data-time="{{.UpdatedAt.Unix}}"></span>
                         · <a href="/notes/edit/{{.ID}}">edit</a>
                     </div>
                 </div>

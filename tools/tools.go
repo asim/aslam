@@ -17,9 +17,8 @@ type Storage interface {
 
 // NoteStorage interface for note operations
 type NoteStorage interface {
-	AddNoteItem(category, name, description, details, credentials, notes string) (int64, error)
+	AddNoteItem(title, content string) (int64, error)
 	SearchNotes(query string) ([]map[string]interface{}, error)
-	GetNoteItems(category string) ([]map[string]interface{}, error)
 	GetNoteItem(id int64) (map[string]interface{}, error)
 	UpdateNoteItem(id int64, updates map[string]interface{}) error
 }
@@ -196,41 +195,25 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "note_add",
-			Description: "Add a family asset, account, contact, or important information to notes. Use this when the user mentions something they own, have access to, or need to remember - bank accounts, property, crypto wallets, important people, instructions for family. Categories: asset, account, person, instruction, document.",
+			Description: "Add a note to the family notes. Use this when the user wants to save something for later - information, instructions, credentials, contacts, or any text they want to keep.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
-					"category": map[string]interface{}{
+					"title": map[string]interface{}{
 						"type":        "string",
-						"description": "Category: asset, account, person, instruction, document",
+						"description": "Title of the note",
 					},
-					"name": map[string]interface{}{
+					"content": map[string]interface{}{
 						"type":        "string",
-						"description": "Name or title of the item",
-					},
-					"description": map[string]interface{}{
-						"type":        "string",
-						"description": "Brief description",
-					},
-					"details": map[string]interface{}{
-						"type":        "string",
-						"description": "Additional details, instructions, or context",
-					},
-					"credentials": map[string]interface{}{
-						"type":        "string",
-						"description": "Login info, account numbers, or access credentials if applicable",
-					},
-					"notes": map[string]interface{}{
-						"type":        "string",
-						"description": "Any other notes",
+						"description": "Content of the note",
 					},
 				},
-				"required": []string{"category", "name"},
+				"required": []string{"title"},
 			},
 		},
 		{
 			Name:        "note_search",
-			Description: "Search the family notes for assets, accounts, contacts, or important information. Use when the user asks about what they own, their accounts, important contacts, or stored instructions.",
+			Description: "Search the family notes. Use when the user asks about previously saved notes, information, or instructions.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -238,46 +221,27 @@ func GetTools() []ToolDefinition {
 						"type":        "string",
 						"description": "Search query",
 					},
-					"category": map[string]interface{}{
-						"type":        "string",
-						"description": "Filter by category (optional): asset, account, person, instruction, document",
-					},
 				},
+				"required": []string{"query"},
 			},
 		},
 		{
 			Name:        "note_update",
-			Description: "Update an existing item in the family notes. Use when the user wants to change details, add credentials, or update status of a tracked asset, account, or contact.",
+			Description: "Update an existing note. Use when the user wants to change the title or content of a saved note.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"id": map[string]interface{}{
 						"type":        "integer",
-						"description": "ID of the item to update",
+						"description": "ID of the note to update",
 					},
-					"name": map[string]interface{}{
+					"title": map[string]interface{}{
 						"type":        "string",
-						"description": "Updated name",
+						"description": "Updated title",
 					},
-					"description": map[string]interface{}{
+					"content": map[string]interface{}{
 						"type":        "string",
-						"description": "Updated description",
-					},
-					"details": map[string]interface{}{
-						"type":        "string",
-						"description": "Updated details",
-					},
-					"credentials": map[string]interface{}{
-						"type":        "string",
-						"description": "Updated credentials",
-					},
-					"notes": map[string]interface{}{
-						"type":        "string",
-						"description": "Updated notes",
-					},
-					"status": map[string]interface{}{
-						"type":        "string",
-						"description": "Status: active, closed, archived",
+						"description": "Updated content",
 					},
 				},
 				"required": []string{"id"},
@@ -508,23 +472,19 @@ func executeNoteAdd(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("note storage not available")
 	}
 
-	category, _ := input["category"].(string)
-	name, _ := input["name"].(string)
-	description, _ := input["description"].(string)
-	details, _ := input["details"].(string)
-	credentials, _ := input["credentials"].(string)
-	notes, _ := input["notes"].(string)
+	title, _ := input["title"].(string)
+	content, _ := input["content"].(string)
 
-	if category == "" || name == "" {
-		return "", fmt.Errorf("category and name are required")
+	if title == "" {
+		return "", fmt.Errorf("title is required")
 	}
 
-	id, err := noteStore.AddNoteItem(category, name, description, details, credentials, notes)
+	id, err := noteStore.AddNoteItem(title, content)
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("Added to notes: %s '%s' (ID: %d)", category, name, id), nil
+	return fmt.Sprintf("Added note: '%s' (ID: %d)", title, id), nil
 }
 
 func executeNoteSearch(input map[string]interface{}) (string, error) {
@@ -533,42 +493,27 @@ func executeNoteSearch(input map[string]interface{}) (string, error) {
 	}
 
 	query, _ := input["query"].(string)
-	category, _ := input["category"].(string)
-
-	var items []map[string]interface{}
-	var err error
-
-	if query != "" {
-		items, err = noteStore.SearchNotes(query)
-	} else {
-		items, err = noteStore.GetNoteItems(category)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
 	}
 
+	items, err := noteStore.SearchNotes(query)
 	if err != nil {
 		return "", err
 	}
 
 	if len(items) == 0 {
-		if query != "" {
-			return fmt.Sprintf("No items found matching '%s'", query), nil
-		}
-		if category != "" {
-			return fmt.Sprintf("No items in category '%s'", category), nil
-		}
-		return "Notes are empty.", nil
+		return fmt.Sprintf("No notes found matching '%s'", query), nil
 	}
 
 	var result string
 	for _, item := range items {
-		result += fmt.Sprintf("[%v] %s: %s\n", item["ID"], item["Category"], item["Name"])
-		if desc, ok := item["Description"].(string); ok && desc != "" {
-			result += fmt.Sprintf("    %s\n", desc)
-		}
-		if details, ok := item["Details"].(string); ok && details != "" {
-			result += fmt.Sprintf("    Details: %s\n", details)
-		}
-		if notes, ok := item["Notes"].(string); ok && notes != "" {
-			result += fmt.Sprintf("    Notes: %s\n", notes)
+		result += fmt.Sprintf("[%v] %s\n", item["ID"], item["Title"])
+		if content, ok := item["Content"].(string); ok && content != "" {
+			if len(content) > 200 {
+				content = content[:200] + "..."
+			}
+			result += fmt.Sprintf("    %s\n", content)
 		}
 		result += "\n"
 	}
@@ -595,10 +540,11 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 
 	// Build updates
 	updates := make(map[string]interface{})
-	for _, field := range []string{"name", "description", "details", "credentials", "notes", "status"} {
-		if v, ok := input[field].(string); ok && v != "" {
-			updates[field] = v
-		}
+	if v, ok := input["title"].(string); ok && v != "" {
+		updates["title"] = v
+	}
+	if v, ok := input["content"].(string); ok {
+		updates["content"] = v
 	}
 
 	if len(updates) == 0 {
@@ -610,7 +556,7 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("Updated note item: %s", existing["Name"]), nil
+	return fmt.Sprintf("Updated note: %s", existing["Title"]), nil
 }
 
 func executeIslamQA(input map[string]interface{}) (string, error) {

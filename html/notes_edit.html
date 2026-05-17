@@ -13,16 +13,16 @@
             font-size: 0.9em;
             font-weight: bold;
         }
-        .edit-form input, .edit-form select, .edit-form textarea {
+        .edit-form input, .edit-form textarea {
             width: 100%;
             padding: 8px;
             margin-top: 4px;
-            border: 1px solid var(--border-color);
+            border: 1px solid #999;
             border-radius: 4px;
             font-family: inherit;
         }
         .edit-form textarea {
-            min-height: 100px;
+            min-height: 200px;
         }
         .edit-form .buttons {
             margin-top: 24px;
@@ -49,40 +49,15 @@
     <div class="app">
         {{template "header"}}
         <main class="app-content">
-            <h2>Edit: {{.Item.Name}}</h2>
-            <p class="muted" style="margin-bottom: 20px"><a href="/notes">← back to notes</a></p>
+            <h2>Edit: {{.Item.Title}}</h2>
+            <p class="muted" style="margin-bottom: 20px"><a href="/notes">&larr; back to notes</a></p>
 
             <form action="/notes/edit/{{.Item.ID}}" method="POST" class="edit-form">
-                <label>Category
-                    <select name="category" required>
-                        <option value="asset" {{if eq .Item.Category "asset"}}selected{{end}}>Asset</option>
-                        <option value="account" {{if eq .Item.Category "account"}}selected{{end}}>Account</option>
-                        <option value="person" {{if eq .Item.Category "person"}}selected{{end}}>Person</option>
-                        <option value="instruction" {{if eq .Item.Category "instruction"}}selected{{end}}>Instruction</option>
-                        <option value="document" {{if eq .Item.Category "document"}}selected{{end}}>Document</option>
-                    </select>
+                <label>Title
+                    <input type="text" name="title" value="{{.Item.Title}}" required>
                 </label>
-                <label>Name
-                    <input type="text" name="name" value="{{.Item.Name}}" required>
-                </label>
-                <label>Description
-                    <input type="text" name="description" value="{{.Item.Description}}">
-                </label>
-                <label>Details
-                    <textarea name="details">{{.Item.Details}}</textarea>
-                </label>
-                <label>Credentials
-                    <textarea name="credentials">{{.Item.Credentials}}</textarea>
-                </label>
-                <label>Notes
-                    <textarea name="notes">{{.Item.Notes}}</textarea>
-                </label>
-                <label>Status
-                    <select name="status">
-                        <option value="active" {{if eq .Item.Status "active"}}selected{{end}}>Active</option>
-                        <option value="closed" {{if eq .Item.Status "closed"}}selected{{end}}>Closed</option>
-                        <option value="archived" {{if eq .Item.Status "archived"}}selected{{end}}>Archived</option>
-                    </select>
+                <label>Content
+                    <textarea name="content">{{.Item.Content}}</textarea>
                 </label>
                 <div class="buttons">
                     <button type="submit">Save Changes</button>
@@ -92,7 +67,7 @@
 
             <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                 <p class="muted">Danger zone</p>
-                <button type="submit" class="delete-btn" onclick="return confirm('Delete this item permanently?')">Delete Item</button>
+                <button type="submit" class="delete-btn" onclick="return confirm('Delete this note permanently?')">Delete Note</button>
             </form>
         </main>
     </div>

@@ -299,6 +299,52 @@ func Migrate() error {
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_category ON notes(category)`)
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_status ON notes(status)`)
 
+	// Simplified notes (notes_v2)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS notes_v2 (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			content TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Migrate data from old notes table to notes_v2
+	DB.Exec(`INSERT OR IGNORE INTO notes_v2 (id, title, content, created_at, updated_at)
+		SELECT id, name,
+			COALESCE(details, '') ||
+			CASE WHEN credentials != '' AND credentials IS NOT NULL THEN char(10) || char(10) || credentials ELSE '' END ||
+			CASE WHEN notes != '' AND notes IS NOT NULL THEN char(10) || char(10) || notes ELSE '' END,
+			created_at, updated_at
+		FROM notes`)
+
+	// FTS for notes_v2
+	_, err = DB.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts4(
+			title,
+			content,
+			content='notes_v2'
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS notes_v2_ai AFTER INSERT ON notes_v2 BEGIN
+		INSERT INTO notes_fts(docid, title, content) VALUES (new.id, new.title, new.content);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS notes_v2_ad AFTER DELETE ON notes_v2 BEGIN
+		DELETE FROM notes_fts WHERE docid = old.id;
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS notes_v2_au AFTER UPDATE ON notes_v2 BEGIN
+		DELETE FROM notes_fts WHERE docid = old.id;
+		INSERT INTO notes_fts(docid, title, content) VALUES (new.id, new.title, new.content);
+	END`)
+
 	// Entries (knowledge base)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS entries (
@@ -578,28 +624,20 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 		}
 	}
 
-	// Note items (credentials, accounts, contacts, instructions, documents)
+	// Note items
 	if items, err := SearchNotes(query); err == nil {
-		for _, v := range items {
-			// Build a short content snippet from the available fields.
-			parts := []string{}
-			if v.Description != "" {
-				parts = append(parts, v.Description)
+		for _, n := range items {
+			content := n.Content
+			if len(content) > 500 {
+				content = content[:500] + "..."
 			}
-			if v.Details != "" {
-				parts = append(parts, v.Details)
-			}
-			if v.Notes != "" {
-				parts = append(parts, v.Notes)
-			}
-			snippet := strings.Join(parts, " · ")
 			results = append(results, map[string]interface{}{
 				"Kind":      "notes",
-				"Title":     v.Name,
-				"Content":   snippet,
-				"Role":      v.Category,
-				"URL":       fmt.Sprintf("/notes/edit/%d", v.ID),
-				"CreatedAt": v.UpdatedAt,
+				"Title":     n.Title,
+				"Content":   content,
+				"Role":      "note",
+				"URL":       fmt.Sprintf("/notes/edit/%d", n.ID),
+				"CreatedAt": n.UpdatedAt,
 			})
 		}
 	}
@@ -1274,31 +1312,15 @@ func GetRecentTasks(limit int) ([]PendingTask, error) {
 // Note functions
 
 type NoteItem struct {
-	ID          int64
-	Category    string
-	Name        string
-	Description string
-	Details     string
-	Credentials string
-	Notes       string
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID        int64
+	Title     string
+	Content   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-func GetNoteItems(category string) ([]NoteItem, error) {
-	var query string
-	var args []interface{}
-	if category != "" {
-		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-			FROM notes WHERE category = ? ORDER BY name`
-		args = []interface{}{category}
-	} else {
-		query = `SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-			FROM notes ORDER BY category, name`
-	}
-
-	rows, err := DB.Query(query, args...)
+func GetNoteItems() ([]NoteItem, error) {
+	rows, err := DB.Query(`SELECT id, title, content, created_at, updated_at FROM notes_v2 ORDER BY updated_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -1307,15 +1329,12 @@ func GetNoteItems(category string) ([]NoteItem, error) {
 	var items []NoteItem
 	for rows.Next() {
 		var v NoteItem
-		var desc, details, creds, notes sql.NullString
-		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+		var content sql.NullString
+		err := rows.Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			continue
 		}
-		v.Description = desc.String
-		v.Details = details.String
-		v.Credentials = creds.String
-		v.Notes = notes.String
+		v.Content = content.String
 		items = append(items, v)
 	}
 	return items, nil
@@ -1323,52 +1342,48 @@ func GetNoteItems(category string) ([]NoteItem, error) {
 
 func GetNoteItem(id int64) (*NoteItem, error) {
 	var v NoteItem
-	var desc, details, creds, notes sql.NullString
+	var content sql.NullString
 	err := DB.QueryRow(`
-		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-		FROM notes WHERE id = ?
-	`, id).Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+		SELECT id, title, content, created_at, updated_at
+		FROM notes_v2 WHERE id = ?
+	`, id).Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	v.Description = desc.String
-	v.Details = details.String
-	v.Credentials = creds.String
-	v.Notes = notes.String
+	v.Content = content.String
 	return &v, nil
 }
 
-func AddNoteItem(category, name, description, details, credentials, notes string) (int64, error) {
+func AddNoteItem(title, content string) (int64, error) {
 	result, err := DB.Exec(`
-		INSERT INTO notes (category, name, description, details, credentials, notes)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, category, name, description, details, credentials, notes)
+		INSERT INTO notes_v2 (title, content) VALUES (?, ?)
+	`, title, content)
 	if err != nil {
 		return 0, err
 	}
 	return result.LastInsertId()
 }
 
-func UpdateNoteItem(id int64, category, name, description, details, credentials, notes, status string) error {
+func UpdateNoteItem(id int64, title, content string) error {
 	_, err := DB.Exec(`
-		UPDATE notes SET category=?, name=?, description=?, details=?, credentials=?, notes=?, status=?, updated_at=CURRENT_TIMESTAMP
-		WHERE id=?
-	`, category, name, description, details, credentials, notes, status, id)
+		UPDATE notes_v2 SET title=?, content=?, updated_at=CURRENT_TIMESTAMP WHERE id=?
+	`, title, content, id)
 	return err
 }
 
 func DeleteNoteItem(id int64) error {
-	_, err := DB.Exec(`DELETE FROM notes WHERE id = ?`, id)
+	_, err := DB.Exec(`DELETE FROM notes_v2 WHERE id = ?`, id)
 	return err
 }
 
 func SearchNotes(query string) ([]NoteItem, error) {
 	rows, err := DB.Query(`
-		SELECT id, category, name, description, details, credentials, notes, status, created_at, updated_at
-		FROM notes
-		WHERE name LIKE ? OR description LIKE ? OR details LIKE ? OR notes LIKE ?
-		ORDER BY category, name
-	`, "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+		SELECT n.id, n.title, n.content, n.created_at, n.updated_at
+		FROM notes_v2 n
+		JOIN notes_fts fts ON n.id = fts.docid
+		WHERE notes_fts MATCH ?
+		LIMIT 20
+	`, query)
 	if err != nil {
 		return nil, err
 	}
@@ -1377,34 +1392,15 @@ func SearchNotes(query string) ([]NoteItem, error) {
 	var items []NoteItem
 	for rows.Next() {
 		var v NoteItem
-		var desc, details, creds, notes sql.NullString
-		err := rows.Scan(&v.ID, &v.Category, &v.Name, &desc, &details, &creds, &notes, &v.Status, &v.CreatedAt, &v.UpdatedAt)
+		var content sql.NullString
+		err := rows.Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			continue
 		}
-		v.Description = desc.String
-		v.Details = details.String
-		v.Credentials = creds.String
-		v.Notes = notes.String
+		v.Content = content.String
 		items = append(items, v)
 	}
 	return items, nil
-}
-
-func GetNoteCategories() ([]string, error) {
-	rows, err := DB.Query(`SELECT DISTINCT category FROM notes ORDER BY category`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var categories []string
-	for rows.Next() {
-		var cat string
-		rows.Scan(&cat)
-		categories = append(categories, cat)
-	}
-	return categories, nil
 }
 
 // IslamQA functions
