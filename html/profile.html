@@ -79,19 +79,16 @@
                     {{if .User.Picture}}
                     <img src="{{.User.Picture}}" alt="Profile picture">
                     {{else}}
-                    {{slice .User.Email 0 1}}
+                    {{slice .User.Name 0 1}}
                     {{end}}
                 </div>
 
-                <form method="POST" action="/profile" class="profile-form">
+                <form method="POST" action="/profile" enctype="multipart/form-data" class="profile-form">
+                    <label>Picture
+                        <input type="file" name="picture" accept="image/*" style="margin-top:4px">
+                    </label>
                     <label>Name
                         <input type="text" name="name" value="{{.User.Name}}" placeholder="Your name">
-                    </label>
-                    <label>Email
-                        <input type="email" value="{{.User.Email}}" disabled>
-                    </label>
-                    <label>Role
-                        <input type="text" value="{{.User.Role}}" disabled>
                     </label>
                     <button type="submit">Save</button>
                 </form>
