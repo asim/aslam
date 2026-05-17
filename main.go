@@ -145,6 +145,7 @@ func main() {
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
+	http.HandleFunc("/profile", requireAuth(handleProfile))
 	http.HandleFunc("/notes", requireAuth(handleNotes))
 	http.HandleFunc("/notes/add", requireAuth(handleNoteAdd))
 	http.HandleFunc("/notes/edit/", requireAuth(handleNoteEdit))
@@ -717,8 +718,9 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	defer userResp.Body.Close()
 
 	var userInfo struct {
-		Email string `json:"email"`
-		Name  string `json:"name"`
+		Email   string `json:"email"`
+		Name    string `json:"name"`
+		Picture string `json:"picture"`
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&userInfo); err != nil {
 		http.Error(w, "Failed to parse user info", 500)
@@ -735,6 +737,11 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Printf("Auto-created user via Google OAuth: %s (%s)", userInfo.Name, email)
+	}
+
+	// Update profile picture from Google
+	if userInfo.Picture != "" {
+		db.UpdateUserPicture(email, userInfo.Picture)
 	}
 
 	// Create session
@@ -1712,6 +1719,35 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 }
 
 // Notes handlers
+
+func handleProfile(w http.ResponseWriter, r *http.Request) {
+	session := getSession(r)
+	if session == nil {
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+		return
+	}
+
+	user, err := db.GetUserByEmail(session.Email)
+	if err != nil {
+		http.Error(w, "User not found", 404)
+		return
+	}
+
+	if r.Method == "POST" {
+		name := strings.TrimSpace(r.FormValue("name"))
+		if name != "" {
+			db.UpdateUserProfile(session.Email, name, user.Picture)
+			user.Name = name
+		}
+		http.Redirect(w, r, "/profile?msg=Profile+updated", http.StatusSeeOther)
+		return
+	}
+
+	tmpl.ExecuteTemplate(w, "profile.html", map[string]interface{}{
+		"User":    user,
+		"Message": r.URL.Query().Get("msg"),
+	})
+}
 
 func handleNotes(w http.ResponseWriter, r *http.Request) {
 	items, err := db.GetNoteItems()
