@@ -78,8 +78,10 @@
                 <div class="profile-picture">
                     {{if .User.Picture}}
                     <img src="{{.User.Picture}}" alt="Profile picture">
-                    {{else}}
+                    {{else if .User.Name}}
                     {{slice .User.Name 0 1}}
+                    {{else}}
+                    {{slice .User.Email 0 1}}
                     {{end}}
                 </div>
 
@@ -89,6 +91,9 @@
                     </label>
                     <label>Name
                         <input type="text" name="name" value="{{.User.Name}}" placeholder="Your name">
+                    </label>
+                    <label>Email
+                        <input type="email" value="{{.User.Email}}" disabled>
                     </label>
                     <button type="submit">Save</button>
                 </form>

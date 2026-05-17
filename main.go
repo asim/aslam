@@ -750,9 +750,9 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Auto-created user via Google OAuth: %s (%s)", userInfo.Name, email)
 	}
 
-	// Update profile picture from Google
-	if userInfo.Picture != "" {
-		db.UpdateUserPicture(email, userInfo.Picture)
+	// Update name and picture from Google on every login
+	if userInfo.Name != "" || userInfo.Picture != "" {
+		db.UpdateUserProfile(email, userInfo.Name, userInfo.Picture)
 	}
 
 	// Create session
