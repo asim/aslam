@@ -7,7 +7,7 @@
         <a href="/notes">notes</a>
         <a href="/search">search</a>
         <a href="/profile">profile</a>
-        <a href="/admin">admin</a>
+        {{if .IsAdmin}}<a href="/admin">admin</a>{{end}}
     </nav>
     <button class="nav-toggle" onclick="document.querySelector('.nav-mobile').classList.toggle('open')" aria-label="Menu">&#9776;</button>
     <nav class="nav-mobile">
@@ -16,7 +16,7 @@
         <a href="/notes">notes</a>
         <a href="/search">search</a>
         <a href="/profile">profile</a>
-        <a href="/admin">admin</a>
+        {{if .IsAdmin}}<a href="/admin">admin</a>{{end}}
         <a href="/auth/logout">logout</a>
     </nav>
 </header>

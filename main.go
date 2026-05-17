@@ -271,6 +271,17 @@ func noteItemsToMaps(items []db.NoteItem) []map[string]interface{} {
 	return result
 }
 
+func renderTemplate(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
+	if data == nil {
+		data = map[string]interface{}{}
+	}
+	session := getSession(r)
+	if session != nil {
+		data["IsAdmin"] = db.IsAdmin(session.Email)
+	}
+	tmpl.ExecuteTemplate(w, name, data)
+}
+
 func handleStatic(name, contentType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := templates.ReadFile("html/" + name)
@@ -814,16 +825,14 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	// Get recent conversations
 	convs, _ := db.GetRecentConversations(10)
 
-	if err := tmpl.ExecuteTemplate(w, "home.html", map[string]interface{}{
+	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations": convs,
-	}); err != nil {
-		log.Printf("Template error: %v", err)
-	}
+	})
 }
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	convs, _ := db.GetRecentConversations(50)
-	tmpl.ExecuteTemplate(w, "chat_list.html", map[string]interface{}{
+	renderTemplate(w, r, "chat_list.html", map[string]interface{}{
 		"Conversations": convs,
 	})
 }
@@ -854,7 +863,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	tmpl.ExecuteTemplate(w, "chat.html", map[string]interface{}{
+	renderTemplate(w, r, "chat.html", map[string]interface{}{
 		"Conversation": conv,
 		"Messages":     messages,
 		"UserName":     userName,
@@ -1085,7 +1094,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		results, _ = db.SearchAll(query)
 	}
 
-	tmpl.ExecuteTemplate(w, "search.html", map[string]interface{}{
+	renderTemplate(w, r, "search.html", map[string]interface{}{
 		"Query":   query,
 		"Results": results,
 	})
@@ -1093,7 +1102,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
 	entries, _ := db.GetEntries(50)
-	tmpl.ExecuteTemplate(w, "entries.html", map[string]interface{}{
+	renderTemplate(w, r, "entries.html", map[string]interface{}{
 		"Entries": entries,
 	})
 }
@@ -1110,7 +1119,7 @@ func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	tmpl.ExecuteTemplate(w, "islamqa.html", item)
+	renderTemplate(w, r, "islamqa.html", item)
 }
 
 func handleEntryView(w http.ResponseWriter, r *http.Request) {
@@ -1127,7 +1136,7 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	tmpl.ExecuteTemplate(w, "entry.html", entry)
+	renderTemplate(w, r, "entry.html", entry)
 }
 
 // Database functions
@@ -1507,7 +1516,7 @@ func handleDev(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	
-	tmpl.ExecuteTemplate(w, "dev.html", map[string]interface{}{
+	renderTemplate(w, r, "dev.html", map[string]interface{}{
 		"Model":        anthropicModel,
 		"Tools":        toolDefs,
 		"Integrations": integrations,
@@ -1592,7 +1601,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
 	
-	tmpl.ExecuteTemplate(w, "admin.html", map[string]interface{}{
+	renderTemplate(w, r, "admin.html", map[string]interface{}{
 		"Accounts":     accounts,
 		"Users":        users,
 		"Integrations": integrations,
@@ -1759,7 +1768,7 @@ func handleProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl.ExecuteTemplate(w, "profile.html", map[string]interface{}{
+	renderTemplate(w, r, "profile.html", map[string]interface{}{
 		"User":    user,
 		"Message": r.URL.Query().Get("msg"),
 	})
@@ -1791,7 +1800,7 @@ func handleNotes(w http.ResponseWriter, r *http.Request) {
 		"Items": items,
 	}
 
-	tmpl.ExecuteTemplate(w, "notes.html", data)
+	renderTemplate(w, r, "notes.html", data)
 }
 
 func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
@@ -1854,7 +1863,7 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"Item": item,
 	}
-	tmpl.ExecuteTemplate(w, "notes_edit.html", data)
+	renderTemplate(w, r, "notes_edit.html", data)
 }
 
 func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
