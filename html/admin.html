@@ -224,7 +224,7 @@
             <!-- Users Section -->
             <div class="admin-section">
                 <h3>Users</h3>
-                <p class="muted" style="margin-bottom: 16px;">People who can access the system. Add family members or trusted parties.</p>
+                <p class="muted" style="margin-bottom: 16px;">People who can access the system.</p>
 
                 {{range .Users}}
                 <div class="item-card">
@@ -255,7 +255,7 @@
                     <form method="POST" action="/admin/add-user" style="margin-top: 12px;">
                         <div class="form-row">
                             <label>Email Address</label>
-                            <input type="email" name="email" required placeholder="family@example.com">
+                            <input type="email" name="email" required placeholder="user@example.com">
                         </div>
                         <div class="form-row">
                             <label>Name (optional)</label>
@@ -276,7 +276,7 @@
             <!-- Accounts Section -->
             <div class="admin-section">
                 <h3>Service Accounts & Credentials</h3>
-                <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations). For family accounts and assets, use <a href="/notes">Notes</a>.</p>
+                <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations).</p>
                 
                 {{range .Accounts}}
                 <div class="item-card">

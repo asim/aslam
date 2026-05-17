@@ -28,7 +28,7 @@ Everything is stored in an encrypted database (SQLCipher / AES-256). You search 
    │      Knowledge Base (SQLCipher)   │
    │                                   │
    │   chats · notes · entries         │
-   │   credentials · contacts · docs   │
+   │   notes · reflections · references │
    └──────────────┬───────────────────┘
                   │
                   ▼
@@ -133,7 +133,7 @@ A deploy script checks GitHub for changes, rebuilds, and restarts:
 1. Visit your domain and log in with Google
 2. Use the home page input to interact with the tool
 3. Use `/search` to find anything you've saved
-4. Use `/notes` to store credentials, accounts, and important info
+4. Use `/notes` to save reflections, references, and things worth keeping
 5. Go to `/admin` to manage users and service accounts
 
 ## Tools
@@ -148,7 +148,7 @@ The AI has access to these tools to help organise and retrieve:
 - **www** — Web search via Brave Search API
 - **email_check** — Check the inbox
 - **email_send** — Send email
-- **note_add / note_search / note_update** — Manage notes (credentials, accounts, contacts, docs)
+- **note_add / note_search / note_update** — Save and search notes
 
 ## Purpose
 
