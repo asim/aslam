@@ -1,13 +1,23 @@
 {{define "header"}}
 <header class="app-header">
     <h1><a href="/home" style="text-decoration:none;color:inherit">Aslam</a></h1>
-    <nav>
+    <nav class="nav-desktop">
         <a href="/home">home</a>
         <a href="/chat">chats</a>
         <a href="/notes">notes</a>
         <a href="/search">search</a>
         <a href="/profile">profile</a>
         <a href="/admin">admin</a>
+    </nav>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-mobile').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+    <nav class="nav-mobile">
+        <a href="/home">home</a>
+        <a href="/chat">chats</a>
+        <a href="/notes">notes</a>
+        <a href="/search">search</a>
+        <a href="/profile">profile</a>
+        <a href="/admin">admin</a>
+        <a href="/auth/logout">logout</a>
     </nav>
 </header>
 {{end}}

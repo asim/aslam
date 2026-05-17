@@ -35,11 +35,48 @@
         border-bottom: 1px solid #e0e0e0;
         display: flex;
         align-items: center;
+        position: relative;
     }
     .app-header h1 { font-size: 18px; font-weight: 600; }
-    .app-header nav { margin-left: auto; }
-    .app-header nav a { margin-left: 16px; text-decoration: none; font-size: 13px; }
-    .app-header nav a:hover { text-decoration: underline; }
+    .nav-desktop { margin-left: auto; }
+    .nav-desktop a { margin-left: 16px; text-decoration: none; font-size: 13px; }
+    .nav-desktop a:hover { text-decoration: underline; }
+    .nav-toggle {
+        display: none;
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 4px 8px;
+    }
+    .nav-mobile {
+        display: none;
+        position: absolute;
+        top: 50px;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 100;
+        min-width: 160px;
+    }
+    .nav-mobile a {
+        display: block;
+        padding: 12px 20px;
+        text-decoration: none;
+        font-size: 14px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .nav-mobile a:last-child { border-bottom: none; }
+    .nav-mobile a:hover { background: #f8f8f8; }
+    .nav-mobile.open { display: block; }
+
+    @media (max-width: 640px) {
+        .nav-desktop { display: none; }
+        .nav-toggle { display: block; }
+    }
 
     .app-content {
         flex: 1;
