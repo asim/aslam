@@ -246,6 +246,9 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN api_key TEXT`)
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN url TEXT`)
 
+	// Add password_hash column to users (migration for existing DBs)
+	DB.Exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`)
+
 	// Users - people who can access the system
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
@@ -1137,16 +1140,17 @@ func DeleteAccount(id int64) error {
 // User functions
 
 type User struct {
-	ID        int64
-	Email     string
-	Name      string
-	Role      string
-	AddedBy   string
-	CreatedAt time.Time
+	ID           int64
+	Email        string
+	Name         string
+	Role         string
+	AddedBy      string
+	PasswordHash string
+	CreatedAt    time.Time
 }
 
 func GetUsers() ([]User, error) {
-	rows, err := DB.Query(`SELECT id, email, name, role, added_by, created_at FROM users ORDER BY created_at`)
+	rows, err := DB.Query(`SELECT id, email, name, role, added_by, password_hash, created_at FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
@@ -1155,13 +1159,14 @@ func GetUsers() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		var name, addedBy sql.NullString
-		err := rows.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &u.CreatedAt)
+		var name, addedBy, passwordHash sql.NullString
+		err := rows.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &u.CreatedAt)
 		if err != nil {
 			continue
 		}
 		u.Name = name.String
 		u.AddedBy = addedBy.String
+		u.PasswordHash = passwordHash.String
 		users = append(users, u)
 	}
 	return users, nil
@@ -1194,6 +1199,31 @@ func UserCount() int {
 	var count int
 	DB.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&count)
 	return count
+}
+
+func GetUserByEmail(email string) (*User, error) {
+	var u User
+	var name, addedBy, passwordHash sql.NullString
+	err := DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, created_at FROM users WHERE email = ?`, email).Scan(
+		&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	u.Name = name.String
+	u.AddedBy = addedBy.String
+	u.PasswordHash = passwordHash.String
+	return &u, nil
+}
+
+func SetUserPassword(id int64, hash string) error {
+	_, err := DB.Exec(`UPDATE users SET password_hash = ? WHERE id = ?`, hash, id)
+	return err
+}
+
+func CreateUserWithPassword(email, name, passwordHash, role string) error {
+	_, err := DB.Exec(`INSERT INTO users (email, name, password_hash, role, added_by) VALUES (?, ?, ?, ?, 'signup')`,
+		email, name, passwordHash, role)
+	return err
 }
 
 // Settings functions

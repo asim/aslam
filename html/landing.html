@@ -1,0 +1,85 @@
+{{define "landing.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aslam — Islamic Knowledge Base</title>
+    {{template "style"}}
+    <style>
+        html, body {
+            overflow: auto;
+        }
+        .landing {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 40px 20px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .landing h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .landing .tagline {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+        .landing .description {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 40px;
+            max-width: 460px;
+        }
+        .landing .buttons {
+            display: flex;
+            gap: 12px;
+        }
+        .landing .buttons a {
+            display: inline-block;
+            padding: 12px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: opacity 0.15s;
+        }
+        .landing .buttons a:hover {
+            opacity: 0.85;
+        }
+        .btn-primary {
+            background: #000;
+            color: #fff !important;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: #1a1a1a !important;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="landing">
+        <h1>Aslam</h1>
+        <p class="tagline">An Islamic knowledge base for Muslims</p>
+        <p class="description">
+            Seek Islamic knowledge from authentic sources — Quran, Hadith, and IslamQA.
+            Save your reflections, organise notes, and build a personal library of
+            everything you learn.
+        </p>
+        <div class="buttons">
+            <a href="/auth/signup" class="btn-primary">Sign Up</a>
+            <a href="/auth/login" class="btn-secondary">Log In</a>
+        </div>
+    </div>
+</body>
+</html>
+{{end}}

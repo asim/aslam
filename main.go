@@ -23,6 +23,7 @@ import (
 	"aslam/tools"
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed html/*
@@ -108,7 +109,8 @@ func main() {
 	tmpl = template.Must(template.New("").Funcs(funcs).ParseFS(templates, "html/*.html"))
 
 	// Auth routes (no auth required)
-	http.HandleFunc("/auth/login", handleLogin)
+	http.HandleFunc("/auth/login", handleAuthLogin)
+	http.HandleFunc("/auth/signup", handleSignup)
 	http.HandleFunc("/auth/callback", handleOAuthCallback)
 	http.HandleFunc("/auth/logout", handleLogout)
 
@@ -118,8 +120,11 @@ func main() {
 	http.HandleFunc("/icon-192.png", handleStatic("icon-192.png", "image/png"))
 	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
 
+	// Public landing page
+	http.HandleFunc("/", handleLanding)
+
 	// Protected routes
-	http.HandleFunc("/", requireAuth(handleHome))
+	http.HandleFunc("/home", requireAuth(handleHome))
 	http.HandleFunc("/chat", requireAuth(handleChat))
 	http.HandleFunc("/chat/", requireAuth(handleChatView))
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
@@ -469,7 +474,7 @@ func isHTTPS(r *http.Request) bool {
 	return r.TLS != nil
 }
 
-func handleLogin(w http.ResponseWriter, r *http.Request) {
+func startGoogleOAuth(w http.ResponseWriter, r *http.Request) {
 	if googleClientID == "" {
 		http.Error(w, "OAuth not configured", 500)
 		return
@@ -488,7 +493,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "oauth_state",
 		Value:    state,
 		Path:     "/",
-		
+
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
@@ -503,6 +508,155 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		url.QueryEscape(state),
 	)
 	http.Redirect(w, r, authURL, http.StatusSeeOther)
+}
+
+func handleAuthLogin(w http.ResponseWriter, r *http.Request) {
+	// If ?google=true, trigger Google OAuth flow
+	if r.URL.Query().Get("google") == "true" {
+		startGoogleOAuth(w, r)
+		return
+	}
+
+	if r.Method == "POST" {
+		handleLoginPost(w, r)
+		return
+	}
+
+	// GET: show login page
+	errMsg := r.URL.Query().Get("error")
+	tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+		"Error":         errMsg,
+		"GoogleEnabled": googleClientID != "",
+	})
+}
+
+func handleLoginPost(w http.ResponseWriter, r *http.Request) {
+	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
+	password := r.FormValue("password")
+
+	if email == "" || password == "" {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":         "Email and password are required",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	user, err := db.GetUserByEmail(email)
+	if err != nil || user.PasswordHash == "" {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":         "Invalid email or password",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":         "Invalid email or password",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	// Create session
+	token := createSession(email, user.Name)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    token,
+		Path:     "/",
+		Domain:   "aslam.org",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   30 * 24 * 60 * 60,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
+	})
+
+	log.Printf("User logged in via password: %s (%s)", user.Name, email)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+func handleSignup(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		handleSignupPost(w, r)
+		return
+	}
+
+	// GET: show signup page
+	errMsg := r.URL.Query().Get("error")
+	tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+		"Error":         errMsg,
+		"GoogleEnabled": googleClientID != "",
+	})
+}
+
+func handleSignupPost(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
+	password := r.FormValue("password")
+
+	// Validation
+	if email == "" {
+		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+			"Error":         "Email is required",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+	if len(password) < 8 {
+		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+			"Error":         "Password must be at least 8 characters",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	// Check if email is already taken
+	if db.IsUser(email) {
+		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+			"Error":         "An account with this email already exists",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	// Hash password
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if err != nil {
+		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+			"Error":         "Something went wrong. Please try again.",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	// Create user
+	if err := db.CreateUserWithPassword(email, name, string(hash), "user"); err != nil {
+		log.Printf("Failed to create user %s: %v", email, err)
+		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
+			"Error":         "Could not create account. Please try again.",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	// Create session
+	token := createSession(email, name)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    token,
+		Path:     "/",
+		Domain:   "aslam.org",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   30 * 24 * 60 * 60,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
+	})
+
+	log.Printf("New user signed up: %s (%s)", name, email)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
 func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
@@ -572,10 +726,15 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := strings.ToLower(userInfo.Email)
+
+	// Auto-create user if they don't exist (open registration via Google)
 	if !db.IsUser(email) {
-		log.Printf("Unauthorized login attempt: %s", email)
-		http.Error(w, "Unauthorized: your email is not allowed", 403)
-		return
+		if err := db.AddUser(email, userInfo.Name, "user", "google"); err != nil {
+			log.Printf("Failed to auto-create user %s: %v", email, err)
+			http.Error(w, "Failed to create account", 500)
+			return
+		}
+		log.Printf("Auto-created user via Google OAuth: %s (%s)", userInfo.Name, email)
 	}
 
 	// Create session
@@ -594,7 +753,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("User logged in: %s (%s)", userInfo.Name, email)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -610,20 +769,44 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		MaxAge: -1,
 	})
 
-	http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // Handlers
 
-func handleHome(w http.ResponseWriter, r *http.Request) {
+func handleLanding(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
-	
+
+	// Redirect www to non-www
+	if r.Host == "www.aslam.org" {
+		http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
+		return
+	}
+
+	// If auth is not configured, go straight to home
+	if googleClientID == "" {
+		handleHome(w, r)
+		return
+	}
+
+	// If user is authenticated, redirect to /home
+	session := getSession(r)
+	if session != nil && db.IsUser(session.Email) {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	// Show landing page
+	tmpl.ExecuteTemplate(w, "landing.html", nil)
+}
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
 	// Get recent conversations
 	convs, _ := db.GetRecentConversations(10)
-	
+
 	if err := tmpl.ExecuteTemplate(w, "home.html", map[string]interface{}{
 		"Conversations": convs,
 	}); err != nil {
