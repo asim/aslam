@@ -2252,3 +2252,125 @@ func GetName(id int64) (map[string]interface{}, error) {
 		"Summary":     summary.String,
 	}, nil
 }
+
+// IslamQA index functions
+
+func GetIslamQACategories() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT category, COUNT(*) as count FROM islamqa GROUP BY category ORDER BY category`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var category string
+		var count int
+		rows.Scan(&category, &count)
+		results = append(results, map[string]interface{}{
+			"Category": category,
+			"Count":    count,
+		})
+	}
+	return results, nil
+}
+
+func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, category, question FROM islamqa WHERE category = ? ORDER BY id`, category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var cat, question string
+		rows.Scan(&id, &cat, &question)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Category": cat,
+			"Question": question,
+		})
+	}
+	return results, nil
+}
+
+func GetAllIslamQA() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, category, question FROM islamqa ORDER BY category, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var category, question string
+		rows.Scan(&id, &category, &question)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Category": category,
+			"Question": question,
+		})
+	}
+	return results, nil
+}
+
+func GetIslamQAPrevNext(id int64) (prevID, nextID int64) {
+	DB.QueryRow(`SELECT id FROM islamqa WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRow(`SELECT id FROM islamqa WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
+}
+
+// Ghazali index functions
+
+func GetGhazaliChapters() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter FROM ghazali ORDER BY volume, chapter`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var volume int
+		var volumeTitle, chapter string
+		rows.Scan(&volume, &volumeTitle, &chapter)
+		results = append(results, map[string]interface{}{
+			"Volume":      volume,
+			"VolumeTitle": volumeTitle,
+			"Chapter":     chapter,
+		})
+	}
+	return results, nil
+}
+
+func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY first_id`, volume)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var vol int
+		var volumeTitle, chapter string
+		var firstID int64
+		rows.Scan(&vol, &volumeTitle, &chapter, &firstID)
+		results = append(results, map[string]interface{}{
+			"Volume":      vol,
+			"VolumeTitle": volumeTitle,
+			"Chapter":     chapter,
+			"FirstID":     firstID,
+		})
+	}
+	return results, nil
+}
+
+func GetGhazaliPrevNext(id int64) (prevID, nextID int64) {
+	DB.QueryRow(`SELECT id FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRow(`SELECT id FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
+}

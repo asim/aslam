@@ -66,7 +66,21 @@
             <div class="qa-section-label">Answer</div>
             <div class="qa-answer">{{index . "Answer"}}</div>
 
-            <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
+            <div class="qa-source">
+                Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)
+                <form method="POST" action="/notes/add" style="display:inline; margin-left: 12px;">
+                    <input type="hidden" name="title" value="{{index . "Question"}}">
+                    <input type="hidden" name="content" value="/islamqa/{{index . "ID"}}
+
+{{truncate (index . "Answer") 200}}">
+                    <button type="submit" class="daily-btn">Save</button>
+                </form>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevID"}}<a href="/islamqa/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/islamqa">All Questions</a>
+                {{if index . "NextID"}}<a href="/islamqa/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
         </main>
     </div>
 </body>

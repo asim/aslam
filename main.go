@@ -150,7 +150,9 @@ func main() {
 	http.HandleFunc("/search", requireAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
+	http.HandleFunc("/islamqa", requireAuth(handleIslamQAIndex))
 	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
+	http.HandleFunc("/ghazali", requireAuth(handleGhazaliIndex))
 	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
@@ -1525,7 +1527,29 @@ func handleGhazaliView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	prevID, nextID := db.GetGhazaliPrevNext(id)
+	item["PrevID"] = prevID
+	item["NextID"] = nextID
 	renderTemplate(w, r, "ghazali.html", item)
+}
+
+func handleGhazaliIndex(w http.ResponseWriter, r *http.Request) {
+	volumeStr := r.URL.Query().Get("volume")
+	data := map[string]interface{}{}
+
+	if volumeStr != "" {
+		volume, err := strconv.Atoi(volumeStr)
+		if err == nil {
+			chapters, _ := db.GetGhazaliByVolume(volume)
+			data["Chapters"] = chapters
+			data["SelectedVolume"] = volume
+		}
+	} else {
+		chapters, _ := db.GetGhazaliChapters()
+		data["Chapters"] = chapters
+	}
+
+	renderTemplate(w, r, "ghazali_index.html", data)
 }
 
 func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
@@ -1540,7 +1564,29 @@ func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	prevID, nextID := db.GetIslamQAPrevNext(id)
+	item["PrevID"] = prevID
+	item["NextID"] = nextID
 	renderTemplate(w, r, "islamqa.html", item)
+}
+
+func handleIslamQAIndex(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	data := map[string]interface{}{}
+
+	categories, _ := db.GetIslamQACategories()
+	data["Categories"] = categories
+
+	if category != "" {
+		questions, _ := db.GetIslamQAByCategory(category)
+		data["Questions"] = questions
+		data["SelectedCategory"] = category
+	} else {
+		questions, _ := db.GetAllIslamQA()
+		data["Questions"] = questions
+	}
+
+	renderTemplate(w, r, "islamqa_index.html", data)
 }
 
 func handleEntryView(w http.ResponseWriter, r *http.Request) {

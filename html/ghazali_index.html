@@ -1,0 +1,71 @@
+{{define "ghazali_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghazali - Aslam</title>
+    {{template "style"}}
+    <style>
+        .vol-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .vol-filters a {
+            font-size: 12px;
+            padding: 3px 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #444;
+        }
+        .vol-filters a:hover { background: #e0e0e0; }
+        .vol-filters a.active { background: #000; color: #fff; }
+        .ch-list a {
+            text-decoration: none;
+            display: block;
+        }
+        .ch-list a:hover { opacity: 0.7; }
+        .ch-list .ch-vol-tag {
+            font-size: 11px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Ghazali &mdash; Ihya Ulum al-Din</h2>
+
+            <div class="vol-filters">
+                <a href="/ghazali"{{if not .SelectedVolume}} class="active"{{end}}>All</a>
+                <a href="/ghazali?volume=1"{{if eq .SelectedVolume 1}} class="active"{{end}}>Vol 1</a>
+                <a href="/ghazali?volume=2"{{if eq .SelectedVolume 2}} class="active"{{end}}>Vol 2</a>
+                <a href="/ghazali?volume=3"{{if eq .SelectedVolume 3}} class="active"{{end}}>Vol 3</a>
+                <a href="/ghazali?volume=4"{{if eq .SelectedVolume 4}} class="active"{{end}}>Vol 4</a>
+            </div>
+
+            {{if .Chapters}}
+            <ul class="ch-list">
+                {{range .Chapters}}
+                <li>
+                    {{if index . "FirstID"}}
+                    <a href="/ghazali/{{index . "FirstID"}}">{{index . "Chapter"}}</a>
+                    {{else}}
+                    <span>{{index . "Chapter"}}</span>
+                    {{end}}
+                    <span class="ch-vol-tag">{{index . "VolumeTitle"}}</span>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="muted">No chapters found.</p>
+            {{end}}
+        </main>
+    </div>
+</body>
+</html>
+{{end}}
