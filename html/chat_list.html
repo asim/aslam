@@ -11,7 +11,13 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <h2>Chats</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 style="margin-bottom:0;">Chats</h2>
+                <div style="font-size:13px;">
+                    <a href="/chat" style="{{if not .ShowAll}}font-weight:600;{{end}} text-decoration:none; margin-right:8px;">Mine</a>
+                    <a href="/chat?show=all" style="{{if .ShowAll}}font-weight:600;{{end}} text-decoration:none;">All</a>
+                </div>
+            </div>
 
             <form action="/chat/new" method="POST" style="margin-bottom: 20px">
                 <button type="submit" style="padding: 10px 16px; background: #000; color: #fff; border: none; border-radius: 8px; cursor: pointer;">+ New Chat</button>
@@ -23,11 +29,15 @@
                 <li style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <a href="/chat/{{.ID}}">{{.Title}}</a>
-                        {{if .Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{end}}
                         <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
                     </div>
                     {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
-                    <button onclick="deleteChat({{.ID}})" style="padding: 4px 8px; background: #fff; color: #999; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 12px;">delete</button>
+                    <div style="display:flex; gap:6px; flex-shrink:0; margin-left:8px;">
+                        <button onclick="togglePublic({{.ID}}, {{.Public}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:{{if .Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Public}}#fff{{else}}#999{{end}}; cursor:pointer;">{{if .Public}}Public{{else}}Private{{end}}</button>
+                        <button onclick="deleteChat({{.ID}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;">Delete</button>
+                    </div>
+                    {{else}}
+                    {{if .Public}}<span style="font-size:11px; padding:2px 8px; color:#22c55e;">Public</span>{{end}}
                     {{end}}
                 </li>
                 {{end}}
@@ -52,6 +62,14 @@
                         body: JSON.stringify({id: id})
                     }).then(() => location.reload());
                 }
+            }
+            async function togglePublic(id, current) {
+                await fetch('/api/chat/toggle-public', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: id, public: !current})
+                });
+                location.reload();
             }
             </script>
             {{else}}

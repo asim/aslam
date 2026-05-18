@@ -1186,7 +1186,7 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, _ := db.GetRecentConversations(10, userID)
+	convs, _ := db.GetRecentConversations(10, userID, true)
 	dailyContent, _ := db.GetLatestReminderContent()
 	randomQA, _ := db.GetRandomIslamQA()
 
@@ -1208,10 +1208,12 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, _ := db.GetRecentConversations(50, userID)
+	showAll := r.URL.Query().Get("show") == "all"
+	convs, _ := db.GetRecentConversations(50, userID, !showAll)
 	renderTemplate(w, r, "chat_list.html", map[string]interface{}{
 		"Conversations": convs,
 		"CurrentUserID": userID,
+		"ShowAll":       showAll,
 	})
 }
 
@@ -1443,7 +1445,7 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 
 func handleAPIChats(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, err := db.GetRecentConversations(50, userID)
+	convs, err := db.GetRecentConversations(50, userID, true)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -2375,18 +2377,18 @@ func resizeAndEncode(data []byte) string {
 
 func handleNotes(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	items, err := db.GetNoteItems(userID)
+	showAll := r.URL.Query().Get("show") == "all"
+	items, err := db.GetNoteItems(userID, !showAll)
 	if err != nil {
 		http.Error(w, "Failed to get note items", http.StatusInternalServerError)
 		return
 	}
 
-	data := map[string]interface{}{
+	renderTemplate(w, r, "notes.html", map[string]interface{}{
 		"Items":         items,
 		"CurrentUserID": userID,
-	}
-
-	renderTemplate(w, r, "notes.html", data)
+		"ShowAll":       showAll,
+	})
 }
 
 func handleNoteView(w http.ResponseWriter, r *http.Request) {

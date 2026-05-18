@@ -635,14 +635,19 @@ func Migrate() error {
 
 // Conversation functions
 
-func GetRecentConversations(limit int, userID int64) ([]Conversation, error) {
-	rows, err := DB.Query(`
-		SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
-		FROM conversations
-		WHERE user_id = ? OR public = 1 OR user_id IS NULL
-		ORDER BY updated_at DESC
-		LIMIT ?
-	`, userID, limit)
+func GetRecentConversations(limit int, userID int64, mineOnly bool) ([]Conversation, error) {
+	var query string
+	var args []interface{}
+	if mineOnly {
+		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?`
+		args = []interface{}{userID, limit}
+	} else {
+		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM conversations WHERE user_id = ? OR public = 1 OR user_id IS NULL ORDER BY updated_at DESC LIMIT ?`
+		args = []interface{}{userID, limit}
+	}
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1677,13 +1682,19 @@ type NoteItem struct {
 	UpdatedAt time.Time
 }
 
-func GetNoteItems(userID int64) ([]NoteItem, error) {
-	rows, err := DB.Query(`
-		SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
-		FROM notes_v2
-		WHERE user_id = ? OR public = 1 OR user_id IS NULL
-		ORDER BY updated_at DESC
-	`, userID)
+func GetNoteItems(userID int64, mineOnly bool) ([]NoteItem, error) {
+	var query string
+	var args []interface{}
+	if mineOnly {
+		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM notes_v2 WHERE user_id = ? ORDER BY updated_at DESC`
+		args = []interface{}{userID}
+	} else {
+		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM notes_v2 WHERE user_id = ? OR public = 1 OR user_id IS NULL ORDER BY updated_at DESC`
+		args = []interface{}{userID}
+	}
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
