@@ -98,17 +98,6 @@
             <section class="ask-hero">
                 <h2>Home</h2>
 
-                {{if .PrayerTimes}}
-                <div style="margin-bottom:16px; padding:8px 12px; background:#f8f8f8; border-radius:8px; font-size:11px; color:#555; display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center;">
-                    <div><div style="color:#999; font-size:10px;">Fajr</div>{{index .PrayerTimes "Fajr"}}</div>
-                    <div><div style="color:#999; font-size:10px;">Sunrise</div>{{index .PrayerTimes "Sunrise"}}</div>
-                    <div><div style="color:#999; font-size:10px;">Dhuhr</div>{{index .PrayerTimes "Dhuhr"}}</div>
-                    <div><div style="color:#999; font-size:10px;">Asr</div>{{index .PrayerTimes "Asr"}}</div>
-                    <div><div style="color:#999; font-size:10px;">Maghrib</div>{{index .PrayerTimes "Maghrib"}}</div>
-                    <div><div style="color:#999; font-size:10px;">Isha</div>{{index .PrayerTimes "Isha"}}</div>
-                </div>
-                {{end}}
-
                 <form class="ask-form" id="ask-form">
                     <textarea id="ask-input" name="message" placeholder="Ask a question…" autofocus></textarea>
                     <button type="submit">Ask</button>
@@ -117,6 +106,17 @@
                     Or <a href="/search">search</a> everything you've ever asked or saved · <a href="/notes">notes</a> · <a href="/chat">past chats</a>
                 </div>
             </section>
+
+            {{if .PrayerTimes}}
+            <div style="margin-bottom:16px; padding:8px 12px; background:#f8f8f8; border-radius:8px; font-size:11px; color:#555; display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center;">
+                <div><div style="color:#999; font-size:10px;">Fajr</div>{{index .PrayerTimes "Fajr"}}</div>
+                <div><div style="color:#999; font-size:10px;">Sunrise</div>{{index .PrayerTimes "Sunrise"}}</div>
+                <div><div style="color:#999; font-size:10px;">Dhuhr</div>{{index .PrayerTimes "Dhuhr"}}</div>
+                <div><div style="color:#999; font-size:10px;">Asr</div>{{index .PrayerTimes "Asr"}}</div>
+                <div><div style="color:#999; font-size:10px;">Maghrib</div>{{index .PrayerTimes "Maghrib"}}</div>
+                <div><div style="color:#999; font-size:10px;">Isha</div>{{index .PrayerTimes "Isha"}}</div>
+            </div>
+            {{end}}
 
             {{if .DailyContent}}
             <section style="margin-bottom: 24px;">
