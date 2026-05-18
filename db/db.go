@@ -460,7 +460,7 @@ func Migrate() error {
 		INSERT INTO islamqa_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
 	END`)
 
-	// Ghazali — Ihya Ulum al-Din (Revival of Religious Sciences)
+	// Ghazali — Ihya Ulum al-Din (Revival of the Islamic Sciences)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS ghazali (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -730,7 +730,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 		}
 	}
 
-	// Ghazali results (Ihya Ulum al-Din)
+	// Ghazali results (Ihya Ulum al-Din — Revival of the Islamic Sciences)
 	if gResults, err := SearchGhazali(query); err == nil {
 		for _, g := range gResults {
 			content, _ := g["Content"].(string)

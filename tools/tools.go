@@ -254,7 +254,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "ghazali",
-			Description: "Search the works of Imam Al-Ghazali (Ihya Ulum al-Din / Revival of Religious Sciences). Covers worship, worldly conduct, destructive vices, and constructive virtues. Use for questions about the soul, spiritual purification, Islamic ethics, and inner dimensions of worship.",
+			Description: "Search the works of Imam Al-Ghazali (Ihya Ulum al-Din / Revival of the Islamic Sciences). Covers worship, worldly conduct, destructive vices, and constructive virtues. Use for questions about the soul, spiritual purification, Islamic ethics, and inner dimensions of worship.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
