@@ -35,7 +35,7 @@ var readmeContent string
 //go:embed claude.md
 var claudeContent string
 
-//go:embed archive.zip
+//go:embed islamqa.zip
 var islamqaZip []byte
 
 //go:embed ghazali.zip
