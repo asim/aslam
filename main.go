@@ -202,6 +202,7 @@ func main() {
 	// Start background workers
 	startTaskProcessor()  // Handles pending tasks from any channel
 	startEmailWorker()    // Polls inbox for new emails
+	startDailyContentWorker() // Fetches daily verse/hadith/name
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
@@ -849,9 +850,13 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	convs, _ := db.GetRecentConversations(10, userID)
+	dailyContent, _ := db.GetLatestDailyContent()
+	randomQA, _ := db.GetRandomIslamQA()
 
 	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations": convs,
+		"DailyContent":  dailyContent,
+		"RandomQA":      randomQA,
 	})
 }
 

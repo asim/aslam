@@ -56,6 +56,39 @@
             font-size: 12px;
         }
         .ask-hint a { color: #666; }
+        .daily-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+        .daily-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+        .daily-text {
+            line-height: 1.7;
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+        }
+        .daily-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .daily-btn {
+            font-size: 12px;
+            padding: 2px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            color: #666;
+        }
+        .daily-btn:hover { background: #f5f5f5; }
     </style>
 </head>
 <body>
@@ -73,6 +106,70 @@
                     Or <a href="/search">search</a> everything you've ever asked or saved · <a href="/notes">notes</a> · <a href="/chat">past chats</a>
                 </div>
             </section>
+
+            {{if .DailyContent}}
+            <section style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 12px">Today's Reminder</h3>
+
+                {{if index .DailyContent "Verse"}}
+                <div class="daily-card">
+                    <div class="daily-label">Quran</div>
+                    <div class="daily-text">{{index .DailyContent "Verse"}}</div>
+                    <div class="daily-actions">
+                        <a href="{{index .DailyContent "VerseLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
+                        <form method="POST" action="/notes/add" style="display:inline;">
+                            <input type="hidden" name="title" value="Quran Verse">
+                            <input type="hidden" name="content" value="{{index .DailyContent "Verse"}}">
+                            <button type="submit" class="daily-btn">Save</button>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
+
+                {{if index .DailyContent "Hadith"}}
+                <div class="daily-card">
+                    <div class="daily-label">Hadith</div>
+                    <div class="daily-text">{{index .DailyContent "Hadith"}}</div>
+                    <div class="daily-actions">
+                        <a href="{{index .DailyContent "HadithLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
+                        <form method="POST" action="/notes/add" style="display:inline;">
+                            <input type="hidden" name="title" value="Hadith">
+                            <input type="hidden" name="content" value="{{index .DailyContent "Hadith"}}">
+                            <button type="submit" class="daily-btn">Save</button>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
+
+                {{if index .DailyContent "NameOfAllah"}}
+                <div class="daily-card">
+                    <div class="daily-label">Name of Allah</div>
+                    <div class="daily-text">{{index .DailyContent "NameOfAllah"}}</div>
+                    <div class="daily-actions">
+                        <a href="{{index .DailyContent "NameLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
+                        <form method="POST" action="/notes/add" style="display:inline;">
+                            <input type="hidden" name="title" value="Name of Allah">
+                            <input type="hidden" name="content" value="{{index .DailyContent "NameOfAllah"}}">
+                            <button type="submit" class="daily-btn">Save</button>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
+            </section>
+            {{end}}
+
+            {{if .RandomQA}}
+            <section style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 12px">Question of the Day</h3>
+                <div class="daily-card">
+                    <div class="daily-label">IslamQA</div>
+                    <div class="daily-text" style="font-weight:500;">{{index .RandomQA "Question"}}</div>
+                    <div class="daily-actions">
+                        <a href="/islamqa/{{index .RandomQA "ID"}}" style="font-size:12px; color:#0066cc;">Read Answer</a>
+                    </div>
+                </div>
+            </section>
+            {{end}}
 
             {{if .Conversations}}
             <h3 style="margin-bottom: 10px">Recent Chats</h3>

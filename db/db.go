@@ -460,6 +460,24 @@ func Migrate() error {
 		INSERT INTO islamqa_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
 	END`)
 
+	// Daily content — cached daily reminder (verse, hadith, name of Allah)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS daily_content (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			verse TEXT,
+			hadith TEXT,
+			name_of_allah TEXT,
+			message TEXT,
+			verse_link TEXT,
+			hadith_link TEXT,
+			name_link TEXT,
+			fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Tags
 	DB.Exec(`
 		CREATE TABLE IF NOT EXISTS tags (
@@ -1647,6 +1665,57 @@ func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 func GetIslamQA(id int64) (map[string]interface{}, error) {
 	var category, question, answer string
 	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa WHERE id = ?`, id).Scan(&id, &category, &question, &answer)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":       id,
+		"Category": category,
+		"Question": question,
+		"Answer":   answer,
+	}, nil
+}
+
+// Daily content functions
+
+func SaveDailyContent(verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink string) error {
+	_, err := DB.Exec(`
+		INSERT INTO daily_content (verse, hadith, name_of_allah, message, verse_link, hadith_link, name_link)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink)
+	return err
+}
+
+func GetLatestDailyContent() (map[string]interface{}, error) {
+	var id int64
+	var verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink sql.NullString
+	var fetchedAt time.Time
+
+	err := DB.QueryRow(`
+		SELECT id, verse, hadith, name_of_allah, message, verse_link, hadith_link, name_link, fetched_at
+		FROM daily_content ORDER BY fetched_at DESC LIMIT 1
+	`).Scan(&id, &verse, &hadith, &nameOfAllah, &message, &verseLink, &hadithLink, &nameLink, &fetchedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"ID":          id,
+		"Verse":       verse.String,
+		"Hadith":      hadith.String,
+		"NameOfAllah": nameOfAllah.String,
+		"Message":     message.String,
+		"VerseLink":   verseLink.String,
+		"HadithLink":  hadithLink.String,
+		"NameLink":    nameLink.String,
+		"FetchedAt":   fetchedAt,
+	}, nil
+}
+
+func GetRandomIslamQA() (map[string]interface{}, error) {
+	var id int64
+	var category, question, answer string
+	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa ORDER BY RANDOM() LIMIT 1`).Scan(&id, &category, &question, &answer)
 	if err != nil {
 		return nil, err
 	}
