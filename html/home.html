@@ -248,7 +248,6 @@
                 askBtn.disabled = false;
             }
         });
-        {{if not .HasLocation}}
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
@@ -262,11 +261,10 @@
                             timezone: tz
                         })
                     });
-                    location.reload();
+                    {{if not .HasLocation}}location.reload();{{end}}
                 } catch (_) {}
             }, () => {}, {timeout: 10000});
         }
-        {{end}}
     </script>
 </body>
 </html>

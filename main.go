@@ -1138,6 +1138,7 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 		Timezone:           tz,
 		TwilightConvention: moonsighting,
 		AsrConvention:      prayer.Shafii,
+		HighLatitudeAdapter: prayer.AngleBased(),
 	}, now.Year())
 	if err != nil {
 		return nil
@@ -1148,13 +1149,20 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 		return nil
 	}
 	s := schedules[day]
+
+	// Cap Isha at Maghrib + 90 minutes for high latitudes (summer in UK/Europe)
+	ishaTime := s.Isha
+	maxIsha := s.Maghrib.Add(90 * time.Minute)
+	if ishaTime.After(maxIsha) {
+		ishaTime = maxIsha
+	}
 	return map[string]string{
 		"Fajr":    s.Fajr.Format("15:04"),
 		"Sunrise": s.Sunrise.Format("15:04"),
 		"Dhuhr":   s.Zuhr.Format("15:04"),
 		"Asr":     s.Asr.Format("15:04"),
 		"Maghrib": s.Maghrib.Format("15:04"),
-		"Isha":    s.Isha.Format("15:04"),
+		"Isha":    ishaTime.Format("15:04"),
 	}
 }
 

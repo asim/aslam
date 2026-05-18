@@ -95,18 +95,6 @@
                     <label>Email
                         <input type="email" value="{{.User.Email}}" disabled>
                     </label>
-                    <label style="margin-top:20px; font-size:12px; color:#888; display:block;">Location (for prayer times)</label>
-                    <div style="display:flex; gap:8px;">
-                        <label style="flex:1">Latitude
-                            <input type="text" name="latitude" value="{{if .User.Latitude}}{{.User.Latitude}}{{end}}" placeholder="e.g. 51.5074">
-                        </label>
-                        <label style="flex:1">Longitude
-                            <input type="text" name="longitude" value="{{if .User.Longitude}}{{.User.Longitude}}{{end}}" placeholder="e.g. -0.1278">
-                        </label>
-                    </div>
-                    <label>Timezone
-                        <input type="text" name="timezone" value="{{.User.Timezone}}" placeholder="e.g. Europe/London">
-                    </label>
                     <button type="submit">Save</button>
                 </form>
 
