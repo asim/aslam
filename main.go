@@ -98,9 +98,12 @@ func main() {
 	defer db.Close()
 
 	seedUsers()
-	loadIslamQA()
-	loadGhazali()
-	loadSources()
+
+	go func() {
+		loadIslamQA()
+		loadGhazali()
+		loadSources()
+	}()
 
 	// Parse templates
 	funcs := template.FuncMap{
