@@ -23,14 +23,26 @@ type reference struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
-// SearchIslam queries the Islamic knowledge API for Quran, Hadith, and names of Allah
+// ReminderCacher is called to cache reminder results into the local database.
+type ReminderCacher func(query, answer string)
+
+var cacheReminder ReminderCacher
+
+// SetReminderCacher sets the function used to cache reminder results locally.
+func SetReminderCacher(fn ReminderCacher) {
+	cacheReminder = fn
+}
+
+// SearchIslam queries the Islamic knowledge API for Quran, Hadith, and names of Allah.
+// Uses summarise=false for speed — returns raw references from the source.
 func SearchIslam(query string) (string, error) {
-	reqBody, _ := json.Marshal(map[string]string{
-		"q": query,
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"q":         query,
+		"summarise": false,
 	})
 
 	client := &http.Client{
-		Timeout: 120 * time.Second, // Long timeout - uses Fanar which is slow
+		Timeout: 30 * time.Second,
 	}
 
 	req, err := http.NewRequest("POST", "https://reminder.dev/api/search", bytes.NewReader(reqBody))
@@ -60,7 +72,14 @@ func SearchIslam(query string) (string, error) {
 		return string(body), nil
 	}
 
-	return formatIslamResponse(result), nil
+	formatted := formatIslamResponse(result)
+
+	// Cache the result locally so future searches find it without hitting the API.
+	if cacheReminder != nil && len(result.References) > 0 {
+		cacheReminder(query, formatted)
+	}
+
+	return formatted, nil
 }
 
 func formatIslamResponse(r islamResponse) string {

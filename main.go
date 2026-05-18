@@ -187,6 +187,12 @@ func main() {
 		}
 	})
 
+	tools.SetReminderCacher(func(query, answer string) {
+		if err := db.InsertReminder(query, answer); err != nil {
+			log.Printf("Failed to cache reminder result: %v", err)
+		}
+	})
+
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
 

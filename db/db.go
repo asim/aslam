@@ -398,6 +398,32 @@ func Migrate() error {
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id)`)
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_v2_user ON notes_v2(user_id)`)
 
+	// Reminder — cached Q&A from the reminder API (Quran, Hadith, Names of Allah)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS reminder (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			question TEXT NOT NULL,
+			answer TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS reminder_fts USING fts4(
+			question,
+			answer,
+			content='reminder'
+		)
+	`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS reminder_ai AFTER INSERT ON reminder BEGIN
+		INSERT INTO reminder_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS reminder_ad AFTER DELETE ON reminder BEGIN
+		DELETE FROM reminder_fts WHERE docid = old.id;
+	END`)
+
 	// IslamQA
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS islamqa (
@@ -640,6 +666,24 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Content": answer,
 				"Role":    category,
 				"URL":     fmt.Sprintf("/islamqa/%d", q["ID"]),
+			})
+		}
+	}
+
+	// Reminder results (cached Quran/Hadith/Names of Allah)
+	if remResults, err := SearchReminder(query); err == nil {
+		for _, r := range remResults {
+			question, _ := r["Question"].(string)
+			answer, _ := r["Answer"].(string)
+			if len(answer) > 500 {
+				answer = answer[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "reminder",
+				"Title":   question,
+				"Content": answer,
+				"Role":    "quran/hadith",
+				"URL":     "#",
 			})
 		}
 	}
@@ -1526,6 +1570,38 @@ func GetUserID(email string) int64 {
 func ClearIslamQA() {
 	DB.Exec(`DELETE FROM islamqa`)
 	DB.Exec(`DELETE FROM islamqa_fts`)
+}
+
+func InsertReminder(question, answer string) error {
+	_, err := DB.Exec(`INSERT INTO reminder (question, answer) VALUES (?, ?)`, question, answer)
+	return err
+}
+
+func SearchReminder(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT r.id, r.question, r.answer
+		FROM reminder r
+		JOIN reminder_fts fts ON r.id = fts.docid
+		WHERE reminder_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var question, answer string
+		rows.Scan(&id, &question, &answer)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Question": question,
+			"Answer":   answer,
+		})
+	}
+	return results, nil
 }
 
 func IslamQACount() int {
