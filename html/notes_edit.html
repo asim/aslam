@@ -84,9 +84,8 @@
                 </div>
             </form>
 
-            <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <p class="muted">Danger zone</p>
-                <button type="submit" class="delete-btn" onclick="return confirm('Delete this note permanently?')">Delete Note</button>
+            <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+                <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;" onclick="return confirm('Delete this note permanently?')">Delete</button>
             </form>
         </main>
     </div>

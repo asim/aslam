@@ -71,7 +71,7 @@
                 {{range .Items}}
                 <div class="note-item">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <h3>{{.Title}}</h3>
+                        <h3><a href="/notes/edit/{{.ID}}" style="text-decoration:none;">{{.Title}}</a></h3>
                         {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
                         <button onclick="toggleNotePublic({{.ID}}, {{.Public}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:{{if .Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Public}}#fff{{else}}#999{{end}}; cursor:pointer; flex-shrink:0; margin-left:8px;">
                             {{if .Public}}Public{{else}}Private{{end}}
@@ -80,10 +80,9 @@
                         {{if .Public}}<span style="font-size:11px; padding:2px 8px; color:#22c55e;">Public</span>{{end}}
                         {{end}}
                     </div>
-                    {{if .Content}}<div class="description">{{truncate .Content 200}}</div>{{end}}
+                    {{if .Content}}<div class="description linkify">{{truncate .Content 200}}</div>{{end}}
                     <div class="meta">
                         <span data-time="{{.UpdatedAt.Unix}}"></span>
-                        · <a href="/notes/edit/{{.ID}}">edit</a>
                     </div>
                 </div>
                 {{end}}
@@ -113,6 +112,12 @@
         });
         location.reload();
     }
+    document.querySelectorAll('.linkify').forEach(el => {
+        el.innerHTML = el.textContent.replace(
+            /(\/(?:islamqa|ghazali|quran|hadith|name|notes|chat)\/[\w\/]+)/g,
+            '<a href="$1">$1</a>'
+        );
+    });
     </script>
 </body>
 </html>
