@@ -11,18 +11,16 @@ import (
 )
 
 func startDailyContentWorker() {
-	// Fetch immediately on startup
 	go fetchDailyContent()
 
-	// Then every hour
-	ticker := time.NewTicker(1 * time.Hour)
+	ticker := time.NewTicker(10 * time.Minute)
 	go func() {
 		for range ticker.C {
 			fetchDailyContent()
 		}
 	}()
 
-	log.Println("Daily content worker: started")
+	log.Println("Daily content worker: started (every 10 minutes)")
 }
 
 func fetchDailyContent() {
@@ -63,6 +61,15 @@ func fetchDailyContent() {
 		return
 	}
 
+	// Only save if content has changed
+	existing, _ := db.GetLatestDailyContent()
+	if existing != nil {
+		oldVerse, _ := existing["Verse"].(string)
+		if oldVerse == data.Verse {
+			return
+		}
+	}
+
 	verseLink := "https://reminder.dev" + data.Links.Verse
 	hadithLink := "https://reminder.dev" + data.Links.Hadith
 	nameLink := "https://reminder.dev" + data.Links.Name
@@ -72,5 +79,5 @@ func fetchDailyContent() {
 		return
 	}
 
-	log.Println("Daily content: fetched and saved successfully")
+	log.Println("Daily content: new content saved")
 }
