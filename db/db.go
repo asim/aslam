@@ -640,7 +640,7 @@ func GetRecentConversations(limit int, userID int64, mineOnly bool) ([]Conversat
 	var args []interface{}
 	if mineOnly {
 		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
-			FROM conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?`
+			FROM conversations WHERE user_id = ? OR user_id IS NULL ORDER BY updated_at DESC LIMIT ?`
 		args = []interface{}{userID, limit}
 	} else {
 		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
