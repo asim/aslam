@@ -72,7 +72,7 @@ Access is managed through a users table with two roles:
 - **admin** — full access including user management and system configuration
 - **user** — access to chats, notes, and search
 
-On first run, `ADMIN_EMAILS` seeds the initial admin(s). After that, admins add users from `/admin`.
+On first run, `ADMIN_EMAILS` seeds the initial admin(s). After that, admins add users from `/admin`. Anyone can sign up with email/password or Google OAuth — they get the `user` role by default.
 
 ## Installation
 

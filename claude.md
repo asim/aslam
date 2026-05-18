@@ -102,7 +102,9 @@ GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
 
 ## Authentication
 
-- Google OAuth with allowed email whitelist
+- Google OAuth + email/password auth
+- Users table with roles (admin/user)
+- `ADMIN_EMAILS` seeds initial admins on first run
 - Sessions stored in DB, 30-day expiry
 - Cookie set on `aslam.org` domain (covers www subdomain)
 - www.aslam.org redirects to aslam.org
