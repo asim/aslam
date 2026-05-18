@@ -80,6 +80,7 @@
                 {{range .Conversations}}
                 <li>
                     <a href="/chat/{{.ID}}">{{.Title}}</a>
+                    {{if .Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{else}}<span style="font-size:11px; padding:1px 6px; background:#f0f0f0; color:#999; border-radius:3px; margin-left:6px;">private</span>{{end}}
                     <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
                 </li>
                 {{end}}
