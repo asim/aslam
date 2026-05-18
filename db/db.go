@@ -2336,8 +2336,32 @@ func GetIslamQAPrevNext(id int64) (prevID, nextID int64) {
 
 // Ghazali index functions
 
+func romanToInt(s string) int {
+	roman := map[byte]int{'I': 1, 'V': 5, 'X': 10, 'L': 50}
+	total := 0
+	for i := 0; i < len(s); i++ {
+		v := roman[s[i]]
+		if i+1 < len(s) && roman[s[i+1]] > v {
+			total -= v
+		} else {
+			total += v
+		}
+	}
+	return total
+}
+
+func chapterSortKey(chapter string) int {
+	// Extract Roman numeral from "Chapter IX: ..."
+	parts := strings.SplitN(chapter, ":", 2)
+	if len(parts) > 0 {
+		num := strings.TrimPrefix(parts[0], "Chapter ")
+		return romanToInt(strings.TrimSpace(num))
+	}
+	return 0
+}
+
 func GetGhazaliChapters() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali GROUP BY volume, chapter ORDER BY MIN(id)`)
+	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali GROUP BY volume, chapter`)
 	if err != nil {
 		return nil, err
 	}
@@ -2356,11 +2380,19 @@ func GetGhazaliChapters() ([]map[string]interface{}, error) {
 			"FirstID":     firstID,
 		})
 	}
+	sort.SliceStable(results, func(i, j int) bool {
+		vi := results[i]["Volume"].(int)
+		vj := results[j]["Volume"].(int)
+		if vi != vj {
+			return vi < vj
+		}
+		return chapterSortKey(results[i]["Chapter"].(string)) < chapterSortKey(results[j]["Chapter"].(string))
+	})
 	return results, nil
 }
 
 func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY first_id`, volume)
+	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY chapter`, volume)
 	if err != nil {
 		return nil, err
 	}
@@ -2379,6 +2411,9 @@ func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
 			"FirstID":     firstID,
 		})
 	}
+	sort.SliceStable(results, func(i, j int) bool {
+		return chapterSortKey(results[i]["Chapter"].(string)) < chapterSortKey(results[j]["Chapter"].(string))
+	})
 	return results, nil
 }
 

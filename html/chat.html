@@ -47,10 +47,11 @@
         <main class="app-content" id="messages">
             <h2 id="chat-title">{{.Conversation.Title}}</h2>
             {{if .IsOwner}}
-            <div style="margin: -8px 0 12px 0;">
+            <div style="margin: -8px 0 12px 0; display:flex; gap:6px;">
                 <button onclick="togglePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Conversation.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Conversation.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
                     {{if .Conversation.Public}}Public{{else}}Private{{end}}
                 </button>
+                <button onclick="deleteChat()" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;">Delete</button>
             </div>
             <script>
             async function togglePublic() {
@@ -62,6 +63,15 @@
                     body: JSON.stringify({id: {{.Conversation.ID}}, public: !isPublic})
                 });
                 location.reload();
+            }
+            function deleteChat() {
+                if (confirm('Delete this conversation?')) {
+                    fetch('/api/chat/delete', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id: {{.Conversation.ID}}})
+                    }).then(() => window.location = '/chat');
+                }
             }
             </script>
             {{end}}
