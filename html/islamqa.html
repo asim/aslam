@@ -55,8 +55,8 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <p style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
-                <a href="/islamqa" style="font-size: 13px; color: #888;">&larr; back</a>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span class="qa-category" style="margin-bottom:0;">{{index . "Category"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Question"}}">
                     <input type="hidden" name="content" value="/islamqa/{{index . "ID"}}
@@ -64,8 +64,7 @@
 {{truncate (index . "Answer") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
                 </form>
-            </p>
-            <span class="qa-category">{{index . "Category"}}</span>
+            </div>
 
             <div class="qa-section-label">Question</div>
             <div class="qa-question-box">

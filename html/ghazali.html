@@ -39,8 +39,8 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <p style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
-                <a href="/ghazali" style="font-size: 13px; color: #888;">&larr; back</a>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span class="gh-volume" style="margin-bottom:0;">{{index . "VolumeTitle"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Chapter"}}">
                     <input type="hidden" name="content" value="/ghazali/{{index . "ID"}}
@@ -48,8 +48,7 @@
 {{truncate (index . "Content") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
                 </form>
-            </p>
-            <span class="gh-volume">{{index . "VolumeTitle"}}</span>
+            </div>
             <h2 class="gh-chapter">{{index . "Chapter"}}</h2>
             <div class="gh-content">{{index . "Content"}}</div>
             <div class="gh-source">Source: Imam Al-Ghazali, Ihya Ulum al-Din (Revival of the Islamic Sciences)</div>
