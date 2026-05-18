@@ -1150,14 +1150,23 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 	}
 	s := schedules[day]
 
-	// Cap Isha at Maghrib + 90 minutes for high latitudes (summer in UK/Europe)
+	// High latitude adjustments (UK/Europe summer)
+	// Cap Fajr at no earlier than Sunrise - 90 minutes
+	fajrTime := s.Fajr
+	minFajr := s.Sunrise.Add(-90 * time.Minute)
+	if fajrTime.Before(minFajr) {
+		fajrTime = minFajr
+	}
+
+	// Cap Isha at Maghrib + 90 minutes
 	ishaTime := s.Isha
 	maxIsha := s.Maghrib.Add(90 * time.Minute)
 	if ishaTime.After(maxIsha) {
 		ishaTime = maxIsha
 	}
+
 	return map[string]string{
-		"Fajr":    s.Fajr.Format("15:04"),
+		"Fajr":    fajrTime.Format("15:04"),
 		"Sunrise": s.Sunrise.Format("15:04"),
 		"Dhuhr":   s.Zuhr.Format("15:04"),
 		"Asr":     s.Asr.Format("15:04"),
