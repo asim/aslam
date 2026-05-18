@@ -248,6 +248,25 @@
                 askBtn.disabled = false;
             }
         });
+        {{if not .HasLocation}}
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                try {
+                    await fetch('/api/location', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            latitude: pos.coords.latitude,
+                            longitude: pos.coords.longitude,
+                            timezone: tz
+                        })
+                    });
+                    location.reload();
+                } catch (_) {}
+            }, () => {}, {timeout: 10000});
+        }
+        {{end}}
     </script>
 </body>
 </html>

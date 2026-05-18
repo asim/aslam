@@ -164,6 +164,7 @@ func main() {
 	http.HandleFunc("/notes/edit/", requireAuth(handleNoteEdit))
 	http.HandleFunc("/notes/delete/", requireAuth(handleNoteDelete))
 	http.HandleFunc("/api/chat/toggle-public", requireAuth(handleToggleChatPublic))
+	http.HandleFunc("/api/location", requireAuth(handleUpdateLocation))
 	http.HandleFunc("/api/notes/toggle-public", requireAuth(handleToggleNotePublic))
 
 	port := os.Getenv("PORT")
@@ -1163,11 +1164,19 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	dailyContent, _ := db.GetLatestReminderContent()
 	randomQA, _ := db.GetRandomIslamQA()
 
+	hasLocation := false
+	if userID > 0 {
+		if u, err := db.GetUserByID(userID); err == nil {
+			hasLocation = u.Latitude != 0 || u.Longitude != 0
+		}
+	}
+
 	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations": convs,
 		"DailyContent":  dailyContent,
 		"RandomQA":      randomQA,
 		"PrayerTimes":   getPrayerTimesForUser(userID),
+		"HasLocation":   hasLocation,
 	})
 }
 
@@ -2116,6 +2125,34 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 }
 
 // Toggle public/private handlers
+
+func handleUpdateLocation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+	session := getSession(r)
+	if session == nil {
+		jsonError(w, "Unauthorized", 401)
+		return
+	}
+	var req struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Timezone  string  `json:"timezone"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request", 400)
+		return
+	}
+	if req.Latitude == 0 && req.Longitude == 0 {
+		jsonError(w, "Invalid coordinates", 400)
+		return
+	}
+	db.UpdateUserLocation(session.Email, req.Latitude, req.Longitude, req.Timezone)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
 
 func handleToggleChatPublic(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
