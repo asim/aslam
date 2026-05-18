@@ -114,7 +114,7 @@
                 {{if .PrayerTimes}}
                 <div class="daily-card">
                     <div class="daily-label">Prayer Times</div>
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px;">
+                    <div style="display:flex; gap:16px; font-size:13px; overflow-x:auto;">
                         <span><span style="color:#999; font-size:11px;">Fajr</span> {{index .PrayerTimes "Fajr"}}</span>
                         <span><span style="color:#999; font-size:11px;">Sunrise</span> {{index .PrayerTimes "Sunrise"}}</span>
                         <span><span style="color:#999; font-size:11px;">Dhuhr</span> {{index .PrayerTimes "Dhuhr"}}</span>
