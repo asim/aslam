@@ -251,6 +251,9 @@ func Migrate() error {
 	// Add password_hash column to users (migration for existing DBs)
 	DB.Exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`)
 	DB.Exec(`ALTER TABLE users ADD COLUMN picture TEXT`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN latitude REAL DEFAULT 0`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN timezone TEXT DEFAULT ''`)
 
 	// Users - people who can access the system
 	_, err = DB.Exec(`
@@ -1438,6 +1441,9 @@ type User struct {
 	AddedBy      string
 	PasswordHash string
 	Picture      string
+	Latitude     float64
+	Longitude    float64
+	Timezone     string
 	CreatedAt    time.Time
 }
 
@@ -1494,11 +1500,11 @@ func UserCount() int {
 	return count
 }
 
-func GetUserByEmail(email string) (*User, error) {
+func scanUser(row interface{ Scan(...interface{}) error }) (*User, error) {
 	var u User
-	var name, addedBy, passwordHash, picture sql.NullString
-	err := DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, created_at FROM users WHERE email = ?`, email).Scan(
-		&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &u.CreatedAt)
+	var name, addedBy, passwordHash, picture, tz sql.NullString
+	var lat, lng sql.NullFloat64
+	err := row.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &lat, &lng, &tz, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -1506,7 +1512,18 @@ func GetUserByEmail(email string) (*User, error) {
 	u.AddedBy = addedBy.String
 	u.PasswordHash = passwordHash.String
 	u.Picture = picture.String
+	u.Latitude = lat.Float64
+	u.Longitude = lng.Float64
+	u.Timezone = tz.String
 	return &u, nil
+}
+
+func GetUserByEmail(email string) (*User, error) {
+	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, created_at FROM users WHERE email = ?`, email))
+}
+
+func GetUserByID(id int64) (*User, error) {
+	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, created_at FROM users WHERE id = ?`, id))
 }
 
 func SetUserPassword(id int64, hash string) error {
@@ -1527,6 +1544,11 @@ func UpdateUserProfile(email, name, picture string) error {
 
 func UpdateUserPicture(email, picture string) error {
 	_, err := DB.Exec(`UPDATE users SET picture = ? WHERE email = ?`, picture, email)
+	return err
+}
+
+func UpdateUserLocation(email string, lat, lng float64, timezone string) error {
+	_, err := DB.Exec(`UPDATE users SET latitude = ?, longitude = ?, timezone = ? WHERE email = ?`, lat, lng, timezone, email)
 	return err
 }
 

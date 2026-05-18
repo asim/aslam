@@ -1089,36 +1089,53 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "landing.html", nil)
 }
 
-func getPrayerTimes() map[string]string {
+func getPrayerTimesForUser(userID int64) map[string]string {
 	lat := 51.5074
 	lng := -0.1278
-	tz, _ := time.LoadLocation("Europe/London")
-	if tz == nil {
-		tz = time.UTC
+	tzName := "Europe/London"
+
+	if userID > 0 {
+		if u, err := db.GetUserByID(userID); err == nil {
+			if u.Latitude != 0 {
+				lat = u.Latitude
+			}
+			if u.Longitude != 0 {
+				lng = u.Longitude
+			}
+			if u.Timezone != "" {
+				tzName = u.Timezone
+			}
+		}
 	}
 
 	if envLat := os.Getenv("LATITUDE"); envLat != "" {
-		if v, err := strconv.ParseFloat(envLat, 64); err == nil {
+		if v, err := strconv.ParseFloat(envLat, 64); err == nil && lat == 51.5074 {
 			lat = v
 		}
 	}
 	if envLng := os.Getenv("LONGITUDE"); envLng != "" {
-		if v, err := strconv.ParseFloat(envLng, 64); err == nil {
+		if v, err := strconv.ParseFloat(envLng, 64); err == nil && lng == -0.1278 {
 			lng = v
 		}
 	}
-	if envTZ := os.Getenv("TIMEZONE"); envTZ != "" {
-		if loc, err := time.LoadLocation(envTZ); err == nil {
-			tz = loc
-		}
+	if envTZ := os.Getenv("TIMEZONE"); envTZ != "" && tzName == "Europe/London" {
+		tzName = envTZ
 	}
+
+	tz, _ := time.LoadLocation(tzName)
+	if tz == nil {
+		tz = time.UTC
+	}
+
+	// Moonsighting Committee: Fajr 18°, Isha 18°
+	moonsighting := &prayer.TwilightConvention{FajrAngle: 18, IshaAngle: 18}
 
 	now := time.Now().In(tz)
 	schedules, err := prayer.Calculate(prayer.Config{
 		Latitude:           lat,
 		Longitude:          lng,
 		Timezone:           tz,
-		TwilightConvention: prayer.MWL(),
+		TwilightConvention: moonsighting,
 		AsrConvention:      prayer.Shafii,
 	}, now.Year())
 	if err != nil {
@@ -1150,7 +1167,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 		"Conversations": convs,
 		"DailyContent":  dailyContent,
 		"RandomQA":      randomQA,
-		"PrayerTimes":   getPrayerTimes(),
+		"PrayerTimes":   getPrayerTimesForUser(userID),
 	})
 }
 
@@ -2208,7 +2225,22 @@ func handleProfile(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		if latStr := r.FormValue("latitude"); latStr != "" {
+			if v, err := strconv.ParseFloat(latStr, 64); err == nil {
+				user.Latitude = v
+			}
+		}
+		if lngStr := r.FormValue("longitude"); lngStr != "" {
+			if v, err := strconv.ParseFloat(lngStr, 64); err == nil {
+				user.Longitude = v
+			}
+		}
+		if tz := strings.TrimSpace(r.FormValue("timezone")); tz != "" {
+			user.Timezone = tz
+		}
+
 		db.UpdateUserProfile(session.Email, user.Name, user.Picture)
+		db.UpdateUserLocation(session.Email, user.Latitude, user.Longitude, user.Timezone)
 		http.Redirect(w, r, "/profile?msg=Profile+updated", http.StatusSeeOther)
 		return
 	}
