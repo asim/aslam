@@ -131,6 +131,7 @@ func main() {
 	http.HandleFunc("/sw.js", handleStatic("sw.js", "application/javascript"))
 	http.HandleFunc("/icon-192.png", handleStatic("icon-192.png", "image/png"))
 	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
+	http.HandleFunc("/fonts/arabic.otf", handleStatic("arabic.otf", "font/otf"))
 
 	// Public landing page
 	http.HandleFunc("/", handleLanding)
