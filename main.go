@@ -165,6 +165,7 @@ func main() {
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
 	http.HandleFunc("/profile", requireAuth(handleProfile))
 	http.HandleFunc("/notes", requireAuth(handleNotes))
+	http.HandleFunc("/notes/", requireAuth(handleNoteView))
 	http.HandleFunc("/notes/add", requireAuth(handleNoteAdd))
 	http.HandleFunc("/notes/edit/", requireAuth(handleNoteEdit))
 	http.HandleFunc("/notes/delete/", requireAuth(handleNoteDelete))
@@ -2386,6 +2387,31 @@ func handleNotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate(w, r, "notes.html", data)
+}
+
+func handleNoteView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/notes/")
+	if strings.Contains(idStr, "/") || idStr == "" {
+		http.NotFound(w, r)
+		return
+	}
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetNoteItem(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	userID := getUserID(r)
+	isOwner := item.UserID == userID || item.UserID == 0 || db.IsAdmin(getSession(r).Email)
+
+	renderTemplate(w, r, "notes_view.html", map[string]interface{}{
+		"Item":    item,
+		"IsOwner": isOwner,
+	})
 }
 
 func handleNoteAdd(w http.ResponseWriter, r *http.Request) {

@@ -82,7 +82,7 @@
                 {{range .Items}}
                 <div class="note-item">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <h3><a href="/notes/edit/{{.ID}}" style="text-decoration:none;">{{.Title}}</a></h3>
+                        <h3><a href="/notes/{{.ID}}" style="text-decoration:none;">{{.Title}}</a></h3>
                         {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
                         <button onclick="toggleNotePublic({{.ID}}, {{.Public}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:{{if .Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Public}}#fff{{else}}#999{{end}}; cursor:pointer; flex-shrink:0; margin-left:8px;">
                             {{if .Public}}Public{{else}}Private{{end}}
@@ -94,6 +94,9 @@
                     {{if .Content}}<div class="description linkify">{{truncate .Content 200}}</div>{{end}}
                     <div class="meta">
                         <span data-time="{{.UpdatedAt.Unix}}"></span>
+                        {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
+                        · <a href="/notes/edit/{{.ID}}">edit</a>
+                        {{end}}
                     </div>
                 </div>
                 {{end}}

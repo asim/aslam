@@ -1,0 +1,82 @@
+{{define "notes_view.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Item.Title}} - Aslam</title>
+    {{template "style"}}
+    <style>
+        .note-content {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-top: 16px;
+        }
+        .note-content a.source-link {
+            display: inline-block;
+            font-size: 12px;
+            padding: 2px 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            color: #0066cc;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+        .note-content a.source-link:hover { background: #e0e0e0; }
+        .note-meta {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 style="margin-bottom:0;">{{.Item.Title}}</h2>
+                {{if .IsOwner}}
+                <a href="/notes/edit/{{.Item.ID}}" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none;">Edit</a>
+                {{end}}
+            </div>
+
+            <div class="note-content" id="note-content">{{.Item.Content}}</div>
+
+            <div class="note-meta">
+                <span data-time="{{.Item.UpdatedAt.Unix}}"></span>
+                {{if .Item.Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{end}}
+            </div>
+        </main>
+    </div>
+    <script>
+    function timeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() / 1000) - timestamp);
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+        if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+        return Math.floor(seconds / 604800) + 'w ago';
+    }
+    document.querySelectorAll('[data-time]').forEach(el => {
+        el.textContent = timeAgo(parseInt(el.dataset.time));
+    });
+    // Linkify internal paths
+    const el = document.getElementById('note-content');
+    if (el) {
+        const text = el.textContent;
+        const match = text.match(/(\/(?:islamqa|ghazali|quran|hadith|name|notes|chat)\/[\w\/]+)/);
+        if (match) {
+            const path = match[1];
+            const label = path.split('/').filter(Boolean).join(' / ');
+            const rest = text.replace(match[0], '').trim();
+            el.innerHTML = '<a class="source-link" href="' + path + '">' + label + '</a>' + (rest ? '\n\n' + rest.replace(/</g,'&lt;') : '');
+        }
+    }
+    </script>
+</body>
+</html>
+{{end}}
