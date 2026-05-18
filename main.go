@@ -586,6 +586,9 @@ func loadSources() {
 		}
 	}
 
+	// Rebuild FTS indexes to ensure they're populated
+	db.RebuildSourcesFTS()
+
 	db.SetSetting("sources_version", sourcesVersion)
 	log.Printf("Sources v%s loaded", sourcesVersion)
 }

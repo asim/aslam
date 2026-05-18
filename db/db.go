@@ -2184,6 +2184,16 @@ func ClearNames() {
 	DB.Exec(`DELETE FROM names_fts`)
 }
 
+func RebuildSourcesFTS() {
+	DB.Exec(`DELETE FROM quran_fts`)
+	DB.Exec(`INSERT INTO quran_fts(docid, text, commentary) SELECT id, text, commentary FROM quran`)
+	DB.Exec(`DELETE FROM hadith_fts`)
+	DB.Exec(`INSERT INTO hadith_fts(docid, text, narrator) SELECT id, text, narrator FROM hadith`)
+	DB.Exec(`DELETE FROM names_fts`)
+	DB.Exec(`INSERT INTO names_fts(docid, english, meaning, description, summary) SELECT id, english, meaning, description, summary FROM names`)
+	log.Println("Rebuilt FTS indexes for quran, hadith, names")
+}
+
 func InsertName(number int, english, arabic, meaning, description, summary string) error {
 	_, err := DB.Exec(`INSERT INTO names (number, english, arabic, meaning, description, summary) VALUES (?, ?, ?, ?, ?, ?)`,
 		number, english, arabic, meaning, description, summary)
