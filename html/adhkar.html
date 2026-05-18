@@ -1,0 +1,119 @@
+{{define "adhkar.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{index . "Title"}} - Aslam</title>
+    {{template "style"}}
+    <style>
+        .adhkar-category {
+            display: inline-block;
+            font-size: 12px;
+            background: #f0f0f0;
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+        .adhkar-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 28px;
+            line-height: 2;
+            direction: rtl;
+            text-align: right;
+            margin: 24px 0;
+            color: #222;
+        }
+        .adhkar-transliteration {
+            font-style: italic;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        .adhkar-translation {
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        .adhkar-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .adhkar-notes {
+            background: #f8f8f8;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+        .adhkar-benefits {
+            line-height: 1.8;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .adhkar-source {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span class="adhkar-category">{{index . "Category"}}</span>
+                <form method="POST" action="/notes/add" style="display:inline;">
+                    <input type="hidden" name="title" value="{{index . "Title"}}">
+                    <input type="hidden" name="content" value="/adhkar/{{index . "ID"}}
+
+{{truncate (index . "Translation") 200}}">
+                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                </form>
+            </div>
+
+            <h2>{{index . "Title"}}</h2>
+
+            {{if index . "Arabic"}}
+            <div class="adhkar-arabic">{{index . "Arabic"}}</div>
+            {{end}}
+
+            {{if index . "Transliteration"}}
+            <div class="adhkar-section-label">Transliteration</div>
+            <div class="adhkar-transliteration">{{index . "Transliteration"}}</div>
+            {{end}}
+
+            {{if index . "Translation"}}
+            <div class="adhkar-section-label">Translation</div>
+            <div class="adhkar-translation">{{index . "Translation"}}</div>
+            {{end}}
+
+            {{if index . "Notes"}}
+            <div class="adhkar-notes">{{index . "Notes"}}</div>
+            {{end}}
+
+            {{if index . "Benefits"}}
+            <div class="adhkar-section-label">Benefits</div>
+            <div class="adhkar-benefits">{{index . "Benefits"}}</div>
+            {{end}}
+
+            {{if index . "Source"}}
+            <div class="adhkar-source">Source: {{index . "Source"}}</div>
+            {{end}}
+
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevID"}}<a href="/adhkar/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/adhkar">All Adhkar</a>
+                {{if index . "NextID"}}<a href="/adhkar/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

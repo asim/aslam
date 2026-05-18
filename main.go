@@ -45,6 +45,9 @@ var ghazaliZip []byte
 //go:embed sources.zip
 var sourcesZip []byte
 
+//go:embed adhkar.zip
+var adhkarZip []byte
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -103,6 +106,7 @@ func main() {
 		loadIslamQA()
 		loadGhazali()
 		loadSources()
+		loadAdhkar()
 	}()
 
 	// Parse templates
@@ -155,6 +159,8 @@ func main() {
 	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
 	http.HandleFunc("/ghazali", requireAuth(handleGhazaliIndex))
 	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
+	http.HandleFunc("/adhkar", requireAuth(handleAdhkarIndex))
+	http.HandleFunc("/adhkar/", requireAuth(handleAdhkarView))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
 	http.HandleFunc("/name/", requireAuth(handleNameView))
@@ -598,6 +604,103 @@ func loadSources() {
 
 	db.SetSetting("sources_version", sourcesVersion)
 	log.Printf("Sources v%s loaded", sourcesVersion)
+}
+
+const adhkarVersion = "1"
+
+func loadAdhkar() {
+	if db.GetSetting("adhkar_version") == adhkarVersion {
+		log.Printf("Adhkar v%s already loaded (%d entries)", adhkarVersion, db.AdhkarCount())
+		return
+	}
+
+	log.Printf("Loading Adhkar dataset v%s...", adhkarVersion)
+	db.ClearAdhkar()
+
+	r, err := zip.NewReader(bytes.NewReader(adhkarZip), int64(len(adhkarZip)))
+	if err != nil {
+		log.Printf("Failed to open adhkar.zip: %v", err)
+		return
+	}
+
+	total := 0
+	for _, f := range r.File {
+		if !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		var entries []struct {
+			Title       string `json:"title"`
+			Arabic      string `json:"arabic"`
+			Latin       string `json:"latin"`
+			Translation string `json:"translation"`
+			Notes       string `json:"notes"`
+			Benefits    string `json:"benefits"`
+			Fawaid      string `json:"fawaid"`
+			Source      string `json:"source"`
+			Category    string `json:"category"`
+		}
+		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
+			rc.Close()
+			log.Printf("Failed to decode %s: %v", f.Name, err)
+			continue
+		}
+		rc.Close()
+		for _, e := range entries {
+			benefits := e.Benefits
+			if benefits == "" {
+				benefits = e.Fawaid
+			}
+			if err := db.InsertAdhkar(e.Category, e.Title, e.Arabic, e.Latin, e.Translation, e.Notes, benefits, e.Source); err != nil {
+				log.Printf("Failed to insert adhkar entry: %v", err)
+			} else {
+				total++
+			}
+		}
+	}
+
+	db.SetSetting("adhkar_version", adhkarVersion)
+	log.Printf("Loaded %d adhkar entries (v%s)", total, adhkarVersion)
+}
+
+func handleAdhkarIndex(w http.ResponseWriter, r *http.Request) {
+	category := r.URL.Query().Get("category")
+	data := map[string]interface{}{}
+
+	categories, _ := db.GetAdhkarCategories()
+	data["Categories"] = categories
+
+	if category != "" {
+		items, _ := db.GetAdhkarByCategory(category)
+		data["Items"] = items
+		data["SelectedCategory"] = category
+	} else {
+		items, _ := db.GetAllAdhkar()
+		data["Items"] = items
+	}
+
+	renderTemplate(w, r, "adhkar_index.html", data)
+}
+
+func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/adhkar/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetAdhkar(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	prevID, nextID := db.GetAdhkarPrevNext(id)
+	item["PrevID"] = prevID
+	item["NextID"] = nextID
+	renderTemplate(w, r, "adhkar.html", item)
 }
 
 func handleQuranView(w http.ResponseWriter, r *http.Request) {

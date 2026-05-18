@@ -630,6 +630,34 @@ func Migrate() error {
 		)
 	`)
 
+	// Adhkar (duas/dhikr)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS adhkar (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			category TEXT NOT NULL,
+			title TEXT NOT NULL,
+			arabic TEXT,
+			transliteration TEXT,
+			translation TEXT,
+			notes TEXT,
+			benefits TEXT,
+			source TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS adhkar_fts USING fts4(
+		title, translation, benefits, content='adhkar'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS adhkar_ai AFTER INSERT ON adhkar BEGIN
+		INSERT INTO adhkar_fts(docid, title, translation, benefits) VALUES (new.id, new.title, new.translation, new.benefits);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS adhkar_ad AFTER DELETE ON adhkar BEGIN
+		DELETE FROM adhkar_fts WHERE docid = old.id;
+	END`)
+
 	return nil
 }
 
@@ -923,6 +951,25 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Content": content,
 				"Role":    volumeTitle,
 				"URL":     fmt.Sprintf("/ghazali/%d", g["ID"]),
+			})
+		}
+	}
+
+	// Adhkar results (duas/dhikr)
+	if aResults, err := SearchAdhkar(query); err == nil {
+		for _, a := range aResults {
+			translation, _ := a["Translation"].(string)
+			category, _ := a["Category"].(string)
+			title, _ := a["Title"].(string)
+			if len(translation) > 500 {
+				translation = translation[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "adhkar",
+				"Title":   title,
+				"Content": translation,
+				"Role":    category,
+				"URL":     fmt.Sprintf("/adhkar/%d", a["ID"]),
 			})
 		}
 	}
@@ -2420,5 +2467,153 @@ func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
 func GetGhazaliPrevNext(id int64) (prevID, nextID int64) {
 	DB.QueryRow(`SELECT id FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
 	DB.QueryRow(`SELECT id FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
+}
+
+// Adhkar functions
+
+func AdhkarCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM adhkar`).Scan(&count)
+	return count
+}
+
+func ClearAdhkar() {
+	DB.Exec(`DELETE FROM adhkar`)
+	DB.Exec(`DELETE FROM adhkar_fts`)
+}
+
+func InsertAdhkar(category, title, arabic, transliteration, translation, notes, benefits, source string) error {
+	_, err := DB.Exec(`INSERT INTO adhkar (category, title, arabic, transliteration, translation, notes, benefits, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		category, title, arabic, transliteration, translation, notes, benefits, source)
+	return err
+}
+
+func SearchAdhkar(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT a.id, a.category, a.title, a.arabic, a.transliteration, a.translation, a.notes, a.benefits, a.source
+		FROM adhkar a
+		JOIN adhkar_fts fts ON a.id = fts.docid
+		WHERE adhkar_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var category, title string
+		var arabic, transliteration, translation, notes, benefits, source sql.NullString
+		rows.Scan(&id, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
+		results = append(results, map[string]interface{}{
+			"ID":              id,
+			"Category":        category,
+			"Title":           title,
+			"Arabic":          arabic.String,
+			"Transliteration": transliteration.String,
+			"Translation":     translation.String,
+			"Notes":           notes.String,
+			"Benefits":        benefits.String,
+			"Source":          source.String,
+		})
+	}
+	return results, nil
+}
+
+func GetAdhkar(id int64) (map[string]interface{}, error) {
+	var category, title string
+	var arabic, transliteration, translation, notes, benefits, source sql.NullString
+	err := DB.QueryRow(`SELECT id, category, title, arabic, transliteration, translation, notes, benefits, source FROM adhkar WHERE id = ?`, id).Scan(
+		&id, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":              id,
+		"Category":        category,
+		"Title":           title,
+		"Arabic":          arabic.String,
+		"Transliteration": transliteration.String,
+		"Translation":     translation.String,
+		"Notes":           notes.String,
+		"Benefits":        benefits.String,
+		"Source":          source.String,
+	}, nil
+}
+
+func GetAdhkarByCategory(category string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, category, title, arabic, translation FROM adhkar WHERE category = ? ORDER BY id`, category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var cat, title string
+		var arabic, translation sql.NullString
+		rows.Scan(&id, &cat, &title, &arabic, &translation)
+		results = append(results, map[string]interface{}{
+			"ID":          id,
+			"Category":    cat,
+			"Title":       title,
+			"Arabic":      arabic.String,
+			"Translation": translation.String,
+		})
+	}
+	return results, nil
+}
+
+func GetAdhkarCategories() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT category, COUNT(*) as count FROM adhkar GROUP BY category ORDER BY category`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var category string
+		var count int
+		rows.Scan(&category, &count)
+		results = append(results, map[string]interface{}{
+			"Category": category,
+			"Count":    count,
+		})
+	}
+	return results, nil
+}
+
+func GetAllAdhkar() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, category, title, arabic, translation FROM adhkar ORDER BY category, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var category, title string
+		var arabic, translation sql.NullString
+		rows.Scan(&id, &category, &title, &arabic, &translation)
+		results = append(results, map[string]interface{}{
+			"ID":          id,
+			"Category":    category,
+			"Title":       title,
+			"Arabic":      arabic.String,
+			"Translation": translation.String,
+		})
+	}
+	return results, nil
+}
+
+func GetAdhkarPrevNext(id int64) (prevID, nextID int64) {
+	DB.QueryRow(`SELECT id FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRow(`SELECT id FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
 	return
 }

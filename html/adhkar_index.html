@@ -1,0 +1,80 @@
+{{define "adhkar_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adhkar - Aslam</title>
+    {{template "style"}}
+    <style>
+        .cat-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .cat-filters a {
+            font-size: 12px;
+            padding: 3px 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #444;
+        }
+        .cat-filters a:hover { background: #e0e0e0; }
+        .cat-filters a.active { background: #000; color: #fff; }
+        .adhkar-list a {
+            text-decoration: none;
+            display: block;
+        }
+        .adhkar-list a:hover { opacity: 0.7; }
+        .adhkar-cat-tag {
+            font-size: 11px;
+            color: #888;
+        }
+        .adhkar-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 16px;
+            direction: rtl;
+            color: #444;
+            margin-top: 4px;
+        }
+        .adhkar-translation {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Adhkar</h2>
+
+            <div class="cat-filters">
+                <a href="/adhkar"{{if not .SelectedCategory}} class="active"{{end}}>All</a>
+                {{range .Categories}}
+                <a href="/adhkar?category={{index . "Category"}}"{{if eq (index . "Category") $.SelectedCategory}} class="active"{{end}}>{{index . "Category"}} ({{index . "Count"}})</a>
+                {{end}}
+            </div>
+
+            {{if .Items}}
+            <ul class="adhkar-list">
+                {{range .Items}}
+                <li>
+                    <a href="/adhkar/{{index . "ID"}}">{{index . "Title"}}</a>
+                    {{if index . "Arabic"}}<div class="adhkar-arabic">{{index . "Arabic"}}</div>{{end}}
+                    {{if index . "Translation"}}<div class="adhkar-translation">{{truncate (index . "Translation") 120}}</div>{{end}}
+                    <span class="adhkar-cat-tag">{{index . "Category"}}</span>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="muted">No adhkar found.</p>
+            {{end}}
+        </main>
+    </div>
+</body>
+</html>
+{{end}}
