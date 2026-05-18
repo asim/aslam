@@ -140,15 +140,13 @@ A deploy script checks GitHub for changes, rebuilds, and restarts:
 
 The AI has access to these tools to help organise and retrieve:
 
+- **search** — Search the knowledge base (chats, notes, IslamQA, cached sources)
+- **reminder** — Search Islamic sources (Quran, Hadith, Names of Allah)
 - **fetch** — Fetch URL content and save to the knowledge base
-- **search** — Search the knowledge base
-- **store** — Save a note or fact
-- **reminder** — Search Islamic sources (Quran, Hadith)
+- **web_search** — Search the web for current information
 - **wikipedia** — Look up factual information
-- **www** — Web search via Brave Search API
-- **email_check** — Check the inbox
-- **email_send** — Send email
-- **note_add / note_search / note_update** — Save and search notes
+- **note_add / note_update** — Save and update notes
+- **email_check / email_send** — Check inbox and send email
 
 ## Purpose
 

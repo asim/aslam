@@ -11,8 +11,7 @@ import (
 type Storage interface {
 	SaveEntry(entryType, title, content, metadata string) (int64, error)
 	GetEntryByTitle(entryType, title string) (map[string]interface{}, error)
-	SearchEntries(query string) ([]map[string]interface{}, error)
-	SearchIslamQA(query string) ([]map[string]interface{}, error)
+	SearchAll(query string, userID int64) ([]map[string]interface{}, error)
 }
 
 // NoteStorage interface for note operations
@@ -76,7 +75,7 @@ func GetTools() []ToolDefinition {
 	return []ToolDefinition{
 		{
 			Name:        "fetch",
-			Description: "Fetch the content of a URL (webpage, API, GitHub repo, etc). The content is automatically saved to memory for future recall. Use this to look up information from websites.",
+			Description: "Fetch the content of a URL and save it to the knowledge base. Use this to look up information from websites.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -90,7 +89,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "search",
-			Description: "Search the knowledge base for information. Use this to find previously fetched URLs, saved notes, or any stored knowledge. Search by keywords, URL, domain, or topic.",
+			Description: "Search the knowledge base across chats, notes, IslamQA, and cached sources. Returns user-scoped results (own content + public content).",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -103,26 +102,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "store",
-			Description: "Save something to the knowledge base for later retrieval. Use this to store facts, notes, or information the user wants kept.",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"title": map[string]interface{}{
-						"type":        "string",
-						"description": "Short title or key for this entry",
-					},
-					"content": map[string]interface{}{
-						"type":        "string",
-						"description": "The information to store",
-					},
-				},
-				"required": []string{"title", "content"},
-			},
-		},
-		{
 			Name:        "reminder",
-			Description: "Search Islamic sources (Quran, Hadith, Names of Allah) for authoritative answers. Use this when discussing Islamic topics, questions about the Prophet Muhammad (PBUH), Allah, religious rulings, or Quranic/Hadith references. Returns summarised answers with source references. Note: This can be slow.",
+			Description: "Search Islamic sources (Quran, Hadith, Names of Allah) via the reminder API. Returns direct references with citations. Use for Quranic verses, hadith, or Names of Allah.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -149,8 +130,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "www",
-			Description: "Search the web for current information. Use this for recent news, current prices, latest updates, or any time-sensitive information that may not be in your training data. Returns search results from Brave Search.",
+			Name:        "web_search",
+			Description: "Search the web for current information. Use for recent news, current events, or anything not in the knowledge base.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -203,7 +184,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "note_add",
-			Description: "Add a note to the family notes. Use this when the user wants to save something for later - information, instructions, credentials, contacts, or any text they want to keep.",
+			Description: "Save a note. Use when the user wants to keep information, reflections, instructions, or any text for later.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -217,20 +198,6 @@ func GetTools() []ToolDefinition {
 					},
 				},
 				"required": []string{"title"},
-			},
-		},
-		{
-			Name:        "note_search",
-			Description: "Search the family notes. Use when the user asks about previously saved notes, information, or instructions.",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"query": map[string]interface{}{
-						"type":        "string",
-						"description": "Search query",
-					},
-				},
-				"required": []string{"query"},
 			},
 		},
 		{
@@ -255,20 +222,6 @@ func GetTools() []ToolDefinition {
 				"required": []string{"id"},
 			},
 		},
-		{
-			Name:        "islamqa",
-			Description: "Search IslamQA for scholarly answers to Islamic questions. Returns answers from Sheikh Muhammed Salih Al-Munajjid's Q&A archive covering faith, fiqh, family, history, and more. Use this when the user asks about Islamic rulings, practices, or questions that scholars have already answered.",
-			InputSchema: map[string]interface{}{
-				"type": "object",
-				"properties": map[string]interface{}{
-					"query": map[string]interface{}{
-						"type":        "string",
-						"description": "The Islamic question or topic to search for",
-					},
-				},
-				"required": []string{"query"},
-			},
-		},
 	}
 }
 
@@ -278,14 +231,12 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 	case "fetch":
 		return executeFetchURL(input)
 	case "search":
-		return executeRecall(input)
-	case "store":
-		return executeRemember(input)
+		return executeSearch(input)
 	case "reminder":
 		return executeIslamicSearch(input)
 	case "wikipedia":
 		return executeWikipedia(input)
-	case "www":
+	case "web_search":
 		return executeWebSearch(input)
 	case "email_check":
 		return executeEmailCheck(input)
@@ -293,12 +244,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeEmailSend(input)
 	case "note_add":
 		return executeNoteAdd(input)
-	case "note_search":
-		return executeNoteSearch(input)
 	case "note_update":
 		return executeNoteUpdate(input)
-	case "islamqa":
-		return executeIslamQA(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -370,55 +317,42 @@ func executeFetchURL(input map[string]interface{}) (string, error) {
 	return content, nil
 }
 
-func executeRecall(input map[string]interface{}) (string, error) {
+func executeSearch(input map[string]interface{}) (string, error) {
 	query, _ := input["query"].(string)
 	if query == "" {
 		return "", fmt.Errorf("query is required")
 	}
 
 	if store == nil {
-		return "Memory not available", nil
+		return "Search not available", nil
 	}
 
-	results, err := store.SearchEntries(query)
+	var userID int64
+	if getCurrentUserID != nil {
+		userID = getCurrentUserID()
+	}
+
+	results, err := store.SearchAll(query, userID)
 	if err != nil {
 		return "", err
 	}
 
 	if len(results) == 0 {
-		return "No results found in memory.", nil
+		return "No results found.", nil
 	}
 
-	// Format results
 	var output string
 	for i, r := range results {
+		kind, _ := r["Kind"].(string)
 		title, _ := r["Title"].(string)
-		typ, _ := r["Type"].(string)
 		content, _ := r["Content"].(string)
-		output += fmt.Sprintf("[%d] %s (%s):\n%s\n\n", i+1, title, typ, content)
+		if len(content) > 500 {
+			content = content[:500] + "..."
+		}
+		output += fmt.Sprintf("[%d] [%s] %s\n%s\n\n", i+1, kind, title, content)
 	}
 
 	return output, nil
-}
-
-func executeRemember(input map[string]interface{}) (string, error) {
-	title, _ := input["title"].(string)
-	content, _ := input["content"].(string)
-
-	if title == "" || content == "" {
-		return "", fmt.Errorf("title and content are required")
-	}
-
-	if store == nil {
-		return "Memory not available", nil
-	}
-
-	_, err := store.SaveEntry("note", title, content, "")
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("Saved to memory: %s", title), nil
 }
 
 func executeEmailCheck(input map[string]interface{}) (string, error) {
@@ -577,30 +511,3 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 	return fmt.Sprintf("Updated note: %s", existing["Title"]), nil
 }
 
-func executeIslamQA(input map[string]interface{}) (string, error) {
-	query, _ := input["query"].(string)
-	if query == "" {
-		return "", fmt.Errorf("query is required")
-	}
-	if store == nil {
-		return "IslamQA not available", nil
-	}
-	results, err := store.SearchIslamQA(query)
-	if err != nil {
-		return "", err
-	}
-	if len(results) == 0 {
-		return "No results found in IslamQA.", nil
-	}
-	var output string
-	for i, r := range results {
-		question, _ := r["Question"].(string)
-		answer, _ := r["Answer"].(string)
-		category, _ := r["Category"].(string)
-		if len(answer) > 2000 {
-			answer = answer[:2000] + "..."
-		}
-		output += fmt.Sprintf("[%d] Category: %s\nQ: %s\nA: %s\n\n", i+1, category, question, answer)
-	}
-	return output, nil
-}
