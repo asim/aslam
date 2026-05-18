@@ -950,7 +950,6 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 // Session functions
 
 func GetSessionByToken(token string) *Session {
-	log.Printf("DB lookup for token: %q (len=%d)", token, len(token))
 	var s Session
 	err := DB.QueryRow(`
 		SELECT token, email, name, created_at, expires_at 

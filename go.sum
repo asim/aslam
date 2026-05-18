@@ -9,6 +9,12 @@ github.com/emersion/go-message v0.18.2/go.mod h1:XpJyL70LwRvq2a8rVbHXikPgKj8+aI0
 github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 h1:OJyUGMJTzHTd1XQp98QTaHernxMYzRaOasRir9hUlFQ=
 github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21/go.mod h1:iL2twTeMvZnrg54ZoPDNfJaJaqy0xIQFuBdrLsmspwQ=
 github.com/emersion/go-textwrapper v0.0.0-20200911093747-65d896831594/go.mod h1:aqO8z8wPrjkscevZJFVE1wXJrLpC5LtJG7fqLOsPb2U=
+github.com/hablullah/go-juliandays v1.0.1-0.20220316153050-f56193695a5b h1:Qp6WC5idnPxaUQpX50s+1jrrjIqaCSuCu2BkQgGx/tQ=
+github.com/hablullah/go-juliandays v1.0.1-0.20220316153050-f56193695a5b/go.mod h1:0JOYq4oFOuDja+oospuc61YoX+uNEn7Z6uHYTbBzdGc=
+github.com/hablullah/go-prayer v1.1.1 h1:pxIj6mJPSBNe2w3G1XUgkGTRXyGzRkwRUkLAjU1b6os=
+github.com/hablullah/go-prayer v1.1.1/go.mod h1:SIKN4PmnPu/jbvTM/9mepX19FyWvLRcFPyvKfMDsyYw=
+github.com/hablullah/go-sampa v1.0.0 h1:8SiiPC7LktYsBYkoitGGPRL416TDXjkECRZsAkUbgy4=
+github.com/hablullah/go-sampa v1.0.0/go.mod h1:NgDnpqL95HgRPkal510TVk7tI6+aLwO3wJgoj0dQ4Pc=
 github.com/mutecomm/go-sqlcipher/v4 v4.4.2 h1:eM10bFtI4UvibIsKr10/QT7Yfz+NADfjZYh0GKrXUNc=
 github.com/mutecomm/go-sqlcipher/v4 v4.4.2/go.mod h1:mF2UmIpBnzFeBdu/ypTDb/LdbS0nk0dfSN1WUsWTjMA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

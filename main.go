@@ -22,6 +22,7 @@ import (
 	"aslam/db"
 	"aslam/tools"
 
+	prayer "github.com/hablullah/go-prayer"
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -722,17 +723,9 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 func getSession(r *http.Request) *db.Session {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		log.Printf("No session cookie: %v", err)
 		return nil
 	}
-	log.Printf("Session cookie found: %s...", cookie.Value[:min(10, len(cookie.Value))])
-	session := db.GetSessionByToken(cookie.Value)
-	if session == nil {
-		log.Printf("Session not found in DB for token")
-	} else {
-		log.Printf("Session valid for: %s", session.Email)
-	}
-	return session
+	return db.GetSessionByToken(cookie.Value)
 }
 
 func createSession(email, name string) string {
@@ -1096,6 +1089,57 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "landing.html", nil)
 }
 
+func getPrayerTimes() map[string]string {
+	lat := 51.5074
+	lng := -0.1278
+	tz, _ := time.LoadLocation("Europe/London")
+	if tz == nil {
+		tz = time.UTC
+	}
+
+	if envLat := os.Getenv("LATITUDE"); envLat != "" {
+		if v, err := strconv.ParseFloat(envLat, 64); err == nil {
+			lat = v
+		}
+	}
+	if envLng := os.Getenv("LONGITUDE"); envLng != "" {
+		if v, err := strconv.ParseFloat(envLng, 64); err == nil {
+			lng = v
+		}
+	}
+	if envTZ := os.Getenv("TIMEZONE"); envTZ != "" {
+		if loc, err := time.LoadLocation(envTZ); err == nil {
+			tz = loc
+		}
+	}
+
+	now := time.Now().In(tz)
+	schedules, err := prayer.Calculate(prayer.Config{
+		Latitude:           lat,
+		Longitude:          lng,
+		Timezone:           tz,
+		TwilightConvention: prayer.MWL(),
+		AsrConvention:      prayer.Shafii,
+	}, now.Year())
+	if err != nil {
+		return nil
+	}
+
+	day := now.YearDay() - 1
+	if day < 0 || day >= len(schedules) {
+		return nil
+	}
+	s := schedules[day]
+	return map[string]string{
+		"Fajr":    s.Fajr.Format("15:04"),
+		"Sunrise": s.Sunrise.Format("15:04"),
+		"Dhuhr":   s.Zuhr.Format("15:04"),
+		"Asr":     s.Asr.Format("15:04"),
+		"Maghrib": s.Maghrib.Format("15:04"),
+		"Isha":    s.Isha.Format("15:04"),
+	}
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	convs, _ := db.GetRecentConversations(10, userID)
@@ -1106,6 +1150,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 		"Conversations": convs,
 		"DailyContent":  dailyContent,
 		"RandomQA":      randomQA,
+		"PrayerTimes":   getPrayerTimes(),
 	})
 }
 

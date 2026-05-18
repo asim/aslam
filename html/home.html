@@ -98,6 +98,17 @@
             <section class="ask-hero">
                 <h2>Home</h2>
 
+                {{if .PrayerTimes}}
+                <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:12px; color:#555; display:flex; gap:14px; flex-wrap:wrap;">
+                    <span><b>Fajr</b> {{index .PrayerTimes "Fajr"}}</span>
+                    <span><b>Sunrise</b> {{index .PrayerTimes "Sunrise"}}</span>
+                    <span><b>Dhuhr</b> {{index .PrayerTimes "Dhuhr"}}</span>
+                    <span><b>Asr</b> {{index .PrayerTimes "Asr"}}</span>
+                    <span><b>Maghrib</b> {{index .PrayerTimes "Maghrib"}}</span>
+                    <span><b>Isha</b> {{index .PrayerTimes "Isha"}}</span>
+                </div>
+                {{end}}
+
                 <form class="ask-form" id="ask-form">
                     <textarea id="ask-input" name="message" placeholder="Ask a question…" autofocus></textarea>
                     <button type="submit">Ask</button>
