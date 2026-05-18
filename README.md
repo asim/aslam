@@ -141,7 +141,7 @@ A deploy script checks GitHub for changes, rebuilds, and restarts:
 The AI has access to these tools to help organise and retrieve:
 
 - **fetch** — Fetch URL content and save to the knowledge base
-- **recall** — Search the knowledge base
+- **search** — Search the knowledge base
 - **store** — Save a note or fact
 - **reminder** — Search Islamic sources (Quran, Hadith)
 - **wikipedia** — Look up factual information

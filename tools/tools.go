@@ -89,8 +89,8 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "recall",
-			Description: "Search your memory/knowledge base for information. Use this to recall previously fetched URLs, saved notes, or any stored knowledge. Search by keywords, URL, domain, or topic.",
+			Name:        "search",
+			Description: "Search the knowledge base for information. Use this to find previously fetched URLs, saved notes, or any stored knowledge. Search by keywords, URL, domain, or topic.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -277,7 +277,7 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 	switch name {
 	case "fetch":
 		return executeFetchURL(input)
-	case "recall":
+	case "search":
 		return executeRecall(input)
 	case "store":
 		return executeRemember(input)
