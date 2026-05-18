@@ -463,7 +463,7 @@ func loadGhazali() {
 	log.Printf("Loaded %d Ghazali sections (v%s)", total, ghazaliVersion)
 }
 
-const sourcesVersion = "2"
+const sourcesVersion = "3"
 
 func loadSources() {
 	if db.GetSetting("sources_version") == sourcesVersion {
