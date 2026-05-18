@@ -36,16 +36,16 @@ var readmeContent string
 //go:embed claude.md
 var claudeContent string
 
-//go:embed islamqa.zip
+//go:embed data/islamqa.zip
 var islamqaZip []byte
 
-//go:embed ghazali.zip
+//go:embed data/ghazali.zip
 var ghazaliZip []byte
 
-//go:embed sources.zip
+//go:embed data/sources.zip
 var sourcesZip []byte
 
-//go:embed adhkar.zip
+//go:embed data/adhkar.zip
 var adhkarZip []byte
 
 var (
