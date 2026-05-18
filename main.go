@@ -225,6 +225,9 @@ func main() {
 	tools.SetGhazaliSearcher(func(query string) ([]map[string]interface{}, error) {
 		return db.SearchGhazali(query)
 	})
+	tools.SetAdhkarSearcher(func(query string) ([]map[string]interface{}, error) {
+		return db.SearchAdhkar(query)
+	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)
@@ -1732,14 +1735,17 @@ You are BOTH an assistant and the keeper of the family's knowledge base. Every c
 - search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
 
 You have tools available:
-- fetch: Fetch websites, GitHub repos, docs. Content is saved to memory.
-- search: Search the knowledge base (chats, notes, IslamQA, reminder results).
-- reminder: Search Islamic sources (Quran, Hadith, Names of Allah) for authoritative answers.
-- wikipedia: Look up factual information.
+- search: Search the knowledge base (chats, notes, Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar).
+- reminder: Search Islamic sources (Quran, Hadith, Names of Allah) via the reminder API for semantic results.
+- islamqa: Search IslamQA for scholarly answers to Islamic questions.
+- ghazali: Search Imam Al-Ghazali's Ihya Ulum al-Din (Revival of the Islamic Sciences).
+- adhkar: Search duas and dhikr (morning, evening, after salah, daily).
+- fetch: Fetch a URL and save its content to the knowledge base.
 - web_search: Search the web for current information.
-- email_check: Check the assistant's inbox.
-- email_send: Send an email. When the user asks you to send them an email, USE THIS TOOL to actually send it - don't just write out what the email would say. Actually call the tool.
+- wikipedia: Look up factual information.
 - note_add / note_update: Save and update notes.
+- email_check: Check the assistant's inbox.
+- email_send: Send an email.
 
 When asked to send information about a topic, USE the research tools first (web_search, wikipedia, reminder) to gather accurate information, then send the email with that information.
 

@@ -59,6 +59,14 @@ func SetGhazaliSearcher(fn GhazaliSearcher) {
 	searchGhazali = fn
 }
 
+type AdhkarSearcher func(query string) ([]map[string]interface{}, error)
+
+var searchAdhkar AdhkarSearcher
+
+func SetAdhkarSearcher(fn AdhkarSearcher) {
+	searchAdhkar = fn
+}
+
 // IntegrationChecker checks if an integration is enabled
 type IntegrationChecker func(name string) bool
 
@@ -105,7 +113,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "search",
-			Description: "Search the knowledge base across chats, notes, IslamQA, and cached sources. Returns user-scoped results (own content + public content).",
+			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, chats, notes, and cached content. Returns user-scoped results.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -266,6 +274,20 @@ func GetTools() []ToolDefinition {
 				"required": []string{"query"},
 			},
 		},
+		{
+			Name:        "adhkar",
+			Description: "Search duas and dhikr (remembrances). Covers morning adhkar, evening adhkar, dhikr after salah, daily duas, and selected supplications. Each includes Arabic text, transliteration, translation, and source.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The dua or dhikr to search for",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
@@ -294,6 +316,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeIslamQA(input)
 	case "ghazali":
 		return executeGhazali(input)
+	case "adhkar":
+		return executeAdhkar(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -612,6 +636,43 @@ func executeGhazali(input map[string]interface{}) (string, error) {
 			content = content[:2000] + "..."
 		}
 		output += fmt.Sprintf("[%d] %s — %s\n%s\n\n", i+1, volumeTitle, chapter, content)
+	}
+	return output, nil
+}
+
+func executeAdhkar(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	if searchAdhkar == nil {
+		return "Adhkar not available", nil
+	}
+	results, err := searchAdhkar(query)
+	if err != nil {
+		return "", err
+	}
+	if len(results) == 0 {
+		return "No adhkar found.", nil
+	}
+	var output string
+	for i, r := range results {
+		title, _ := r["Title"].(string)
+		arabic, _ := r["Arabic"].(string)
+		translation, _ := r["Translation"].(string)
+		notes, _ := r["Notes"].(string)
+		source, _ := r["Source"].(string)
+		if len(translation) > 500 {
+			translation = translation[:500] + "..."
+		}
+		output += fmt.Sprintf("[%d] %s\nArabic: %s\nTranslation: %s\n", i+1, title, arabic, translation)
+		if notes != "" {
+			output += fmt.Sprintf("Notes: %s\n", notes)
+		}
+		if source != "" {
+			output += fmt.Sprintf("Source: %s\n", source)
+		}
+		output += "\n"
 	}
 	return output, nil
 }
