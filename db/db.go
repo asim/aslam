@@ -587,7 +587,7 @@ func Migrate() error {
 
 	// Names of Allah — 99 names with meanings and descriptions
 	_, err = DB.Exec(`
-		CREATE TABLE IF NOT EXISTS names_of_allah (
+		CREATE TABLE IF NOT EXISTS names (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			number INTEGER NOT NULL,
 			english TEXT NOT NULL,
@@ -601,12 +601,12 @@ func Migrate() error {
 		return err
 	}
 	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS names_fts USING fts4(
-		english, meaning, description, summary, content='names_of_allah'
+		english, meaning, description, summary, content='names'
 	)`)
-	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ai AFTER INSERT ON names_of_allah BEGIN
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ai AFTER INSERT ON names BEGIN
 		INSERT INTO names_fts(docid, english, meaning, description, summary) VALUES (new.id, new.english, new.meaning, new.description, new.summary);
 	END`)
-	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ad AFTER DELETE ON names_of_allah BEGIN
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ad AFTER DELETE ON names BEGIN
 		DELETE FROM names_fts WHERE docid = old.id;
 	END`)
 
@@ -2154,17 +2154,17 @@ func GetHadith(id int64) (map[string]interface{}, error) {
 
 func NamesCount() int {
 	var count int
-	DB.QueryRow(`SELECT COUNT(*) FROM names_of_allah`).Scan(&count)
+	DB.QueryRow(`SELECT COUNT(*) FROM names`).Scan(&count)
 	return count
 }
 
 func ClearNames() {
-	DB.Exec(`DELETE FROM names_of_allah`)
+	DB.Exec(`DELETE FROM names`)
 	DB.Exec(`DELETE FROM names_fts`)
 }
 
 func InsertName(number int, english, arabic, meaning, description, summary string) error {
-	_, err := DB.Exec(`INSERT INTO names_of_allah (number, english, arabic, meaning, description, summary) VALUES (?, ?, ?, ?, ?, ?)`,
+	_, err := DB.Exec(`INSERT INTO names (number, english, arabic, meaning, description, summary) VALUES (?, ?, ?, ?, ?, ?)`,
 		number, english, arabic, meaning, description, summary)
 	return err
 }
@@ -2172,7 +2172,7 @@ func InsertName(number int, english, arabic, meaning, description, summary strin
 func SearchNames(query string) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
 		SELECT n.id, n.number, n.english, n.arabic, n.meaning, n.description, n.summary
-		FROM names_of_allah n
+		FROM names n
 		JOIN names_fts fts ON n.id = fts.docid
 		WHERE names_fts MATCH ?
 		LIMIT 10
@@ -2206,7 +2206,7 @@ func GetName(id int64) (map[string]interface{}, error) {
 	var number int
 	var english string
 	var arabic, meaning, description, summary sql.NullString
-	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names_of_allah WHERE id = ?`, id).Scan(
+	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names WHERE id = ?`, id).Scan(
 		&id, &number, &english, &arabic, &meaning, &description, &summary)
 	if err != nil {
 		return nil, err
