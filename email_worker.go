@@ -188,9 +188,10 @@ func getOrCreateConversation(threadID, subject, sender string) (int64, error) {
 		return thread.ConversationID, nil
 	}
 
-	// Create new conversation
+	// Create new conversation (use sender's user ID if they exist)
 	title := fmt.Sprintf("Email: %s (from %s)", subject, sender)
-	convID, err := db.CreateConversation(title)
+	senderUserID := db.GetUserID(strings.ToLower(sender))
+	convID, err := db.CreateConversation(title, senderUserID)
 	if err != nil {
 		return 0, err
 	}

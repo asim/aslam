@@ -150,6 +150,8 @@ func main() {
 	http.HandleFunc("/notes/add", requireAuth(handleNoteAdd))
 	http.HandleFunc("/notes/edit/", requireAuth(handleNoteEdit))
 	http.HandleFunc("/notes/delete/", requireAuth(handleNoteDelete))
+	http.HandleFunc("/api/chat/toggle-public", requireAuth(handleToggleChatPublic))
+	http.HandleFunc("/api/notes/toggle-public", requireAuth(handleToggleNotePublic))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -159,6 +161,12 @@ func main() {
 	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
 	tools.SetNoteStorage(&noteStorage{})
+	tools.SetCurrentUserIDGetter(func() int64 {
+		if currentUserContext != nil && currentUserContext.Email != "" {
+			return db.GetUserID(currentUserContext.Email)
+		}
+		return 0
+	})
 	tools.SetIntegrationChecker(func(name string) bool {
 		switch name {
 		case "brave_search":
@@ -211,12 +219,12 @@ func (s *dbStorage) SearchIslamQA(query string) ([]map[string]interface{}, error
 // noteStorage implements tools.NoteStorage interface
 type noteStorage struct{}
 
-func (v *noteStorage) AddNoteItem(title, content string) (int64, error) {
-	return db.AddNoteItem(title, content)
+func (v *noteStorage) AddNoteItem(title, content string, userID int64) (int64, error) {
+	return db.AddNoteItem(title, content, userID)
 }
 
-func (v *noteStorage) SearchNotes(query string) ([]map[string]interface{}, error) {
-	items, err := db.SearchNotes(query)
+func (v *noteStorage) SearchNotes(query string, userID int64) ([]map[string]interface{}, error) {
+	items, err := db.SearchNotes(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -790,6 +798,15 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// getUserID returns the database user ID from the request session, or 0 if unauthenticated.
+func getUserID(r *http.Request) int64 {
+	session := getSession(r)
+	if session == nil {
+		return 0
+	}
+	return db.GetUserID(session.Email)
+}
+
 // Handlers
 
 func handleLanding(w http.ResponseWriter, r *http.Request) {
@@ -822,8 +839,8 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
-	// Get recent conversations
-	convs, _ := db.GetRecentConversations(10)
+	userID := getUserID(r)
+	convs, _ := db.GetRecentConversations(10, userID)
 
 	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations": convs,
@@ -831,9 +848,11 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
-	convs, _ := db.GetRecentConversations(50)
+	userID := getUserID(r)
+	convs, _ := db.GetRecentConversations(50, userID)
 	renderTemplate(w, r, "chat_list.html", map[string]interface{}{
 		"Conversations": convs,
+		"CurrentUserID": userID,
 	})
 }
 
@@ -844,15 +863,28 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	
+
 	conv, err := db.GetConversation(id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	
+
+	userID := getUserID(r)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+
+	// Access check: owner, public, legacy (no owner), or admin
+	isOwner := conv.UserID == userID || conv.UserID == 0
+	if !isOwner && !conv.Public && !isAdmin {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
 	messages, _ := db.GetMessages(id)
-	
+
 	// Get user's first name from session
 	userName := "You"
 	if session := getSession(r); session != nil {
@@ -861,12 +893,13 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 			userName = parts[0]
 		}
 	}
-	
+
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	renderTemplate(w, r, "chat.html", map[string]interface{}{
 		"Conversation": conv,
 		"Messages":     messages,
 		"UserName":     userName,
+		"IsOwner":      isOwner || isAdmin,
 	})
 }
 
@@ -875,13 +908,14 @@ func handleNewChat(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	
-	id, err := db.CreateConversation("New conversation")
+
+	userID := getUserID(r)
+	id, err := db.CreateConversation("New conversation", userID)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	
+
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", id), http.StatusSeeOther)
 }
 
@@ -1001,7 +1035,8 @@ func handleAPINewChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := db.CreateConversation("New conversation")
+	userID := getUserID(r)
+	id, err := db.CreateConversation("New conversation", userID)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -1025,6 +1060,18 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Verify ownership: owner, legacy (no owner), or admin
+	userID := getUserID(r)
+	ownerID := db.GetConversationOwner(req.ID)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+	if ownerID != 0 && ownerID != userID && !isAdmin {
+		jsonError(w, "Access denied", 403)
+		return
+	}
+
 	// Delete conversation (messages deleted by cascade)
 	if err := db.DeleteConversation(req.ID); err != nil {
 		jsonError(w, err.Error(), 500)
@@ -1036,7 +1083,8 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAPIChats(w http.ResponseWriter, r *http.Request) {
-	convs, err := db.GetRecentConversations(50)
+	userID := getUserID(r)
+	convs, err := db.GetRecentConversations(50, userID)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -1070,7 +1118,8 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Unified search across chats, entries, and notes.
-	results, err := db.SearchAll(query)
+	userID := getUserID(r)
+	results, err := db.SearchAll(query, userID)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -1091,7 +1140,8 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	var results []map[string]interface{}
 	if query != "" {
-		results, _ = db.SearchAll(query)
+		userID := getUserID(r)
+		results, _ = db.SearchAll(query, userID)
 	}
 
 	renderTemplate(w, r, "search.html", map[string]interface{}{
@@ -1727,6 +1777,80 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
 }
 
+// Toggle public/private handlers
+
+func handleToggleChatPublic(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ID     int64 `json:"id"`
+		Public bool  `json:"public"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request", 400)
+		return
+	}
+
+	// Verify ownership
+	userID := getUserID(r)
+	ownerID := db.GetConversationOwner(req.ID)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+	if ownerID != 0 && ownerID != userID && !isAdmin {
+		jsonError(w, "Access denied", 403)
+		return
+	}
+
+	if err := db.ToggleConversationPublic(req.ID, req.Public); err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func handleToggleNotePublic(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
+
+	var req struct {
+		ID     int64 `json:"id"`
+		Public bool  `json:"public"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request", 400)
+		return
+	}
+
+	// Verify ownership
+	userID := getUserID(r)
+	ownerID := db.GetNoteOwner(req.ID)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+	if ownerID != 0 && ownerID != userID && !isAdmin {
+		jsonError(w, "Access denied", 403)
+		return
+	}
+
+	if err := db.ToggleNotePublic(req.ID, req.Public); err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
 // Notes handlers
 
 func handleProfile(w http.ResponseWriter, r *http.Request) {
@@ -1790,14 +1914,16 @@ func resizeAndEncode(data []byte) string {
 }
 
 func handleNotes(w http.ResponseWriter, r *http.Request) {
-	items, err := db.GetNoteItems()
+	userID := getUserID(r)
+	items, err := db.GetNoteItems(userID)
 	if err != nil {
 		http.Error(w, "Failed to get note items", http.StatusInternalServerError)
 		return
 	}
 
 	data := map[string]interface{}{
-		"Items": items,
+		"Items":         items,
+		"CurrentUserID": userID,
 	}
 
 	renderTemplate(w, r, "notes.html", data)
@@ -1823,7 +1949,8 @@ func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.AddNoteItem(title, content)
+	userID := getUserID(r)
+	_, err := db.AddNoteItem(title, content, userID)
 	if err != nil {
 		http.Redirect(w, r, "/notes?error=Failed+to+add+item", http.StatusSeeOther)
 		return
@@ -1840,7 +1967,21 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID := getUserID(r)
+	ownerID := db.GetNoteOwner(id)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+	isOwner := ownerID == userID || ownerID == 0
+
 	if r.Method == "POST" {
+		// Only owner or admin can edit
+		if !isOwner && !isAdmin {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
 		title := strings.TrimSpace(r.FormValue("title"))
 		content := strings.TrimSpace(r.FormValue("content"))
 
@@ -1860,8 +2001,15 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check access: owner, public, legacy, or admin
+	if !isOwner && !item.Public && !isAdmin {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
 	data := map[string]interface{}{
-		"Item": item,
+		"Item":    item,
+		"IsOwner": isOwner || isAdmin,
 	}
 	renderTemplate(w, r, "notes_edit.html", data)
 }
@@ -1876,6 +2024,18 @@ func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil || id == 0 {
 		http.Redirect(w, r, "/notes", http.StatusSeeOther)
+		return
+	}
+
+	// Verify ownership: owner, legacy (no owner), or admin
+	userID := getUserID(r)
+	ownerID := db.GetNoteOwner(id)
+	isAdmin := false
+	if session := getSession(r); session != nil {
+		isAdmin = db.IsAdmin(session.Email)
+	}
+	if ownerID != 0 && ownerID != userID && !isAdmin {
+		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 

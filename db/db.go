@@ -22,6 +22,8 @@ type Conversation struct {
 	ID        int64
 	Title     string
 	Summary   sql.NullString
+	UserID    int64
+	Public    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -388,6 +390,14 @@ func Migrate() error {
 		INSERT INTO entries_fts(docid, title, content) VALUES (new.id, new.title, new.content);
 	END`)
 
+	// Add user_id and public columns to conversations and notes_v2
+	DB.Exec(`ALTER TABLE conversations ADD COLUMN user_id INTEGER REFERENCES users(id)`)
+	DB.Exec(`ALTER TABLE conversations ADD COLUMN public INTEGER DEFAULT 0`)
+	DB.Exec(`ALTER TABLE notes_v2 ADD COLUMN user_id INTEGER REFERENCES users(id)`)
+	DB.Exec(`ALTER TABLE notes_v2 ADD COLUMN public INTEGER DEFAULT 0`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id)`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_notes_v2_user ON notes_v2(user_id)`)
+
 	// IslamQA
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS islamqa (
@@ -446,13 +456,14 @@ func Migrate() error {
 
 // Conversation functions
 
-func GetRecentConversations(limit int) ([]Conversation, error) {
+func GetRecentConversations(limit int, userID int64) ([]Conversation, error) {
 	rows, err := DB.Query(`
-		SELECT id, title, summary, created_at, updated_at 
-		FROM conversations 
-		ORDER BY updated_at DESC 
+		SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+		FROM conversations
+		WHERE user_id = ? OR public = 1 OR user_id IS NULL
+		ORDER BY updated_at DESC
 		LIMIT ?
-	`, limit)
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +472,9 @@ func GetRecentConversations(limit int) ([]Conversation, error) {
 	var convs []Conversation
 	for rows.Next() {
 		var c Conversation
-		rows.Scan(&c.ID, &c.Title, &c.Summary, &c.CreatedAt, &c.UpdatedAt)
+		var pub int
+		rows.Scan(&c.ID, &c.Title, &c.Summary, &c.UserID, &pub, &c.CreatedAt, &c.UpdatedAt)
+		c.Public = pub == 1
 		convs = append(convs, c)
 	}
 	return convs, nil
@@ -469,18 +482,20 @@ func GetRecentConversations(limit int) ([]Conversation, error) {
 
 func GetConversation(id int64) (*Conversation, error) {
 	var c Conversation
+	var pub int
 	err := DB.QueryRow(`
-		SELECT id, title, summary, created_at, updated_at 
+		SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
 		FROM conversations WHERE id = ?
-	`, id).Scan(&c.ID, &c.Title, &c.Summary, &c.CreatedAt, &c.UpdatedAt)
+	`, id).Scan(&c.ID, &c.Title, &c.Summary, &c.UserID, &pub, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
+	c.Public = pub == 1
 	return &c, nil
 }
 
-func CreateConversation(title string) (int64, error) {
-	result, err := DB.Exec(`INSERT INTO conversations (title) VALUES (?)`, title)
+func CreateConversation(title string, userID int64) (int64, error) {
+	result, err := DB.Exec(`INSERT INTO conversations (title, user_id) VALUES (?, ?)`, title, userID)
 	if err != nil {
 		return 0, err
 	}
@@ -531,16 +546,17 @@ func AddMessage(convID int64, role, content string) error {
 	return nil
 }
 
-func SearchMessages(query string) ([]map[string]interface{}, error) {
+func SearchMessages(query string, userID int64) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
 		SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, c.title
 		FROM messages m
 		JOIN messages_fts fts ON m.id = fts.docid
 		JOIN conversations c ON m.conversation_id = c.id
 		WHERE messages_fts MATCH ?
+		AND (c.user_id = ? OR c.public = 1 OR c.user_id IS NULL)
 		ORDER BY m.created_at DESC
 		LIMIT 50
-	`, query)
+	`, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -571,7 +587,7 @@ func SearchMessages(query string) ([]map[string]interface{}, error) {
 // This is the backbone of the knowledge base: anything the user has ever asked
 // the assistant, anything the assistant remembered, and anything stored in
 // notes can be found with a single query.
-func SearchAll(query string) ([]map[string]interface{}, error) {
+func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, nil
 	}
@@ -579,7 +595,7 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	// Chats (messages + conversation title)
-	if msgs, err := SearchMessages(query); err == nil {
+	if msgs, err := SearchMessages(query, userID); err == nil {
 		for _, m := range msgs {
 			createdAt, _ := m["CreatedAt"].(time.Time)
 			results = append(results, map[string]interface{}{
@@ -629,7 +645,7 @@ func SearchAll(query string) ([]map[string]interface{}, error) {
 	}
 
 	// Note items
-	if items, err := SearchNotes(query); err == nil {
+	if items, err := SearchNotes(query, userID); err == nil {
 		for _, n := range items {
 			content := n.Content
 			if len(content) > 500 {
@@ -1359,12 +1375,19 @@ type NoteItem struct {
 	ID        int64
 	Title     string
 	Content   string
+	UserID    int64
+	Public    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-func GetNoteItems() ([]NoteItem, error) {
-	rows, err := DB.Query(`SELECT id, title, content, created_at, updated_at FROM notes_v2 ORDER BY updated_at DESC`)
+func GetNoteItems(userID int64) ([]NoteItem, error) {
+	rows, err := DB.Query(`
+		SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+		FROM notes_v2
+		WHERE user_id = ? OR public = 1 OR user_id IS NULL
+		ORDER BY updated_at DESC
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1374,11 +1397,13 @@ func GetNoteItems() ([]NoteItem, error) {
 	for rows.Next() {
 		var v NoteItem
 		var content sql.NullString
-		err := rows.Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
+		var pub int
+		err := rows.Scan(&v.ID, &v.Title, &content, &v.UserID, &pub, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			continue
 		}
 		v.Content = content.String
+		v.Public = pub == 1
 		items = append(items, v)
 	}
 	return items, nil
@@ -1387,21 +1412,23 @@ func GetNoteItems() ([]NoteItem, error) {
 func GetNoteItem(id int64) (*NoteItem, error) {
 	var v NoteItem
 	var content sql.NullString
+	var pub int
 	err := DB.QueryRow(`
-		SELECT id, title, content, created_at, updated_at
+		SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
 		FROM notes_v2 WHERE id = ?
-	`, id).Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
+	`, id).Scan(&v.ID, &v.Title, &content, &v.UserID, &pub, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	v.Content = content.String
+	v.Public = pub == 1
 	return &v, nil
 }
 
-func AddNoteItem(title, content string) (int64, error) {
+func AddNoteItem(title, content string, userID int64) (int64, error) {
 	result, err := DB.Exec(`
-		INSERT INTO notes_v2 (title, content) VALUES (?, ?)
-	`, title, content)
+		INSERT INTO notes_v2 (title, content, user_id) VALUES (?, ?, ?)
+	`, title, content, userID)
 	if err != nil {
 		return 0, err
 	}
@@ -1420,14 +1447,15 @@ func DeleteNoteItem(id int64) error {
 	return err
 }
 
-func SearchNotes(query string) ([]NoteItem, error) {
+func SearchNotes(query string, userID int64) ([]NoteItem, error) {
 	rows, err := DB.Query(`
-		SELECT n.id, n.title, n.content, n.created_at, n.updated_at
+		SELECT n.id, n.title, n.content, COALESCE(n.user_id, 0), COALESCE(n.public, 0), n.created_at, n.updated_at
 		FROM notes_v2 n
 		JOIN notes_fts fts ON n.id = fts.docid
 		WHERE notes_fts MATCH ?
+		AND (n.user_id = ? OR n.public = 1 OR n.user_id IS NULL)
 		LIMIT 20
-	`, query)
+	`, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -1437,14 +1465,60 @@ func SearchNotes(query string) ([]NoteItem, error) {
 	for rows.Next() {
 		var v NoteItem
 		var content sql.NullString
-		err := rows.Scan(&v.ID, &v.Title, &content, &v.CreatedAt, &v.UpdatedAt)
+		var pub int
+		err := rows.Scan(&v.ID, &v.Title, &content, &v.UserID, &pub, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			continue
 		}
 		v.Content = content.String
+		v.Public = pub == 1
 		items = append(items, v)
 	}
 	return items, nil
+}
+
+// Toggle and ownership functions
+
+func ToggleConversationPublic(id int64, public bool) error {
+	val := 0
+	if public {
+		val = 1
+	}
+	_, err := DB.Exec(`UPDATE conversations SET public = ? WHERE id = ?`, val, id)
+	return err
+}
+
+func ToggleNotePublic(id int64, public bool) error {
+	val := 0
+	if public {
+		val = 1
+	}
+	_, err := DB.Exec(`UPDATE notes_v2 SET public = ? WHERE id = ?`, val, id)
+	return err
+}
+
+func GetConversationOwner(id int64) int64 {
+	var userID sql.NullInt64
+	DB.QueryRow(`SELECT user_id FROM conversations WHERE id = ?`, id).Scan(&userID)
+	if userID.Valid {
+		return userID.Int64
+	}
+	return 0
+}
+
+func GetNoteOwner(id int64) int64 {
+	var userID sql.NullInt64
+	DB.QueryRow(`SELECT user_id FROM notes_v2 WHERE id = ?`, id).Scan(&userID)
+	if userID.Valid {
+		return userID.Int64
+	}
+	return 0
+}
+
+func GetUserID(email string) int64 {
+	var id int64
+	DB.QueryRow(`SELECT id FROM users WHERE email = ?`, email).Scan(&id)
+	return id
 }
 
 // IslamQA functions

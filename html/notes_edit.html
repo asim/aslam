@@ -50,6 +50,25 @@
         {{template "header" .}}
         <main class="app-content">
             <h2>Edit: {{.Item.Title}}</h2>
+            {{if .IsOwner}}
+            <div style="margin: -4px 0 12px 0;">
+                <button onclick="toggleNotePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Item.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Item.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
+                    {{if .Item.Public}}Public{{else}}Private{{end}}
+                </button>
+            </div>
+            <script>
+            async function toggleNotePublic() {
+                const btn = document.getElementById('public-toggle');
+                const isPublic = btn.textContent.trim() === 'Public';
+                await fetch('/api/notes/toggle-public', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: {{.Item.ID}}, public: !isPublic})
+                });
+                location.reload();
+            }
+            </script>
+            {{end}}
             <p class="muted" style="margin-bottom: 20px"><a href="/notes">&larr; back to notes</a></p>
 
             <form action="/notes/edit/{{.Item.ID}}" method="POST" class="edit-form">

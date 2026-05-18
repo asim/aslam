@@ -23,9 +23,12 @@
                 <li style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <a href="/chat/{{.ID}}">{{.Title}}</a>
+                        {{if .Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{end}}
                         <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
                     </div>
+                    {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
                     <button onclick="deleteChat({{.ID}})" style="padding: 4px 8px; background: #fff; color: #999; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 12px;">delete</button>
+                    {{end}}
                 </li>
                 {{end}}
             </ul>

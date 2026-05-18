@@ -17,14 +17,22 @@ type Storage interface {
 
 // NoteStorage interface for note operations
 type NoteStorage interface {
-	AddNoteItem(title, content string) (int64, error)
-	SearchNotes(query string) ([]map[string]interface{}, error)
+	AddNoteItem(title, content string, userID int64) (int64, error)
+	SearchNotes(query string, userID int64) ([]map[string]interface{}, error)
 	GetNoteItem(id int64) (map[string]interface{}, error)
 	UpdateNoteItem(id int64, updates map[string]interface{}) error
 }
 
 var store Storage
 var noteStore NoteStorage
+
+// getCurrentUserID returns the current user's ID for tool calls
+var getCurrentUserID func() int64
+
+// SetCurrentUserIDGetter sets the function to get the current user ID
+func SetCurrentUserIDGetter(fn func() int64) {
+	getCurrentUserID = fn
+}
 
 // SetStorage sets the storage backend
 func SetStorage(s Storage) {
@@ -479,7 +487,12 @@ func executeNoteAdd(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("title is required")
 	}
 
-	id, err := noteStore.AddNoteItem(title, content)
+	var userID int64
+	if getCurrentUserID != nil {
+		userID = getCurrentUserID()
+	}
+
+	id, err := noteStore.AddNoteItem(title, content, userID)
 	if err != nil {
 		return "", err
 	}
@@ -497,7 +510,12 @@ func executeNoteSearch(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("query is required")
 	}
 
-	items, err := noteStore.SearchNotes(query)
+	var userID int64
+	if getCurrentUserID != nil {
+		userID = getCurrentUserID()
+	}
+
+	items, err := noteStore.SearchNotes(query, userID)
 	if err != nil {
 		return "", err
 	}

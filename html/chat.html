@@ -46,7 +46,26 @@
         
         <main class="app-content" id="messages">
             <h2 id="chat-title">{{.Conversation.Title}}</h2>
-            
+            {{if .IsOwner}}
+            <div style="margin: -8px 0 12px 0;">
+                <button onclick="togglePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Conversation.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Conversation.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
+                    {{if .Conversation.Public}}Public{{else}}Private{{end}}
+                </button>
+            </div>
+            <script>
+            async function togglePublic() {
+                const btn = document.getElementById('public-toggle');
+                const isPublic = btn.textContent.trim() === 'Public';
+                await fetch('/api/chat/toggle-public', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: {{.Conversation.ID}}, public: !isPublic})
+                });
+                location.reload();
+            }
+            </script>
+            {{end}}
+
             {{if .Messages}}
             {{range .Messages}}
             <div class="message {{.Role}}">
