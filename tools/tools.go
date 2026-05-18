@@ -51,6 +51,14 @@ func SetIslamQASearcher(fn IslamQASearcher) {
 	searchIslamQA = fn
 }
 
+type GhazaliSearcher func(query string) ([]map[string]interface{}, error)
+
+var searchGhazali GhazaliSearcher
+
+func SetGhazaliSearcher(fn GhazaliSearcher) {
+	searchGhazali = fn
+}
+
 // IntegrationChecker checks if an integration is enabled
 type IntegrationChecker func(name string) bool
 
@@ -244,6 +252,20 @@ func GetTools() []ToolDefinition {
 				"required": []string{"query"},
 			},
 		},
+		{
+			Name:        "ghazali",
+			Description: "Search the works of Imam Al-Ghazali (Ihya Ulum al-Din / Revival of Religious Sciences). Covers worship, worldly conduct, destructive vices, and constructive virtues. Use for questions about the soul, spiritual purification, Islamic ethics, and inner dimensions of worship.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The topic to search for in Ghazali's works",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
@@ -270,6 +292,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeNoteUpdate(input)
 	case "islamqa":
 		return executeIslamQA(input)
+	case "ghazali":
+		return executeGhazali(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -563,3 +587,31 @@ func executeIslamQA(input map[string]interface{}) (string, error) {
 	return output, nil
 }
 
+
+func executeGhazali(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	if searchGhazali == nil {
+		return "Ghazali works not available", nil
+	}
+	results, err := searchGhazali(query)
+	if err != nil {
+		return "", err
+	}
+	if len(results) == 0 {
+		return "No results found in Ghazali's works.", nil
+	}
+	var output string
+	for i, r := range results {
+		chapter, _ := r["Chapter"].(string)
+		volumeTitle, _ := r["VolumeTitle"].(string)
+		content, _ := r["Content"].(string)
+		if len(content) > 2000 {
+			content = content[:2000] + "..."
+		}
+		output += fmt.Sprintf("[%d] %s — %s\n%s\n\n", i+1, volumeTitle, chapter, content)
+	}
+	return output, nil
+}

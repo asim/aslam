@@ -460,6 +460,30 @@ func Migrate() error {
 		INSERT INTO islamqa_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
 	END`)
 
+	// Ghazali — Ihya Ulum al-Din (Revival of Religious Sciences)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS ghazali (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			volume INTEGER NOT NULL,
+			volume_title TEXT NOT NULL,
+			chapter TEXT NOT NULL,
+			part INTEGER DEFAULT 1,
+			content TEXT NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS ghazali_fts USING fts4(
+		chapter, content, content='ghazali'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS ghazali_ai AFTER INSERT ON ghazali BEGIN
+		INSERT INTO ghazali_fts(docid, chapter, content) VALUES (new.id, new.chapter, new.content);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS ghazali_ad AFTER DELETE ON ghazali BEGIN
+		DELETE FROM ghazali_fts WHERE docid = old.id;
+	END`)
+
 	// Daily content — cached daily reminder (verse, hadith, name of Allah)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS daily_content (
@@ -702,6 +726,25 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Content": answer,
 				"Role":    "quran/hadith",
 				"URL":     "#",
+			})
+		}
+	}
+
+	// Ghazali results (Ihya Ulum al-Din)
+	if gResults, err := SearchGhazali(query); err == nil {
+		for _, g := range gResults {
+			content, _ := g["Content"].(string)
+			chapter, _ := g["Chapter"].(string)
+			volumeTitle, _ := g["VolumeTitle"].(string)
+			if len(content) > 500 {
+				content = content[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "ghazali",
+				"Title":   chapter,
+				"Content": content,
+				"Role":    volumeTitle,
+				"URL":     fmt.Sprintf("/ghazali/%d", g["ID"]),
 			})
 		}
 	}
@@ -1724,5 +1767,73 @@ func GetRandomIslamQA() (map[string]interface{}, error) {
 		"Category": category,
 		"Question": question,
 		"Answer":   answer,
+	}, nil
+}
+
+// Ghazali functions
+
+func GhazaliCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM ghazali`).Scan(&count)
+	return count
+}
+
+func ClearGhazali() {
+	DB.Exec(`DELETE FROM ghazali`)
+	DB.Exec(`DELETE FROM ghazali_fts`)
+}
+
+func InsertGhazali(volume int, volumeTitle, chapter string, part int, content string) error {
+	_, err := DB.Exec(`INSERT INTO ghazali (volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?)`,
+		volume, volumeTitle, chapter, part, content)
+	return err
+}
+
+func SearchGhazali(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT g.id, g.volume, g.volume_title, g.chapter, g.part, g.content
+		FROM ghazali g
+		JOIN ghazali_fts fts ON g.id = fts.docid
+		WHERE ghazali_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var volume, part int
+		var volumeTitle, chapter, content string
+		rows.Scan(&id, &volume, &volumeTitle, &chapter, &part, &content)
+		results = append(results, map[string]interface{}{
+			"ID":          id,
+			"Volume":      volume,
+			"VolumeTitle": volumeTitle,
+			"Chapter":     chapter,
+			"Part":        part,
+			"Content":     content,
+		})
+	}
+	return results, nil
+}
+
+func GetGhazali(id int64) (map[string]interface{}, error) {
+	var volume, part int
+	var volumeTitle, chapter, content string
+	err := DB.QueryRow(`SELECT id, volume, volume_title, chapter, part, content FROM ghazali WHERE id = ?`, id).Scan(
+		&id, &volume, &volumeTitle, &chapter, &part, &content)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":          id,
+		"Volume":      volume,
+		"VolumeTitle": volumeTitle,
+		"Chapter":     chapter,
+		"Part":        part,
+		"Content":     content,
 	}, nil
 }

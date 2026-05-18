@@ -38,6 +38,9 @@ var claudeContent string
 //go:embed archive.zip
 var islamqaZip []byte
 
+//go:embed ghazali.zip
+var ghazaliZip []byte
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -92,6 +95,7 @@ func main() {
 
 	seedUsers()
 	loadIslamQA()
+	loadGhazali()
 
 	// Parse templates
 	funcs := template.FuncMap{
@@ -139,6 +143,7 @@ func main() {
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
 	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
+	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
@@ -194,6 +199,9 @@ func main() {
 	})
 	tools.SetIslamQASearcher(func(query string) ([]map[string]interface{}, error) {
 		return db.SearchIslamQA(query)
+	})
+	tools.SetGhazaliSearcher(func(query string) ([]map[string]interface{}, error) {
+		return db.SearchGhazali(query)
 	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
@@ -394,6 +402,58 @@ func loadIslamQA() {
 // sets them as process environment variables (without overwriting any that are
 // already set). It tolerates `export KEY=value`, surrounding quotes, and
 // `# comments`, so a file that also works when `source`d in a shell is fine.
+const ghazaliVersion = "1"
+
+func loadGhazali() {
+	if db.GetSetting("ghazali_version") == ghazaliVersion {
+		log.Printf("Ghazali v%s already loaded (%d sections)", ghazaliVersion, db.GhazaliCount())
+		return
+	}
+
+	log.Printf("Loading Ghazali dataset v%s...", ghazaliVersion)
+	db.ClearGhazali()
+
+	r, err := zip.NewReader(bytes.NewReader(ghazaliZip), int64(len(ghazaliZip)))
+	if err != nil {
+		log.Printf("Failed to open ghazali.zip: %v", err)
+		return
+	}
+
+	total := 0
+	for _, f := range r.File {
+		if !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		var entries []struct {
+			Volume      int    `json:"volume"`
+			VolumeTitle string `json:"volume_title"`
+			Chapter     string `json:"chapter"`
+			Part        int    `json:"part"`
+			Content     string `json:"content"`
+		}
+		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
+			rc.Close()
+			log.Printf("Failed to decode ghazali.json: %v", err)
+			continue
+		}
+		rc.Close()
+		for _, e := range entries {
+			if err := db.InsertGhazali(e.Volume, e.VolumeTitle, e.Chapter, e.Part, e.Content); err != nil {
+				log.Printf("Failed to insert Ghazali section: %v", err)
+			} else {
+				total++
+			}
+		}
+	}
+
+	db.SetSetting("ghazali_version", ghazaliVersion)
+	log.Printf("Loaded %d Ghazali sections (v%s)", total, ghazaliVersion)
+}
+
 func loadEnv() {
 	data, err := os.ReadFile(".env")
 	if err != nil {
@@ -1168,6 +1228,21 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, r, "entries.html", map[string]interface{}{
 		"Entries": entries,
 	})
+}
+
+func handleGhazaliView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/ghazali/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetGhazali(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	renderTemplate(w, r, "ghazali.html", item)
 }
 
 func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
