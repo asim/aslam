@@ -192,6 +192,9 @@ func main() {
 			log.Printf("Failed to cache reminder result: %v", err)
 		}
 	})
+	tools.SetIslamQASearcher(func(query string) ([]map[string]interface{}, error) {
+		return db.SearchIslamQA(query)
+	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
 	log.Printf("Aslam running on http://localhost:%s", port)

@@ -43,6 +43,14 @@ func SetNoteStorage(v NoteStorage) {
 	noteStore = v
 }
 
+type IslamQASearcher func(query string) ([]map[string]interface{}, error)
+
+var searchIslamQA IslamQASearcher
+
+func SetIslamQASearcher(fn IslamQASearcher) {
+	searchIslamQA = fn
+}
+
 // IntegrationChecker checks if an integration is enabled
 type IntegrationChecker func(name string) bool
 
@@ -222,6 +230,20 @@ func GetTools() []ToolDefinition {
 				"required": []string{"id"},
 			},
 		},
+		{
+			Name:        "islamqa",
+			Description: "Search IslamQA for scholarly answers to Islamic questions. Returns answers from Sheikh Muhammed Salih Al-Munajjid covering faith, fiqh, family, history, and more.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The Islamic question or topic to search for",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
@@ -246,6 +268,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeNoteAdd(input)
 	case "note_update":
 		return executeNoteUpdate(input)
+	case "islamqa":
+		return executeIslamQA(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
@@ -509,5 +533,33 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 	}
 
 	return fmt.Sprintf("Updated note: %s", existing["Title"]), nil
+}
+
+func executeIslamQA(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	if searchIslamQA == nil {
+		return "IslamQA not available", nil
+	}
+	results, err := searchIslamQA(query)
+	if err != nil {
+		return "", err
+	}
+	if len(results) == 0 {
+		return "No results found in IslamQA.", nil
+	}
+	var output string
+	for i, r := range results {
+		question, _ := r["Question"].(string)
+		answer, _ := r["Answer"].(string)
+		category, _ := r["Category"].(string)
+		if len(answer) > 2000 {
+			answer = answer[:2000] + "..."
+		}
+		output += fmt.Sprintf("[%d] Category: %s\nQ: %s\nA: %s\n\n", i+1, category, question, answer)
+	}
+	return output, nil
 }
 
