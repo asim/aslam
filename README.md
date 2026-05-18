@@ -72,7 +72,7 @@ Access is managed through a users table with two roles:
 - **admin** — full access including user management and system configuration
 - **user** — access to chats, notes, and search
 
-On first run, `ALLOWED_EMAILS` seeds the initial admin(s). After that, admins add users from `/admin`.
+On first run, `ADMIN_EMAILS` seeds the initial admin(s). After that, admins add users from `/admin`.
 
 ## Installation
 
@@ -100,7 +100,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
-ALLOWED_EMAILS=your@email.com
+ADMIN_EMAILS=your@email.com
 BRAVE_API_KEY=your-brave-api-key
 EOF
 chmod 600 .env

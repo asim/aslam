@@ -306,7 +306,10 @@ func seedUsers() {
 	if db.UserCount() > 0 {
 		return
 	}
-	emails := os.Getenv("ALLOWED_EMAILS")
+	emails := os.Getenv("ADMIN_EMAILS")
+	if emails == "" {
+		emails = os.Getenv("ALLOWED_EMAILS")
+	}
 	if emails == "" {
 		return
 	}
@@ -1582,7 +1585,7 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		
-		// Check if user is admin (either in admins table or in ALLOWED_EMAILS as fallback)
+		// Check if user is admin
 		if !db.IsAdmin(session.Email) {
 			http.Error(w, "Admin access required", http.StatusForbidden)
 			return
