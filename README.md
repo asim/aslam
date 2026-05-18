@@ -6,7 +6,7 @@ An Islamic knowledge base for Muslims.
 
 Aslam is a **knowledge base for seeking Islamic knowledge**. It connects you to authentic sources — Quran, Hadith, scholarly Q&A — and gives you a place to save reflections, notes, and references. AI works in the background to help find, organise, and connect information.
 
-Everything is stored in an encrypted database (SQLCipher / AES-256). You search it, you browse it, you own it.
+Everything is stored locally in a searchable database. You search it, you browse it, you own it.
 
 ## How it works
 
@@ -25,7 +25,7 @@ Everything is stored in an encrypted database (SQLCipher / AES-256). You search 
                   │
                   ▼
    ┌──────────────────────────────────┐
-   │      Knowledge Base (SQLCipher)   │
+   │         Knowledge Base             │
    │                                   │
    │   chats · notes · entries         │
    │   notes · reflections · references │
@@ -60,7 +60,7 @@ All of it indexed. All of it searchable from `/search`.
 1. **Authentic sources first** — Quran, Hadith, scholarly answers — not AI opinions
 2. **Save, search, retrieve** — the primary actions
 3. **Searchable** — if you can't find it, it doesn't exist
-4. **Secure** — all data encrypted at rest (SQLCipher / AES-256)
+4. **Secure** — data encrypted at rest
 5. **Simple** — easy to add, easy to retrieve
 6. **Shareable** — community members can access and contribute
 7. **Durable** — outlives any single service or platform
