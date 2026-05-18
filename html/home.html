@@ -114,13 +114,13 @@
                 {{if .PrayerTimes}}
                 <div class="daily-card">
                     <div class="daily-label">Prayer Times</div>
-                    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center; font-size:13px;">
-                        <div><div class="daily-label" style="margin-bottom:2px;">Fajr</div>{{index .PrayerTimes "Fajr"}}</div>
-                        <div><div class="daily-label" style="margin-bottom:2px;">Sunrise</div>{{index .PrayerTimes "Sunrise"}}</div>
-                        <div><div class="daily-label" style="margin-bottom:2px;">Dhuhr</div>{{index .PrayerTimes "Dhuhr"}}</div>
-                        <div><div class="daily-label" style="margin-bottom:2px;">Asr</div>{{index .PrayerTimes "Asr"}}</div>
-                        <div><div class="daily-label" style="margin-bottom:2px;">Maghrib</div>{{index .PrayerTimes "Maghrib"}}</div>
-                        <div><div class="daily-label" style="margin-bottom:2px;">Isha</div>{{index .PrayerTimes "Isha"}}</div>
+                    <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px;">
+                        <span><span style="color:#999; font-size:11px;">Fajr</span> {{index .PrayerTimes "Fajr"}}</span>
+                        <span><span style="color:#999; font-size:11px;">Sunrise</span> {{index .PrayerTimes "Sunrise"}}</span>
+                        <span><span style="color:#999; font-size:11px;">Dhuhr</span> {{index .PrayerTimes "Dhuhr"}}</span>
+                        <span><span style="color:#999; font-size:11px;">Asr</span> {{index .PrayerTimes "Asr"}}</span>
+                        <span><span style="color:#999; font-size:11px;">Maghrib</span> {{index .PrayerTimes "Maghrib"}}</span>
+                        <span><span style="color:#999; font-size:11px;">Isha</span> {{index .PrayerTimes "Isha"}}</span>
                     </div>
                 </div>
                 {{end}}
