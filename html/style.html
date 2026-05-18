@@ -172,5 +172,24 @@
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
 }
+// Pull-to-refresh on .app-content
+(function() {
+    let startY = 0;
+    let pulling = false;
+    document.addEventListener('touchstart', function(e) {
+        const content = document.querySelector('.app-content');
+        if (content && content.scrollTop === 0) {
+            startY = e.touches[0].clientY;
+            pulling = true;
+        }
+    }, {passive: true});
+    document.addEventListener('touchend', function(e) {
+        if (pulling) {
+            const dy = e.changedTouches[0].clientY - startY;
+            if (dy > 100) location.reload();
+            pulling = false;
+        }
+    }, {passive: true});
+})();
 </script>
 {{end}}
