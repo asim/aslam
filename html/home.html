@@ -107,23 +107,23 @@
                 </div>
             </section>
 
-            {{if .PrayerTimes}}
-            <div class="daily-card">
-                <div class="daily-label">Prayer Times</div>
-                <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center; font-size:13px;">
-                    <div><div class="daily-label" style="margin-bottom:2px;">Fajr</div>{{index .PrayerTimes "Fajr"}}</div>
-                    <div><div class="daily-label" style="margin-bottom:2px;">Sunrise</div>{{index .PrayerTimes "Sunrise"}}</div>
-                    <div><div class="daily-label" style="margin-bottom:2px;">Dhuhr</div>{{index .PrayerTimes "Dhuhr"}}</div>
-                    <div><div class="daily-label" style="margin-bottom:2px;">Asr</div>{{index .PrayerTimes "Asr"}}</div>
-                    <div><div class="daily-label" style="margin-bottom:2px;">Maghrib</div>{{index .PrayerTimes "Maghrib"}}</div>
-                    <div><div class="daily-label" style="margin-bottom:2px;">Isha</div>{{index .PrayerTimes "Isha"}}</div>
-                </div>
-            </div>
-            {{end}}
-
-            {{if .DailyContent}}
+            {{if or .PrayerTimes .DailyContent}}
             <section style="margin-bottom: 24px;">
                 <h3 style="margin-bottom: 12px">Today's Reminder</h3>
+
+                {{if .PrayerTimes}}
+                <div class="daily-card">
+                    <div class="daily-label">Prayer Times</div>
+                    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center; font-size:13px;">
+                        <div><div class="daily-label" style="margin-bottom:2px;">Fajr</div>{{index .PrayerTimes "Fajr"}}</div>
+                        <div><div class="daily-label" style="margin-bottom:2px;">Sunrise</div>{{index .PrayerTimes "Sunrise"}}</div>
+                        <div><div class="daily-label" style="margin-bottom:2px;">Dhuhr</div>{{index .PrayerTimes "Dhuhr"}}</div>
+                        <div><div class="daily-label" style="margin-bottom:2px;">Asr</div>{{index .PrayerTimes "Asr"}}</div>
+                        <div><div class="daily-label" style="margin-bottom:2px;">Maghrib</div>{{index .PrayerTimes "Maghrib"}}</div>
+                        <div><div class="daily-label" style="margin-bottom:2px;">Isha</div>{{index .PrayerTimes "Isha"}}</div>
+                    </div>
+                </div>
+                {{end}}
 
                 {{if index .DailyContent "Verse"}}
                 <div class="daily-card">
