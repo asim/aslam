@@ -2326,7 +2326,7 @@ func GetIslamQAPrevNext(id int64) (prevID, nextID int64) {
 // Ghazali index functions
 
 func GetGhazaliChapters() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter FROM ghazali ORDER BY volume, chapter`)
+	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali GROUP BY volume, chapter ORDER BY MIN(id)`)
 	if err != nil {
 		return nil, err
 	}
@@ -2336,11 +2336,13 @@ func GetGhazaliChapters() ([]map[string]interface{}, error) {
 	for rows.Next() {
 		var volume int
 		var volumeTitle, chapter string
-		rows.Scan(&volume, &volumeTitle, &chapter)
+		var firstID int64
+		rows.Scan(&volume, &volumeTitle, &chapter, &firstID)
 		results = append(results, map[string]interface{}{
 			"Volume":      volume,
 			"VolumeTitle": volumeTitle,
 			"Chapter":     chapter,
+			"FirstID":     firstID,
 		})
 	}
 	return results, nil

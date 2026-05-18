@@ -61,7 +61,16 @@
             {{if index . "Arabic"}}
             <div class="hadith-arabic">{{index . "Arabic"}}</div>
             {{end}}
-            <div class="hadith-source">Source: Sahih al-Bukhari</div>
+            <div class="hadith-source">
+                Source: Sahih al-Bukhari
+                <form method="POST" action="/notes/add" style="display:inline; margin-left: 12px;">
+                    <input type="hidden" name="title" value="{{index . "Book"}} - {{index . "Narrator"}}">
+                    <input type="hidden" name="content" value="/hadith/{{index . "ID"}}
+
+{{truncate (index . "Text") 200}}">
+                    <button type="submit" class="daily-btn">Save</button>
+                </form>
+            </div>
         </main>
     </div>
 </body>

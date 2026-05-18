@@ -81,7 +81,16 @@
                 {{index . "Commentary"}}
             </div>
             {{end}}
-            <div class="quran-source">Source: The Holy Quran</div>
+            <div class="quran-source">
+                Source: The Holy Quran
+                <form method="POST" action="/notes/add" style="display:inline; margin-left: 12px;">
+                    <input type="hidden" name="title" value="Quran {{index . "ChapterName"}} {{index . "Chapter"}}:{{index . "Verse"}}">
+                    <input type="hidden" name="content" value="/quran/{{index . "Chapter"}}/{{index . "Verse"}}
+
+{{index . "Text"}}">
+                    <button type="submit" class="daily-btn">Save</button>
+                </form>
+            </div>
         </main>
     </div>
 </body>
