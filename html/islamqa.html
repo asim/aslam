@@ -13,21 +13,37 @@
             background: #f0f0f0;
             padding: 2px 10px;
             border-radius: 4px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
-        .qa-question {
+        .qa-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .qa-question-box {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 28px;
+        }
+        .qa-question-box h2 {
             font-size: 17px;
             font-weight: 600;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            line-height: 1.6;
+            margin: 0;
         }
         .qa-answer {
             line-height: 1.8;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
+        .qa-answer p, .qa-answer-text {
+            margin-bottom: 1em;
+        }
         .qa-source {
-            margin-top: 24px;
+            margin-top: 32px;
             padding-top: 16px;
             border-top: 1px solid #eee;
             font-size: 12px;
@@ -39,10 +55,17 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <p style="margin-bottom: 12px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
+            <p style="margin-bottom: 16px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
             <span class="qa-category">{{index . "Category"}}</span>
-            <h2 class="qa-question">{{index . "Question"}}</h2>
+
+            <div class="qa-section-label">Question</div>
+            <div class="qa-question-box">
+                <h2>{{index . "Question"}}</h2>
+            </div>
+
+            <div class="qa-section-label">Answer</div>
             <div class="qa-answer">{{index . "Answer"}}</div>
+
             <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
         </main>
     </div>

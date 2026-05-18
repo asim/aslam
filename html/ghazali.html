@@ -18,8 +18,8 @@
         .gh-chapter {
             font-size: 17px;
             font-weight: 600;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            line-height: 1.6;
+            margin-bottom: 24px;
         }
         .gh-content {
             line-height: 1.8;
@@ -27,7 +27,7 @@
             word-wrap: break-word;
         }
         .gh-source {
-            margin-top: 24px;
+            margin-top: 32px;
             padding-top: 16px;
             border-top: 1px solid #eee;
             font-size: 12px;
@@ -39,7 +39,7 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <p style="margin-bottom: 12px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
+            <p style="margin-bottom: 16px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
             <span class="gh-volume">{{index . "VolumeTitle"}}</span>
             <h2 class="gh-chapter">{{index . "Chapter"}}</h2>
             <div class="gh-content">{{index . "Content"}}</div>
