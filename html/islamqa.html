@@ -37,7 +37,7 @@
 </head>
 <body>
     <div class="app">
-        {{template "header"}}
+        {{template "header" .}}
         <main class="app-content">
             <p style="margin-bottom: 12px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
             <span class="qa-category">{{index . "Category"}}</span>

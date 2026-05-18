@@ -47,7 +47,7 @@
 </head>
 <body>
     <div class="app">
-        {{template "header"}}
+        {{template "header" .}}
         <main class="app-content">
             <h2>Edit: {{.Item.Title}}</h2>
             <p class="muted" style="margin-bottom: 20px"><a href="/notes">&larr; back to notes</a></p>

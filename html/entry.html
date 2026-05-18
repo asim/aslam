@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="container">
-        {{template "header"}}
+        {{template "header" .}}
         <p class="muted">[{{index . "Type"}}] <span class="time">{{formatTime (index . "CreatedAt")}}</span></p>
         <h2 style="margin: 10px 0">{{index . "Title"}}</h2>
 
