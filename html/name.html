@@ -1,0 +1,91 @@
+{{define "name.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{index . "English"}} - Names of Allah - Aslam</title>
+    {{template "style"}}
+    <style>
+        .name-number {
+            display: inline-block;
+            font-size: 12px;
+            background: #e8e8f5;
+            color: #1a1a6b;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .name-arabic {
+            font-size: 36px;
+            line-height: 1.8;
+            direction: rtl;
+            text-align: center;
+            font-family: "Traditional Arabic", "Scheherazade New", serif;
+            margin: 16px 0;
+            padding: 16px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .name-english {
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .name-meaning {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .name-description {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-bottom: 24px;
+        }
+        .name-summary {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding: 16px;
+            background: #f8f6f0;
+            border-radius: 8px;
+            border-left: 3px solid #8080c0;
+            font-size: 14px;
+        }
+        .name-source {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <p style="margin-bottom: 16px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
+            <span class="name-number">#{{index . "Number"}}</span>
+            {{if index . "Arabic"}}
+            <div class="name-arabic">{{index . "Arabic"}}</div>
+            {{end}}
+            <div class="name-english">{{index . "English"}}</div>
+            {{if index . "Meaning"}}
+            <div class="name-meaning">{{index . "Meaning"}}</div>
+            {{end}}
+            {{if index . "Description"}}
+            <div class="name-description">{{index . "Description"}}</div>
+            {{end}}
+            {{if index . "Summary"}}
+            <div class="name-summary">{{index . "Summary"}}</div>
+            {{end}}
+            <div class="name-source">Source: 99 Names of Allah</div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

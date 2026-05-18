@@ -62,7 +62,7 @@ func fetchDailyContent() {
 	}
 
 	// Only save if content has changed
-	existing, _ := db.GetLatestDailyContent()
+	existing, _ := db.GetLatestReminderContent()
 	if existing != nil {
 		oldVerse, _ := existing["Verse"].(string)
 		if oldVerse == data.Verse {
@@ -74,7 +74,7 @@ func fetchDailyContent() {
 	hadithLink := "https://reminder.dev" + data.Links.Hadith
 	nameLink := "https://reminder.dev" + data.Links.Name
 
-	if err := db.SaveDailyContent(data.Verse, data.Hadith, data.Name, data.Message, verseLink, hadithLink, nameLink); err != nil {
+	if err := db.SaveReminderContent(data.Verse, data.Hadith, data.Name, data.Message, verseLink, hadithLink, nameLink); err != nil {
 		log.Printf("Daily content: failed to save: %v", err)
 		return
 	}

@@ -41,6 +41,9 @@ var islamqaZip []byte
 //go:embed ghazali.zip
 var ghazaliZip []byte
 
+//go:embed sources.zip
+var sourcesZip []byte
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -96,6 +99,7 @@ func main() {
 	seedUsers()
 	loadIslamQA()
 	loadGhazali()
+	loadSources()
 
 	// Parse templates
 	funcs := template.FuncMap{
@@ -144,6 +148,9 @@ func main() {
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
 	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
 	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
+	http.HandleFunc("/quran/", requireAuth(handleQuranView))
+	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
+	http.HandleFunc("/name/", requireAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
@@ -193,7 +200,7 @@ func main() {
 	})
 
 	tools.SetReminderCacher(func(query, answer string) {
-		if err := db.InsertReminder(query, answer); err != nil {
+		if err := db.InsertSearch(query, answer); err != nil {
 			log.Printf("Failed to cache reminder result: %v", err)
 		}
 	})
@@ -452,6 +459,188 @@ func loadGhazali() {
 
 	db.SetSetting("ghazali_version", ghazaliVersion)
 	log.Printf("Loaded %d Ghazali sections (v%s)", total, ghazaliVersion)
+}
+
+const sourcesVersion = "1"
+
+func loadSources() {
+	if db.GetSetting("sources_version") == sourcesVersion {
+		log.Printf("Sources v%s already loaded (quran=%d, hadith=%d, names=%d)",
+			sourcesVersion, db.QuranCount(), db.HadithCount(), db.NamesCount())
+		return
+	}
+
+	log.Printf("Loading sources v%s...", sourcesVersion)
+	db.ClearQuran()
+	db.ClearHadith()
+	db.ClearNames()
+
+	r, err := zip.NewReader(bytes.NewReader(sourcesZip), int64(len(sourcesZip)))
+	if err != nil {
+		log.Printf("Failed to open sources.zip: %v", err)
+		return
+	}
+
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() || !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			log.Printf("Failed to open %s in sources.zip: %v", f.Name, err)
+			continue
+		}
+		data, err := io.ReadAll(rc)
+		rc.Close()
+		if err != nil {
+			log.Printf("Failed to read %s: %v", f.Name, err)
+			continue
+		}
+
+		base := filepath.Base(f.Name)
+		switch base {
+		case "quran.json":
+			var quranData struct {
+				Chapters []struct {
+					Name   string `json:"name"`
+					Number int    `json:"number"`
+					Verses []struct {
+						Chapter  int    `json:"chapter"`
+						Number   int    `json:"number"`
+						Text     string `json:"text"`
+						Arabic   string `json:"arabic"`
+						Comments string `json:"comments"`
+					} `json:"verses"`
+				} `json:"chapters"`
+			}
+			if err := json.Unmarshal(data, &quranData); err != nil {
+				log.Printf("Failed to parse quran.json: %v", err)
+				continue
+			}
+			total := 0
+			for _, ch := range quranData.Chapters {
+				for _, v := range ch.Verses {
+					if err := db.InsertQuranVerse(ch.Number, ch.Name, v.Number, v.Text, v.Arabic, v.Comments); err != nil {
+						log.Printf("Failed to insert quran verse %d:%d: %v", ch.Number, v.Number, err)
+					} else {
+						total++
+					}
+				}
+			}
+			log.Printf("Loaded %d Quran verses", total)
+
+		case "hadith.json":
+			var hadithData struct {
+				Name  string `json:"name"`
+				Books []struct {
+					Name    string `json:"name"`
+					Hadiths []struct {
+						Number   int    `json:"number"`
+						Narrator string `json:"narrator"`
+						English  string `json:"english"`
+						Arabic   string `json:"arabic"`
+					} `json:"hadiths"`
+				} `json:"books"`
+			}
+			if err := json.Unmarshal(data, &hadithData); err != nil {
+				log.Printf("Failed to parse hadith.json: %v", err)
+				continue
+			}
+			total := 0
+			for _, book := range hadithData.Books {
+				for _, h := range book.Hadiths {
+					if err := db.InsertHadith(book.Name, h.Number, h.Narrator, h.English, h.Arabic); err != nil {
+						log.Printf("Failed to insert hadith %d: %v", h.Number, err)
+					} else {
+						total++
+					}
+				}
+			}
+			log.Printf("Loaded %d hadiths", total)
+
+		case "names.json":
+			var names []struct {
+				Number      int    `json:"number"`
+				English     string `json:"english"`
+				Arabic      string `json:"arabic"`
+				Meaning     string `json:"meaning"`
+				Description string `json:"description"`
+				Summary     string `json:"summary"`
+			}
+			if err := json.Unmarshal(data, &names); err != nil {
+				log.Printf("Failed to parse names.json: %v", err)
+				continue
+			}
+			total := 0
+			for _, n := range names {
+				if err := db.InsertName(n.Number, n.English, n.Arabic, n.Meaning, n.Description, n.Summary); err != nil {
+					log.Printf("Failed to insert name %d: %v", n.Number, err)
+				} else {
+					total++
+				}
+			}
+			log.Printf("Loaded %d Names of Allah", total)
+		}
+	}
+
+	db.SetSetting("sources_version", sourcesVersion)
+	log.Printf("Sources v%s loaded", sourcesVersion)
+}
+
+func handleQuranView(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/quran/")
+	parts := strings.SplitN(path, "/", 2)
+	if len(parts) != 2 {
+		http.NotFound(w, r)
+		return
+	}
+	chapter, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	verse, err := strconv.Atoi(parts[1])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetQuranVerse(chapter, verse)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	renderTemplate(w, r, "quran.html", item)
+}
+
+func handleHadithView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/hadith/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetHadith(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	renderTemplate(w, r, "hadith.html", item)
+}
+
+func handleNameView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/name/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetName(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	renderTemplate(w, r, "name.html", item)
 }
 
 func loadEnv() {
@@ -910,7 +1099,7 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	convs, _ := db.GetRecentConversations(10, userID)
-	dailyContent, _ := db.GetLatestDailyContent()
+	dailyContent, _ := db.GetLatestReminderContent()
 	randomQA, _ := db.GetRandomIslamQA()
 
 	renderTemplate(w, r, "home.html", map[string]interface{}{

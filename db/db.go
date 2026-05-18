@@ -502,6 +502,114 @@ func Migrate() error {
 		return err
 	}
 
+	// Rename: reminder → searches (cached search results from reminder API)
+	DB.Exec(`CREATE TABLE IF NOT EXISTS searches (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		question TEXT NOT NULL,
+		answer TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	)`)
+	DB.Exec(`INSERT OR IGNORE INTO searches SELECT * FROM reminder WHERE typeof(id) = 'integer'`)
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS searches_fts USING fts4(
+		question, answer, content='searches'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS searches_ai AFTER INSERT ON searches BEGIN
+		INSERT INTO searches_fts(docid, question, answer) VALUES (new.id, new.question, new.answer);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS searches_ad AFTER DELETE ON searches BEGIN
+		DELETE FROM searches_fts WHERE docid = old.id;
+	END`)
+	// Rebuild FTS index for migrated data
+	DB.Exec(`INSERT INTO searches_fts(searches_fts) VALUES('rebuild')`)
+
+	// Rename: daily_content → reminder_content (the daily feed from reminder.dev)
+	DB.Exec(`CREATE TABLE IF NOT EXISTS reminder_content (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		verse TEXT,
+		hadith TEXT,
+		name_of_allah TEXT,
+		message TEXT,
+		verse_link TEXT,
+		hadith_link TEXT,
+		name_link TEXT,
+		fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	)`)
+	DB.Exec(`INSERT OR IGNORE INTO reminder_content SELECT * FROM daily_content WHERE typeof(id) = 'integer'`)
+
+	// Quran — full text of the Quran with translations and commentary
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS quran (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			chapter INTEGER NOT NULL,
+			chapter_name TEXT NOT NULL,
+			verse INTEGER NOT NULL,
+			text TEXT NOT NULL,
+			arabic TEXT,
+			commentary TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS quran_fts USING fts4(
+		text, commentary, content='quran'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS quran_ai AFTER INSERT ON quran BEGIN
+		INSERT INTO quran_fts(docid, text, commentary) VALUES (new.id, new.text, new.commentary);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS quran_ad AFTER DELETE ON quran BEGIN
+		DELETE FROM quran_fts WHERE docid = old.id;
+	END`)
+
+	// Hadith — Sahih al-Bukhari
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS hadith (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			book TEXT NOT NULL,
+			number INTEGER,
+			narrator TEXT,
+			text TEXT NOT NULL,
+			arabic TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS hadith_fts USING fts4(
+		text, narrator, content='hadith'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS hadith_ai AFTER INSERT ON hadith BEGIN
+		INSERT INTO hadith_fts(docid, text, narrator) VALUES (new.id, new.text, new.narrator);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS hadith_ad AFTER DELETE ON hadith BEGIN
+		DELETE FROM hadith_fts WHERE docid = old.id;
+	END`)
+
+	// Names of Allah — 99 names with meanings and descriptions
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS names_of_allah (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			number INTEGER NOT NULL,
+			english TEXT NOT NULL,
+			arabic TEXT,
+			meaning TEXT,
+			description TEXT,
+			summary TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS names_fts USING fts4(
+		english, meaning, description, summary, content='names_of_allah'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ai AFTER INSERT ON names_of_allah BEGIN
+		INSERT INTO names_fts(docid, english, meaning, description, summary) VALUES (new.id, new.english, new.meaning, new.description, new.summary);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS names_ad AFTER DELETE ON names_of_allah BEGIN
+		DELETE FROM names_fts WHERE docid = old.id;
+	END`)
+
 	// Tags
 	DB.Exec(`
 		CREATE TABLE IF NOT EXISTS tags (
@@ -712,8 +820,8 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 		}
 	}
 
-	// Reminder results (cached Quran/Hadith/Names of Allah)
-	if remResults, err := SearchReminder(query); err == nil {
+	// Searches results (cached Quran/Hadith/Names of Allah from reminder API)
+	if remResults, err := SearchSearches(query); err == nil {
 		for _, r := range remResults {
 			question, _ := r["Question"].(string)
 			answer, _ := r["Answer"].(string)
@@ -721,11 +829,73 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				answer = answer[:500] + "..."
 			}
 			results = append(results, map[string]interface{}{
-				"Kind":    "reminder",
+				"Kind":    "searches",
 				"Title":   question,
 				"Content": answer,
 				"Role":    "quran/hadith",
 				"URL":     "#",
+			})
+		}
+	}
+
+	// Quran verses
+	if qResults, err := SearchQuran(query); err == nil {
+		for _, q := range qResults {
+			text, _ := q["Text"].(string)
+			chapterName, _ := q["ChapterName"].(string)
+			chapter, _ := q["Chapter"].(int)
+			verse, _ := q["Verse"].(int)
+			if len(text) > 500 {
+				text = text[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "quran",
+				"Title":   fmt.Sprintf("%s %d:%d", chapterName, chapter, verse),
+				"Content": text,
+				"Role":    "quran",
+				"URL":     fmt.Sprintf("/quran/%d/%d", chapter, verse),
+			})
+		}
+	}
+
+	// Hadith results
+	if hResults, err := SearchHadith(query); err == nil {
+		for _, h := range hResults {
+			text, _ := h["Text"].(string)
+			book, _ := h["Book"].(string)
+			narrator, _ := h["Narrator"].(string)
+			if len(text) > 500 {
+				text = text[:500] + "..."
+			}
+			title := book
+			if narrator != "" {
+				title = book + " — " + narrator
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "hadith",
+				"Title":   title,
+				"Content": text,
+				"Role":    "hadith",
+				"URL":     fmt.Sprintf("/hadith/%d", h["ID"]),
+			})
+		}
+	}
+
+	// Names of Allah results
+	if nResults, err := SearchNames(query); err == nil {
+		for _, n := range nResults {
+			english, _ := n["English"].(string)
+			meaning, _ := n["Meaning"].(string)
+			desc, _ := n["Description"].(string)
+			if len(desc) > 500 {
+				desc = desc[:500] + "..."
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "names",
+				"Title":   english + " — " + meaning,
+				"Content": desc,
+				"Role":    "names of allah",
+				"URL":     fmt.Sprintf("/name/%d", n["ID"]),
 			})
 		}
 	}
@@ -1633,17 +1803,17 @@ func ClearIslamQA() {
 	DB.Exec(`DELETE FROM islamqa_fts`)
 }
 
-func InsertReminder(question, answer string) error {
-	_, err := DB.Exec(`INSERT INTO reminder (question, answer) VALUES (?, ?)`, question, answer)
+func InsertSearch(question, answer string) error {
+	_, err := DB.Exec(`INSERT INTO searches (question, answer) VALUES (?, ?)`, question, answer)
 	return err
 }
 
-func SearchReminder(query string) ([]map[string]interface{}, error) {
+func SearchSearches(query string) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
-		SELECT r.id, r.question, r.answer
-		FROM reminder r
-		JOIN reminder_fts fts ON r.id = fts.docid
-		WHERE reminder_fts MATCH ?
+		SELECT s.id, s.question, s.answer
+		FROM searches s
+		JOIN searches_fts fts ON s.id = fts.docid
+		WHERE searches_fts MATCH ?
 		LIMIT 10
 	`, query)
 	if err != nil {
@@ -1719,24 +1889,24 @@ func GetIslamQA(id int64) (map[string]interface{}, error) {
 	}, nil
 }
 
-// Daily content functions
+// Reminder content functions (daily feed from reminder.dev)
 
-func SaveDailyContent(verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink string) error {
+func SaveReminderContent(verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink string) error {
 	_, err := DB.Exec(`
-		INSERT INTO daily_content (verse, hadith, name_of_allah, message, verse_link, hadith_link, name_link)
+		INSERT INTO reminder_content (verse, hadith, name_of_allah, message, verse_link, hadith_link, name_link)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink)
 	return err
 }
 
-func GetLatestDailyContent() (map[string]interface{}, error) {
+func GetLatestReminderContent() (map[string]interface{}, error) {
 	var id int64
 	var verse, hadith, nameOfAllah, message, verseLink, hadithLink, nameLink sql.NullString
 	var fetchedAt time.Time
 
 	err := DB.QueryRow(`
 		SELECT id, verse, hadith, name_of_allah, message, verse_link, hadith_link, name_link, fetched_at
-		FROM daily_content ORDER BY fetched_at DESC LIMIT 1
+		FROM reminder_content ORDER BY fetched_at DESC LIMIT 1
 	`).Scan(&id, &verse, &hadith, &nameOfAllah, &message, &verseLink, &hadithLink, &nameLink, &fetchedAt)
 	if err != nil {
 		return nil, err
@@ -1835,5 +2005,219 @@ func GetGhazali(id int64) (map[string]interface{}, error) {
 		"Chapter":     chapter,
 		"Part":        part,
 		"Content":     content,
+	}, nil
+}
+
+// Quran functions
+
+func QuranCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM quran`).Scan(&count)
+	return count
+}
+
+func ClearQuran() {
+	DB.Exec(`DELETE FROM quran`)
+	DB.Exec(`DELETE FROM quran_fts`)
+}
+
+func InsertQuranVerse(chapter int, chapterName string, verse int, text, arabic, commentary string) error {
+	_, err := DB.Exec(`INSERT INTO quran (chapter, chapter_name, verse, text, arabic, commentary) VALUES (?, ?, ?, ?, ?, ?)`,
+		chapter, chapterName, verse, text, arabic, commentary)
+	return err
+}
+
+func SearchQuran(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT q.id, q.chapter, q.chapter_name, q.verse, q.text, q.arabic, q.commentary
+		FROM quran q
+		JOIN quran_fts fts ON q.id = fts.docid
+		WHERE quran_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var chapter, verse int
+		var chapterName, text string
+		var arabic, commentary sql.NullString
+		rows.Scan(&id, &chapter, &chapterName, &verse, &text, &arabic, &commentary)
+		results = append(results, map[string]interface{}{
+			"ID":          id,
+			"Chapter":     chapter,
+			"ChapterName": chapterName,
+			"Verse":       verse,
+			"Text":        text,
+			"Arabic":      arabic.String,
+			"Commentary":  commentary.String,
+		})
+	}
+	return results, nil
+}
+
+func GetQuranVerse(chapter, verse int) (map[string]interface{}, error) {
+	var id int64
+	var chapterName, text string
+	var arabic, commentary sql.NullString
+	err := DB.QueryRow(`SELECT id, chapter_name, text, arabic, commentary FROM quran WHERE chapter = ? AND verse = ?`,
+		chapter, verse).Scan(&id, &chapterName, &text, &arabic, &commentary)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":          id,
+		"Chapter":     chapter,
+		"ChapterName": chapterName,
+		"Verse":       verse,
+		"Text":        text,
+		"Arabic":      arabic.String,
+		"Commentary":  commentary.String,
+	}, nil
+}
+
+// Hadith functions
+
+func HadithCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM hadith`).Scan(&count)
+	return count
+}
+
+func ClearHadith() {
+	DB.Exec(`DELETE FROM hadith`)
+	DB.Exec(`DELETE FROM hadith_fts`)
+}
+
+func InsertHadith(book string, number int, narrator, text, arabic string) error {
+	_, err := DB.Exec(`INSERT INTO hadith (book, number, narrator, text, arabic) VALUES (?, ?, ?, ?, ?)`,
+		book, number, narrator, text, arabic)
+	return err
+}
+
+func SearchHadith(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT h.id, h.book, h.number, h.narrator, h.text, h.arabic
+		FROM hadith h
+		JOIN hadith_fts fts ON h.id = fts.docid
+		WHERE hadith_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var number int
+		var book, text string
+		var narrator, arabic sql.NullString
+		rows.Scan(&id, &book, &number, &narrator, &text, &arabic)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Book":     book,
+			"Number":   number,
+			"Narrator": narrator.String,
+			"Text":     text,
+			"Arabic":   arabic.String,
+		})
+	}
+	return results, nil
+}
+
+func GetHadith(id int64) (map[string]interface{}, error) {
+	var number int
+	var book, text string
+	var narrator, arabic sql.NullString
+	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM hadith WHERE id = ?`, id).Scan(
+		&id, &book, &number, &narrator, &text, &arabic)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":       id,
+		"Book":     book,
+		"Number":   number,
+		"Narrator": narrator.String,
+		"Text":     text,
+		"Arabic":   arabic.String,
+	}, nil
+}
+
+// Names of Allah functions
+
+func NamesCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM names_of_allah`).Scan(&count)
+	return count
+}
+
+func ClearNames() {
+	DB.Exec(`DELETE FROM names_of_allah`)
+	DB.Exec(`DELETE FROM names_fts`)
+}
+
+func InsertName(number int, english, arabic, meaning, description, summary string) error {
+	_, err := DB.Exec(`INSERT INTO names_of_allah (number, english, arabic, meaning, description, summary) VALUES (?, ?, ?, ?, ?, ?)`,
+		number, english, arabic, meaning, description, summary)
+	return err
+}
+
+func SearchNames(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT n.id, n.number, n.english, n.arabic, n.meaning, n.description, n.summary
+		FROM names_of_allah n
+		JOIN names_fts fts ON n.id = fts.docid
+		WHERE names_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var number int
+		var english string
+		var arabic, meaning, description, summary sql.NullString
+		rows.Scan(&id, &number, &english, &arabic, &meaning, &description, &summary)
+		results = append(results, map[string]interface{}{
+			"ID":          id,
+			"Number":      number,
+			"English":     english,
+			"Arabic":      arabic.String,
+			"Meaning":     meaning.String,
+			"Description": description.String,
+			"Summary":     summary.String,
+		})
+	}
+	return results, nil
+}
+
+func GetName(id int64) (map[string]interface{}, error) {
+	var number int
+	var english string
+	var arabic, meaning, description, summary sql.NullString
+	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names_of_allah WHERE id = ?`, id).Scan(
+		&id, &number, &english, &arabic, &meaning, &description, &summary)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":          id,
+		"Number":      number,
+		"English":     english,
+		"Arabic":      arabic.String,
+		"Meaning":     meaning.String,
+		"Description": description.String,
+		"Summary":     summary.String,
 	}, nil
 }
