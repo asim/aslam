@@ -68,7 +68,16 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <p style="margin-bottom: 16px"><a href="/search" style="font-size: 13px; color: #888;">&larr; back to search</a></p>
+            <p style="margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+                <a href="/search" style="font-size: 13px; color: #888;">&larr; back</a>
+                <form method="POST" action="/notes/add" style="display:inline;">
+                    <input type="hidden" name="title" value="{{index . "English"}} — {{index . "Meaning"}}">
+                    <input type="hidden" name="content" value="/name/{{index . "ID"}}
+
+{{index . "Description"}}">
+                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                </form>
+            </p>
             <span class="name-number">#{{index . "Number"}}</span>
             {{if index . "Arabic"}}
             <div class="name-arabic">{{index . "Arabic"}}</div>
@@ -83,16 +92,7 @@
             {{if index . "Summary"}}
             <div class="name-summary">{{index . "Summary"}}</div>
             {{end}}
-            <div class="name-source">
-                Source: 99 Names of Allah
-                <form method="POST" action="/notes/add" style="display:inline; margin-left: 12px;">
-                    <input type="hidden" name="title" value="{{index . "English"}} — {{index . "Meaning"}}">
-                    <input type="hidden" name="content" value="/name/{{index . "ID"}}
-
-{{index . "Description"}}">
-                    <button type="submit" class="daily-btn">Save</button>
-                </form>
-            </div>
+            <div class="name-source">Source: 99 Names of Allah</div>
         </main>
     </div>
 </body>
