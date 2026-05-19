@@ -120,6 +120,23 @@ func main() {
 			}
 			return s[:n] + "..."
 		},
+		"paragraphs": func(s string) template.HTML {
+			s = strings.ReplaceAll(s, "\r\n", "\n")
+			paras := strings.Split(s, "\n\n")
+			var out strings.Builder
+			for _, p := range paras {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					continue
+				}
+				p = strings.ReplaceAll(p, "\n", " ")
+				p = template.HTMLEscapeString(p)
+				out.WriteString("<p>")
+				out.WriteString(p)
+				out.WriteString("</p>")
+			}
+			return template.HTML(out.String())
+		},
 	}
 	
 	tmpl = template.Must(template.New("").Funcs(funcs).ParseFS(templates, "html/*.html"))

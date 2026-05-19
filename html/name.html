@@ -41,13 +41,13 @@
         }
         .name-description {
             line-height: 1.8;
-            white-space: pre-wrap;
+            
             word-wrap: break-word;
             margin-bottom: 24px;
         }
         .name-summary {
             line-height: 1.8;
-            white-space: pre-wrap;
+            
             word-wrap: break-word;
             padding: 16px;
             background: #f8f6f0;
@@ -86,10 +86,10 @@
             <div class="name-meaning">{{index . "Meaning"}}</div>
             {{end}}
             {{if index . "Description"}}
-            <div class="name-description">{{index . "Description"}}</div>
+            <div class="name-description">{{paragraphs (index . "Description")}}</div>
             {{end}}
             {{if index . "Summary"}}
-            <div class="name-summary">{{index . "Summary"}}</div>
+            <div class="name-summary">{{paragraphs (index . "Summary")}}</div>
             {{end}}
             <div class="name-source">Source: 99 Names of Allah</div>
         </main>

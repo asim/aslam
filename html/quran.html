@@ -35,13 +35,13 @@
         }
         .quran-text {
             line-height: 1.8;
-            white-space: pre-wrap;
+            
             word-wrap: break-word;
             margin-bottom: 24px;
         }
         .quran-commentary {
             line-height: 1.8;
-            white-space: pre-wrap;
+            
             word-wrap: break-word;
             padding: 16px;
             background: #f8f6f0;
@@ -86,7 +86,7 @@
             {{if index . "Commentary"}}
             <div class="quran-commentary">
                 <h3>Commentary</h3>
-                {{index . "Commentary"}}
+                {{paragraphs (index . "Commentary")}}
             </div>
             {{end}}
             <div class="quran-source">Source: The Holy Quran</div>

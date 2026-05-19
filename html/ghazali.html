@@ -20,7 +20,6 @@
         }
         .gh-content {
             line-height: 1.8;
-            white-space: pre-wrap;
             word-wrap: break-word;
         }
         .gh-source {
@@ -47,7 +46,7 @@
                 </form>
             </div>
             <h2 class="gh-chapter">{{index . "Chapter"}}</h2>
-            <div class="gh-content">{{index . "Content"}}</div>
+            <div class="gh-content">{{paragraphs (index . "Content")}}</div>
             <div class="gh-source">Source: Imam Al-Ghazali, Ihya Ulum al-Din (Revival of the Islamic Sciences)</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
                 {{if index . "PrevID"}}<a href="/ghazali/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
