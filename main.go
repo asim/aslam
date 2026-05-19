@@ -129,10 +129,25 @@ func main() {
 				if p == "" {
 					continue
 				}
-				p = strings.ReplaceAll(p, "\n", " ")
-				p = template.HTMLEscapeString(p)
+				lines := strings.Split(p, "\n")
+				var merged strings.Builder
+				for i, line := range lines {
+					line = strings.TrimSpace(line)
+					if line == "" {
+						continue
+					}
+					if i > 0 {
+						prev := strings.TrimSpace(lines[i-1])
+						if prev != "" && !strings.HasSuffix(prev, ".") && !strings.HasSuffix(prev, ":") && !strings.HasSuffix(prev, "?") && !strings.HasSuffix(prev, "!") && !strings.HasSuffix(prev, "\"") && !strings.HasSuffix(prev, ")") {
+							merged.WriteString(" ")
+						} else {
+							merged.WriteString("<br>")
+						}
+					}
+					merged.WriteString(template.HTMLEscapeString(line))
+				}
 				out.WriteString("<p>")
-				out.WriteString(p)
+				out.WriteString(merged.String())
 				out.WriteString("</p>")
 			}
 			return template.HTML(out.String())
