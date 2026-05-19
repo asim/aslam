@@ -172,22 +172,45 @@
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
 }
-// Pull-to-refresh on .app-content
 (function() {
-    let startY = 0;
-    let pulling = false;
+    var startY = 0, pulling = false, indicator = null;
+    function getIndicator() {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;text-align:center;padding:8px;font-size:12px;color:#888;background:#f8f8f8;z-index:999;transition:transform 0.2s;transform:translateY(-100%)';
+            indicator.textContent = '↓ Pull to refresh';
+            document.body.appendChild(indicator);
+        }
+        return indicator;
+    }
     document.addEventListener('touchstart', function(e) {
-        const content = document.querySelector('.app-content');
+        var content = document.querySelector('.app-content');
         if (content && content.scrollTop === 0) {
             startY = e.touches[0].clientY;
             pulling = true;
         }
     }, {passive: true});
+    document.addEventListener('touchmove', function(e) {
+        if (!pulling) return;
+        var dy = e.touches[0].clientY - startY;
+        var el = getIndicator();
+        if (dy > 10) {
+            var pct = Math.min(dy / 100, 1);
+            el.style.transform = 'translateY(' + (pct * 100 - 100) + '%)';
+            el.textContent = dy > 100 ? '↻ Release to refresh' : '↓ Pull to refresh';
+        }
+    }, {passive: true});
     document.addEventListener('touchend', function(e) {
-        if (pulling) {
-            const dy = e.changedTouches[0].clientY - startY;
-            if (dy > 100) location.reload();
-            pulling = false;
+        if (!pulling) return;
+        var dy = e.changedTouches[0].clientY - startY;
+        pulling = false;
+        if (dy > 100) {
+            var el = getIndicator();
+            el.textContent = 'Refreshing…';
+            el.style.transform = 'translateY(0)';
+            location.reload();
+        } else if (indicator) {
+            indicator.style.transform = 'translateY(-100%)';
         }
     }, {passive: true});
 })();
