@@ -7,6 +7,11 @@
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
     <style>
+        html, body { height: 100dvh; overflow: hidden; }
+        .app { display: flex; flex-direction: column; height: 100dvh; }
+        .app-header { position: static; flex: 0 0 50px; }
+        .app-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .app-footer { position: static; flex: 0 0 auto; }
         .typing { opacity: 0.6; }
         .typing .message-content::after {
             content: '...';
