@@ -121,7 +121,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "search",
-			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, chats, notes, and cached content. Returns user-scoped results.",
+			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Saliheen, chats, notes, and cached content. Returns user-scoped results.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -697,6 +697,39 @@ func executeAdhkar(input map[string]interface{}) (string, error) {
 			output += fmt.Sprintf("Source: %s\n", source)
 		}
 		output += "\n"
+	}
+	return output, nil
+}
+
+func executeRiyad(input map[string]interface{}) (string, error) {
+	query, _ := input["query"].(string)
+	if query == "" {
+		return "", fmt.Errorf("query is required")
+	}
+	if searchRiyad == nil {
+		return "Riyad us-Saliheen not available", nil
+	}
+	results, err := searchRiyad(query)
+	if err != nil {
+		return "", err
+	}
+	if len(results) == 0 {
+		return "No results found in Riyad us-Saliheen.", nil
+	}
+	var output string
+	for i, r := range results {
+		book, _ := r["Book"].(string)
+		number, _ := r["Number"].(int)
+		narrator, _ := r["Narrator"].(string)
+		text, _ := r["Text"].(string)
+		if len(text) > 2000 {
+			text = text[:2000] + "..."
+		}
+		output += fmt.Sprintf("[%d] %s — Hadith %d\n", i+1, book, number)
+		if narrator != "" {
+			output += fmt.Sprintf("Narrator: %s\n", narrator)
+		}
+		output += fmt.Sprintf("%s\n\n", text)
 	}
 	return output, nil
 }
