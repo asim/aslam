@@ -121,7 +121,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "search",
-			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Saliheen, chats, notes, and cached content. Returns user-scoped results.",
+			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Salihin, chats, notes, and cached content. Returns user-scoped results.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -298,13 +298,13 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "salihin",
-			Description: "Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi. A collection of hadith on good manners, virtues, knowledge, supplication, and righteousness.",
+			Description: "Search Riyad us-Salihin (Gardens of the Righteous) by Imam An-Nawawi. A collection of hadith on good manners, virtues, knowledge, supplication, and righteousness.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
 					"query": map[string]interface{}{
 						"type":        "string",
-						"description": "The topic to search for in Riyad us-Saliheen",
+						"description": "The topic to search for in Riyad us-Salihin",
 					},
 				},
 				"required": []string{"query"},
@@ -707,14 +707,14 @@ func executeRiyad(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("query is required")
 	}
 	if searchRiyad == nil {
-		return "Riyad us-Saliheen not available", nil
+		return "Riyad us-Salihin not available", nil
 	}
 	results, err := searchRiyad(query)
 	if err != nil {
 		return "", err
 	}
 	if len(results) == 0 {
-		return "No results found in Riyad us-Saliheen.", nil
+		return "No results found in Riyad us-Salihin.", nil
 	}
 	var output string
 	for i, r := range results {

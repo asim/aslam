@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riyad us-Saliheen - Hadith {{index . "Number"}} - Aslam</title>
+    <title>Riyad us-Salihin - Hadith {{index . "Number"}} - Aslam</title>
     {{template "style"}}
     <style>
         .riyad-book {
@@ -55,7 +55,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <span class="riyad-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
-                    <input type="hidden" name="title" value="Riyad us-Saliheen - {{index . "Book"}} - Hadith {{index . "Number"}}">
+                    <input type="hidden" name="title" value="Riyad us-Salihin - {{index . "Book"}} - Hadith {{index . "Number"}}">
                     <input type="hidden" name="content" value="/salihin/{{index . "ID"}}
 
 {{truncate (index . "Text") 200}}">
@@ -70,7 +70,7 @@
             {{if index . "Arabic"}}
             <div class="riyad-arabic">{{index . "Arabic"}}</div>
             {{end}}
-            <div class="riyad-source">Source: Riyad us-Saliheen (Imam An-Nawawi)</div>
+            <div class="riyad-source">Source: Riyad us-Salihin (Imam An-Nawawi)</div>
 
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
                 {{if index . "PrevID"}}<a href="/salihin/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}

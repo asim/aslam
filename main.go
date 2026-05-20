@@ -765,11 +765,11 @@ const riyadVersion = "2"
 
 func loadRiyad() {
 	if db.GetSetting("riyad_version") == riyadVersion {
-		log.Printf("Riyad us-Saliheen v%s already loaded (%d hadiths)", riyadVersion, db.RiyadCount())
+		log.Printf("Riyad us-Salihin v%s already loaded (%d hadiths)", riyadVersion, db.RiyadCount())
 		return
 	}
 
-	log.Printf("Loading Riyad us-Saliheen dataset v%s...", riyadVersion)
+	log.Printf("Loading Riyad us-Salihin dataset v%s...", riyadVersion)
 	db.ClearRiyad()
 
 	r, err := zip.NewReader(bytes.NewReader(riyadZip), int64(len(riyadZip)))
@@ -816,7 +816,7 @@ func loadRiyad() {
 	}
 
 	db.SetSetting("riyad_version", riyadVersion)
-	log.Printf("Loaded %d Riyad us-Saliheen hadiths (v%s)", total, riyadVersion)
+	log.Printf("Loaded %d Riyad us-Salihin hadiths (v%s)", total, riyadVersion)
 }
 
 func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
@@ -1882,12 +1882,12 @@ You are BOTH an assistant and the keeper of the family's knowledge base. Every c
 - search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
 
 You have tools available:
-- search: Search the knowledge base (chats, notes, Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Saliheen).
+- search: Search the knowledge base (chats, notes, Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Salihin).
 - reminder: Search Islamic sources (Quran, Hadith, Names of Allah) via the reminder API for semantic results.
 - islamqa: Search IslamQA for scholarly answers to Islamic questions.
 - ghazali: Search Imam Al-Ghazali's Ihya Ulum al-Din (Revival of the Islamic Sciences).
 - adhkar: Search duas and dhikr (morning, evening, after salah, daily).
-- salihin: Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi for hadith on good manners, virtues, and righteousness.
+- salihin: Search Riyad us-Salihin (Gardens of the Righteous) by Imam An-Nawawi for hadith on good manners, virtues, and righteousness.
 - fetch: Fetch a URL and save its content to the knowledge base.
 - web_search: Search the web for current information.
 - wikipedia: Look up factual information.
