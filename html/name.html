@@ -71,7 +71,7 @@
                 <span class="name-number" style="margin-bottom:0;">#{{index . "Number"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "English"}} — {{index . "Meaning"}}">
-                    <input type="hidden" name="content" value="/name/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/names/{{index . "ID"}}
 
 {{index . "Description"}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
@@ -91,7 +91,7 @@
             <div class="name-summary">{{paragraphs (index . "Summary")}}</div>
             {{end}}
             <div class="name-source">
-                <a href="https://reminder.dev/name/{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
+                <a href="https://reminder.dev/names/{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
             </div>
         </main>
     </div>

@@ -255,6 +255,8 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0`)
 	DB.Exec(`ALTER TABLE users ADD COLUMN timezone TEXT DEFAULT ''`)
 
+	DB.Exec(`ALTER TABLE hadith ADD COLUMN book_number INTEGER`)
+
 	// Users - people who can access the system
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
@@ -569,6 +571,7 @@ func Migrate() error {
 		CREATE TABLE IF NOT EXISTS hadith (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			book TEXT NOT NULL,
+			book_number INTEGER,
 			number INTEGER,
 			narrator TEXT,
 			text TEXT NOT NULL,
@@ -980,7 +983,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   english + " — " + meaning,
 				"Content": desc,
 				"Role":    "names of allah",
-				"URL":     fmt.Sprintf("/name/%d", n["ID"]),
+				"URL":     fmt.Sprintf("/names/%d", n["ID"]),
 			})
 		}
 	}
@@ -2244,9 +2247,9 @@ func ClearHadith() {
 	DB.Exec(`DELETE FROM hadith_fts`)
 }
 
-func InsertHadith(book string, number int, narrator, text, arabic string) error {
-	_, err := DB.Exec(`INSERT INTO hadith (book, number, narrator, text, arabic) VALUES (?, ?, ?, ?, ?)`,
-		book, number, narrator, text, arabic)
+func InsertHadith(book string, bookNumber, number int, narrator, text, arabic string) error {
+	_, err := DB.Exec(`INSERT INTO hadith (book, book_number, number, narrator, text, arabic) VALUES (?, ?, ?, ?, ?, ?)`,
+		book, bookNumber, number, narrator, text, arabic)
 	return err
 }
 
@@ -2284,20 +2287,22 @@ func SearchHadith(query string) ([]map[string]interface{}, error) {
 
 func GetHadith(id int64) (map[string]interface{}, error) {
 	var number int
+	var bookNumber sql.NullInt64
 	var book, text string
 	var narrator, arabic sql.NullString
-	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM hadith WHERE id = ?`, id).Scan(
-		&id, &book, &number, &narrator, &text, &arabic)
+	err := DB.QueryRow(`SELECT id, book, book_number, number, narrator, text, arabic FROM hadith WHERE id = ?`, id).Scan(
+		&id, &book, &bookNumber, &number, &narrator, &text, &arabic)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"ID":       id,
-		"Book":     book,
-		"Number":   number,
-		"Narrator": narrator.String,
-		"Text":     text,
-		"Arabic":   arabic.String,
+		"ID":         id,
+		"Book":       book,
+		"BookNumber": bookNumber.Int64,
+		"Number":     number,
+		"Narrator":   narrator.String,
+		"Text":       text,
+		"Arabic":     arabic.String,
 	}, nil
 }
 

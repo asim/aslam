@@ -223,7 +223,7 @@ func main() {
 	http.HandleFunc("/api/arabic/search", requireAuth(handleArabicSearch))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
-	http.HandleFunc("/name/", requireAuth(handleNameView))
+	http.HandleFunc("/names/", requireAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
@@ -542,7 +542,7 @@ func loadGhazali() {
 	log.Printf("Loaded %d Ghazali sections (v%s)", total, ghazaliVersion)
 }
 
-const sourcesVersion = "4"
+const sourcesVersion = "5"
 
 func loadSources() {
 	if db.GetSetting("sources_version") == sourcesVersion {
@@ -616,6 +616,7 @@ func loadSources() {
 				Name  string `json:"name"`
 				Books []struct {
 					Name    string `json:"name"`
+					Number  int    `json:"number"`
 					Hadiths []struct {
 						Number   int    `json:"number"`
 						Narrator string `json:"narrator"`
@@ -631,7 +632,7 @@ func loadSources() {
 			total := 0
 			for _, book := range hadithData.Books {
 				for _, h := range book.Hadiths {
-					if err := db.InsertHadith(book.Name, h.Number, h.Narrator, h.English, h.Arabic); err != nil {
+					if err := db.InsertHadith(book.Name, book.Number, h.Number, h.Narrator, h.English, h.Arabic); err != nil {
 						log.Printf("Failed to insert hadith %d: %v", h.Number, err)
 					} else {
 						total++
@@ -1024,7 +1025,7 @@ func handleHadithView(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNameView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/name/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/names/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
