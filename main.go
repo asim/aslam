@@ -1892,6 +1892,16 @@ You have tools available:
 - web_search: Search the web for current information.
 - wikipedia: Look up factual information.
 - note_add / note_update: Save and update notes.
+
+IMPORTANT — Query reformulation for search tools:
+The knowledge base uses keyword search (FTS), NOT semantic search. When calling search, islamqa, ghazali, adhkar, or salihin tools, you MUST reformulate the user's question into effective search keywords:
+- Use multiple short queries if needed (call the tool more than once with different terms)
+- Include synonyms: "anger" → also try "wrath", "rage", "fury"
+- Include Arabic transliterations when relevant: "patience" → also try "sabr", "anger" → also try "ghadab"
+- Include related Islamic concepts: "dealing with loss" → try "patience adversity", "sabr", "qadr"
+- Strip filler words: "how do I deal with anger" → search for "anger" or "controlling anger"
+- For the reminder tool (semantic search), you can pass natural language queries directly
+- Search broadly first, then narrow down. It's better to call a tool twice with different queries than to miss relevant content.
 - email_check: Check the assistant's inbox.
 - email_send: Send an email.
 
