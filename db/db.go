@@ -658,6 +658,30 @@ func Migrate() error {
 		DELETE FROM adhkar_fts WHERE docid = old.id;
 	END`)
 
+	// Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS saliheen (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			book TEXT NOT NULL,
+			number INTEGER,
+			narrator TEXT,
+			text TEXT NOT NULL,
+			arabic TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS saliheen_fts USING fts4(
+		text, narrator, content='saliheen'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS saliheen_ai AFTER INSERT ON saliheen BEGIN
+		INSERT INTO saliheen_fts(docid, text, narrator) VALUES (new.id, new.text, new.narrator);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS saliheen_ad AFTER DELETE ON saliheen BEGIN
+		DELETE FROM saliheen_fts WHERE docid = old.id;
+	END`)
+
 	return nil
 }
 
@@ -951,6 +975,29 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Content": content,
 				"Role":    volumeTitle,
 				"URL":     fmt.Sprintf("/ghazali/%d", g["ID"]),
+			})
+		}
+	}
+
+	// Riyad us-Saliheen results
+	if rResults, err := SearchRiyad(query); err == nil {
+		for _, r := range rResults {
+			text, _ := r["Text"].(string)
+			book, _ := r["Book"].(string)
+			narrator, _ := r["Narrator"].(string)
+			if len(text) > 500 {
+				text = text[:500] + "..."
+			}
+			title := book
+			if narrator != "" {
+				title = book + " — " + narrator
+			}
+			results = append(results, map[string]interface{}{
+				"Kind":    "saliheen",
+				"Title":   title,
+				"Content": text,
+				"Role":    "hadith",
+				"URL":     fmt.Sprintf("/saliheen/%d", r["ID"]),
 			})
 		}
 	}
@@ -2616,4 +2663,122 @@ func GetAdhkarPrevNext(id int64) (prevID, nextID int64) {
 	DB.QueryRow(`SELECT id FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
 	DB.QueryRow(`SELECT id FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
 	return
+}
+
+// Riyad us-Saliheen functions
+
+func RiyadCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM saliheen`).Scan(&count)
+	return count
+}
+
+func ClearRiyad() {
+	DB.Exec(`DELETE FROM saliheen`)
+	DB.Exec(`DELETE FROM saliheen_fts`)
+}
+
+func InsertRiyad(book string, number int, narrator, text, arabic string) error {
+	_, err := DB.Exec(`INSERT INTO saliheen (book, number, narrator, text, arabic) VALUES (?, ?, ?, ?, ?)`,
+		book, number, narrator, text, arabic)
+	return err
+}
+
+func SearchRiyad(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT r.id, r.book, r.number, r.narrator, r.text, r.arabic
+		FROM saliheen r
+		JOIN saliheen_fts fts ON r.id = fts.docid
+		WHERE saliheen_fts MATCH ?
+		LIMIT 10
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var number int
+		var book, text string
+		var narrator, arabic sql.NullString
+		rows.Scan(&id, &book, &number, &narrator, &text, &arabic)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Book":     book,
+			"Number":   number,
+			"Narrator": narrator.String,
+			"Text":     text,
+			"Arabic":   arabic.String,
+		})
+	}
+	return results, nil
+}
+
+func GetRiyad(id int64) (map[string]interface{}, error) {
+	var number int
+	var book, text string
+	var narrator, arabic sql.NullString
+	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM saliheen WHERE id = ?`, id).Scan(
+		&id, &book, &number, &narrator, &text, &arabic)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":       id,
+		"Book":     book,
+		"Number":   number,
+		"Narrator": narrator.String,
+		"Text":     text,
+		"Arabic":   arabic.String,
+	}, nil
+}
+
+func GetRiyadPrevNext(id int64) (prevID, nextID int64) {
+	DB.QueryRow(`SELECT id FROM saliheen WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRow(`SELECT id FROM saliheen WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
+}
+
+func GetRiyadBooks() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT book, COUNT(*) as count FROM saliheen GROUP BY book ORDER BY MIN(id)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var book string
+		var count int
+		rows.Scan(&book, &count)
+		results = append(results, map[string]interface{}{
+			"Book":  book,
+			"Count": count,
+		})
+	}
+	return results, nil
+}
+
+func GetRiyadByBook(book string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, number, narrator FROM saliheen WHERE book = ? ORDER BY id`, book)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var number int
+		var narrator sql.NullString
+		rows.Scan(&id, &number, &narrator)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Number":   number,
+			"Narrator": narrator.String,
+		})
+	}
+	return results, nil
 }

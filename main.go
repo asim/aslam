@@ -48,6 +48,9 @@ var sourcesZip []byte
 //go:embed data/adhkar.zip
 var adhkarZip []byte
 
+//go:embed data/riyadussalihin.zip
+var riyadZip []byte
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -107,6 +110,7 @@ func main() {
 		loadGhazali()
 		loadSources()
 		loadAdhkar()
+		loadRiyad()
 	}()
 
 	// Parse templates
@@ -193,6 +197,8 @@ func main() {
 	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
 	http.HandleFunc("/adhkar", requireAuth(handleAdhkarIndex))
 	http.HandleFunc("/adhkar/", requireAuth(handleAdhkarView))
+	http.HandleFunc("/riyadussalihin", requireAuth(handleRiyadIndex))
+	http.HandleFunc("/riyadussalihin/", requireAuth(handleRiyadView))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
 	http.HandleFunc("/name/", requireAuth(handleNameView))
@@ -259,6 +265,9 @@ func main() {
 	})
 	tools.SetAdhkarSearcher(func(query string) ([]map[string]interface{}, error) {
 		return db.SearchAdhkar(query)
+	})
+	tools.SetRiyadSearcher(func(query string) ([]map[string]interface{}, error) {
+		return db.SearchRiyad(query)
 	})
 
 	log.Printf("System prompt length: %d", len(systemPrompt))
@@ -736,6 +745,98 @@ func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
 	item["PrevID"] = prevID
 	item["NextID"] = nextID
 	renderTemplate(w, r, "adhkar.html", item)
+}
+
+const riyadVersion = "1"
+
+func loadRiyad() {
+	if db.GetSetting("riyad_version") == riyadVersion {
+		log.Printf("Riyad us-Saliheen v%s already loaded (%d hadiths)", riyadVersion, db.RiyadCount())
+		return
+	}
+
+	log.Printf("Loading Riyad us-Saliheen dataset v%s...", riyadVersion)
+	db.ClearRiyad()
+
+	r, err := zip.NewReader(bytes.NewReader(riyadZip), int64(len(riyadZip)))
+	if err != nil {
+		log.Printf("Failed to open riyadussalihin.zip: %v", err)
+		return
+	}
+
+	total := 0
+	for _, f := range r.File {
+		if !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		var data struct {
+			Books []struct {
+				Name    string `json:"name"`
+				Hadiths []struct {
+					Number   int    `json:"number"`
+					Narrator string `json:"narrator"`
+					English  string `json:"english"`
+					Arabic   string `json:"arabic"`
+				} `json:"hadiths"`
+			} `json:"books"`
+		}
+		if err := json.NewDecoder(rc).Decode(&data); err != nil {
+			rc.Close()
+			log.Printf("Failed to decode %s: %v", f.Name, err)
+			continue
+		}
+		rc.Close()
+		for _, book := range data.Books {
+			for _, h := range book.Hadiths {
+				if err := db.InsertRiyad(book.Name, h.Number, h.Narrator, h.English, h.Arabic); err != nil {
+					log.Printf("Failed to insert Riyad hadith %d: %v", h.Number, err)
+				} else {
+					total++
+				}
+			}
+		}
+	}
+
+	db.SetSetting("riyad_version", riyadVersion)
+	log.Printf("Loaded %d Riyad us-Saliheen hadiths (v%s)", total, riyadVersion)
+}
+
+func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
+	book := r.URL.Query().Get("book")
+	data := map[string]interface{}{}
+
+	books, _ := db.GetRiyadBooks()
+	data["Books"] = books
+
+	if book != "" {
+		items, _ := db.GetRiyadByBook(book)
+		data["Items"] = items
+		data["SelectedBook"] = book
+	}
+
+	renderTemplate(w, r, "riyadussalihin_index.html", data)
+}
+
+func handleRiyadView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/riyadussalihin/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetRiyad(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	prevID, nextID := db.GetRiyadPrevNext(id)
+	item["PrevID"] = prevID
+	item["NextID"] = nextID
+	renderTemplate(w, r, "riyadussalihin.html", item)
 }
 
 func handleQuranView(w http.ResponseWriter, r *http.Request) {
@@ -1767,11 +1868,12 @@ You are BOTH an assistant and the keeper of the family's knowledge base. Every c
 - search: Before saying "I don't know", check the knowledge base first — the user may already have told you.
 
 You have tools available:
-- search: Search the knowledge base (chats, notes, Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar).
+- search: Search the knowledge base (chats, notes, Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Saliheen).
 - reminder: Search Islamic sources (Quran, Hadith, Names of Allah) via the reminder API for semantic results.
 - islamqa: Search IslamQA for scholarly answers to Islamic questions.
 - ghazali: Search Imam Al-Ghazali's Ihya Ulum al-Din (Revival of the Islamic Sciences).
 - adhkar: Search duas and dhikr (morning, evening, after salah, daily).
+- riyadussalihin: Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi for hadith on good manners, virtues, and righteousness.
 - fetch: Fetch a URL and save its content to the knowledge base.
 - web_search: Search the web for current information.
 - wikipedia: Look up factual information.

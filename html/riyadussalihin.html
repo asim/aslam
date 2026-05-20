@@ -1,0 +1,84 @@
+{{define "riyadussalihin.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riyad us-Saliheen - Hadith {{index . "Number"}} - Aslam</title>
+    {{template "style"}}
+    <style>
+        .riyad-book {
+            display: inline-block;
+            font-size: 12px;
+            background: #f0e8f5;
+            color: #5a206b;
+            padding: 2px 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .riyad-narrator {
+            font-size: 14px;
+            font-style: italic;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .riyad-text {
+            line-height: 1.8;
+            word-wrap: break-word;
+            margin-bottom: 24px;
+        }
+        .riyad-text p { margin-bottom: 1em; }
+        .riyad-arabic {
+            font-size: 22px;
+            line-height: 2;
+            direction: rtl;
+            text-align: right;
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .riyad-source {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span class="riyad-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
+                <form method="POST" action="/notes/add" style="display:inline;">
+                    <input type="hidden" name="title" value="Riyad us-Saliheen - {{index . "Book"}} - Hadith {{index . "Number"}}">
+                    <input type="hidden" name="content" value="/riyadussalihin/{{index . "ID"}}
+
+{{truncate (index . "Text") 200}}">
+                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                </form>
+            </div>
+            <h2>{{index . "Book"}} — Hadith {{index . "Number"}}</h2>
+            {{if index . "Narrator"}}
+            <p class="riyad-narrator">{{index . "Narrator"}}</p>
+            {{end}}
+            <div class="riyad-text">{{paragraphs (index . "Text")}}</div>
+            {{if index . "Arabic"}}
+            <div class="riyad-arabic">{{index . "Arabic"}}</div>
+            {{end}}
+            <div class="riyad-source">Source: Riyad us-Saliheen (Imam An-Nawawi)</div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevID"}}<a href="/riyadussalihin/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/riyadussalihin">All Books</a>
+                {{if index . "NextID"}}<a href="/riyadussalihin/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

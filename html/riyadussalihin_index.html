@@ -1,0 +1,70 @@
+{{define "riyadussalihin_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riyad us-Saliheen - Aslam</title>
+    {{template "style"}}
+    <style>
+        .cat-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .cat-filters a {
+            font-size: 12px;
+            padding: 3px 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #444;
+        }
+        .cat-filters a:hover { background: #e0e0e0; }
+        .cat-filters a.active { background: #000; color: #fff; }
+        .riyad-list a {
+            text-decoration: none;
+            display: block;
+        }
+        .riyad-list a:hover { opacity: 0.7; }
+        .riyad-narrator {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Riyad us-Saliheen</h2>
+
+            <div class="cat-filters">
+                <a href="/riyadussalihin"{{if not .SelectedBook}} class="active"{{end}}>All Books</a>
+                {{range .Books}}
+                <a href="/riyadussalihin?book={{index . "Book"}}"{{if eq (index . "Book") $.SelectedBook}} class="active"{{end}}>{{index . "Book"}} ({{index . "Count"}})</a>
+                {{end}}
+            </div>
+
+            {{if .Items}}
+            <ul class="riyad-list">
+                {{range .Items}}
+                <li>
+                    <a href="/riyadussalihin/{{index . "ID"}}">Hadith {{index . "Number"}}</a>
+                    {{if index . "Narrator"}}<div class="riyad-narrator">{{truncate (index . "Narrator") 120}}</div>{{end}}
+                </li>
+                {{end}}
+            </ul>
+            {{else if .SelectedBook}}
+            <p class="muted">No hadiths found in this book.</p>
+            {{else}}
+            <p class="muted">Select a book to browse hadiths.</p>
+            {{end}}
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

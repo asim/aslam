@@ -67,6 +67,14 @@ func SetAdhkarSearcher(fn AdhkarSearcher) {
 	searchAdhkar = fn
 }
 
+type RiyadSearcher func(query string) ([]map[string]interface{}, error)
+
+var searchRiyad RiyadSearcher
+
+func SetRiyadSearcher(fn RiyadSearcher) {
+	searchRiyad = fn
+}
+
 // IntegrationChecker checks if an integration is enabled
 type IntegrationChecker func(name string) bool
 
@@ -288,6 +296,20 @@ func GetTools() []ToolDefinition {
 				"required": []string{"query"},
 			},
 		},
+		{
+			Name:        "riyadussalihin",
+			Description: "Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi. A collection of hadith on good manners, virtues, knowledge, supplication, and righteousness.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"query": map[string]interface{}{
+						"type":        "string",
+						"description": "The topic to search for in Riyad us-Saliheen",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
 	}
 }
 
@@ -318,6 +340,8 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeGhazali(input)
 	case "adhkar":
 		return executeAdhkar(input)
+	case "riyadussalihin":
+		return executeRiyad(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
