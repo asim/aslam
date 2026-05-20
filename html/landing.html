@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aslam — Islamic Knowledge Base</title>
+    <title>Aslam — An Islamic Knowledge Base for Muslims</title>
     {{template "style"}}
     <style>
         html, body {
@@ -14,11 +14,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             min-height: 100dvh;
-            padding: 40px 20px;
-            text-align: center;
-            max-width: 600px;
+            padding: 60px 20px 40px;
+            max-width: 640px;
             margin: 0 auto;
         }
         .landing h1 {
@@ -26,22 +24,26 @@
             font-weight: 600;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
+            text-align: center;
         }
         .landing .tagline {
             font-size: 18px;
             color: #666;
             margin-bottom: 32px;
+            text-align: center;
         }
         .landing .description {
             font-size: 15px;
             color: #555;
-            line-height: 1.7;
-            margin-bottom: 40px;
-            max-width: 460px;
+            line-height: 1.8;
+            margin-bottom: 36px;
+            text-align: center;
+            max-width: 500px;
         }
         .landing .buttons {
             display: flex;
             gap: 12px;
+            margin-bottom: 48px;
         }
         .landing .buttons a {
             display: inline-block;
@@ -52,17 +54,54 @@
             font-weight: 500;
             transition: opacity 0.15s;
         }
-        .landing .buttons a:hover {
-            opacity: 0.85;
+        .landing .buttons a:hover { opacity: 0.85; }
+        .btn-primary { background: #000; color: #fff !important; }
+        .btn-secondary { background: #fff; color: #1a1a1a !important; border: 1px solid #ddd; }
+        .sources {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 40px;
         }
-        .btn-primary {
-            background: #000;
-            color: #fff !important;
+        @media (min-width: 480px) { .sources { grid-template-columns: repeat(3, 1fr); } }
+        .source-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
         }
-        .btn-secondary {
-            background: #fff;
-            color: #1a1a1a !important;
-            border: 1px solid #ddd;
+        .source-card .count { font-size: 20px; font-weight: 600; }
+        .source-card .label { font-size: 12px; color: #888; margin-top: 2px; }
+        .features {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 40px;
+        }
+        .features h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        .features ul {
+            list-style: none;
+            display: grid;
+            gap: 8px;
+        }
+        .features li {
+            font-size: 14px;
+            color: #555;
+            padding: 0;
+            border: none;
+            line-height: 1.5;
+        }
+        .features li::before { content: "· "; color: #999; }
+        .landing .footer {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
         }
     </style>
 </head>
@@ -71,14 +110,69 @@
         <h1>Aslam</h1>
         <p class="tagline">An Islamic knowledge base for Muslims</p>
         <p class="description">
-            Seek Islamic knowledge from authentic sources — Quran, Hadith, and IslamQA.
-            Save your reflections, organise notes, and build a personal library of
-            everything you learn.
+            Seek Islamic knowledge from authentic sources. Browse the Quran, Hadith,
+            scholarly answers, classical works, and daily adhkar. Save what matters,
+            share what helps, and learn Arabic along the way.
         </p>
         <div class="buttons">
             <a href="/auth/signup" class="btn-primary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
         </div>
+
+        <div class="sources">
+            <div class="source-card">
+                <div class="count">6,348</div>
+                <div class="label">Quran Verses</div>
+            </div>
+            <div class="source-card">
+                <div class="count">7,265</div>
+                <div class="label">Hadith</div>
+            </div>
+            <div class="source-card">
+                <div class="count">99</div>
+                <div class="label">Names of Allah</div>
+            </div>
+            <div class="source-card">
+                <div class="count">4,200+</div>
+                <div class="label">IslamQA</div>
+            </div>
+            <div class="source-card">
+                <div class="count">1,437</div>
+                <div class="label">Ghazali</div>
+            </div>
+            <div class="source-card">
+                <div class="count">1,217</div>
+                <div class="label">Riyad us-Salihin</div>
+            </div>
+            <div class="source-card">
+                <div class="count">97</div>
+                <div class="label">Adhkar</div>
+            </div>
+            <div class="source-card">
+                <div class="count">21,000+</div>
+                <div class="label">Arabic Words</div>
+            </div>
+            <div class="source-card">
+                <div class="count">Hourly</div>
+                <div class="label">Daily Reminder</div>
+            </div>
+        </div>
+
+        <div class="features">
+            <h3>Features</h3>
+            <ul>
+                <li>Search across all Islamic sources from one box</li>
+                <li>Prayer times based on your location</li>
+                <li>Daily verse, hadith, and name of Allah</li>
+                <li>Save and share notes and reflections</li>
+                <li>Browse IslamQA, Ghazali, Adhkar, and Riyad us-Salihin</li>
+                <li>Learn Quranic Arabic vocabulary</li>
+                <li>Ask questions with AI-powered sourced answers</li>
+                <li>Private by default, share with a toggle</li>
+            </ul>
+        </div>
+
+        <p class="footer">Free and open source</p>
     </div>
 </body>
 </html>
