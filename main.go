@@ -430,7 +430,7 @@ func seedUsers() {
 	}
 }
 
-const islamqaVersion = "2"
+const islamqaVersion = "3"
 
 func loadIslamQA() {
 	if db.GetSetting("islamqa_version") == islamqaVersion {
@@ -493,7 +493,7 @@ func loadIslamQA() {
 // sets them as process environment variables (without overwriting any that are
 // already set). It tolerates `export KEY=value`, surrounding quotes, and
 // `# comments`, so a file that also works when `source`d in a shell is fine.
-const ghazaliVersion = "1"
+const ghazaliVersion = "2"
 
 func loadGhazali() {
 	if db.GetSetting("ghazali_version") == ghazaliVersion {
@@ -676,7 +676,7 @@ func loadSources() {
 	log.Printf("Sources v%s loaded", sourcesVersion)
 }
 
-const adhkarVersion = "1"
+const adhkarVersion = "2"
 
 func loadAdhkar() {
 	if db.GetSetting("adhkar_version") == adhkarVersion {
@@ -756,20 +756,19 @@ func handleAdhkarIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/adhkar/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	slug := strings.TrimPrefix(r.URL.Path, "/adhkar/")
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetAdhkar(slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetAdhkar(id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	prevID, nextID := db.GetAdhkarPrevNext(id)
-	item["PrevID"] = prevID
-	item["NextID"] = nextID
+	prev, next := db.GetAdhkarPrevNext(slug)
+	item["PrevSlug"] = prev
+	item["NextSlug"] = next
 	renderTemplate(w, r, "adhkar.html", item)
 }
 
@@ -848,20 +847,20 @@ func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleRiyadView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/salihin/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	numStr := strings.TrimPrefix(r.URL.Path, "/salihin/")
+	number, err := strconv.ParseInt(numStr, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetRiyad(id)
+	item, err := db.GetRiyad(number)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prevID, nextID := db.GetRiyadPrevNext(id)
-	item["PrevID"] = prevID
-	item["NextID"] = nextID
+	prev, next := db.GetRiyadPrevNext(number)
+	item["PrevNumber"] = prev
+	item["NextNumber"] = next
 	renderTemplate(w, r, "salihin.html", item)
 }
 
@@ -1984,20 +1983,19 @@ func handleEntries(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGhazaliView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/ghazali/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	slug := strings.TrimPrefix(r.URL.Path, "/ghazali/")
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetGhazali(slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetGhazali(id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	prevID, nextID := db.GetGhazaliPrevNext(id)
-	item["PrevID"] = prevID
-	item["NextID"] = nextID
+	prev, next := db.GetGhazaliPrevNext(slug)
+	item["PrevSlug"] = prev
+	item["NextSlug"] = next
 	renderTemplate(w, r, "ghazali.html", item)
 }
 
@@ -2021,20 +2019,19 @@ func handleGhazaliIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/islamqa/")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	slug := strings.TrimPrefix(r.URL.Path, "/islamqa/")
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetIslamQA(slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetIslamQA(id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	prevID, nextID := db.GetIslamQAPrevNext(id)
-	item["PrevID"] = prevID
-	item["NextID"] = nextID
+	prev, next := db.GetIslamQAPrevNext(slug)
+	item["PrevSlug"] = prev
+	item["NextSlug"] = next
 	renderTemplate(w, r, "islamqa.html", item)
 }
 

@@ -52,8 +52,8 @@
             <ul class="ch-list">
                 {{range .Chapters}}
                 <li>
-                    {{if index . "FirstID"}}
-                    <a href="/ghazali/{{index . "FirstID"}}">{{index . "Chapter"}}</a>
+                    {{if index . "FirstSlug"}}
+                    <a href="/ghazali/{{index . "FirstSlug"}}">{{index . "Chapter"}}</a>
                     {{else}}
                     <span>{{index . "Chapter"}}</span>
                     {{end}}

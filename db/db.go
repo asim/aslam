@@ -2,19 +2,42 @@ package db
 
 import (
 	"crypto/rand"
+	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 )
+
+var slugBadChars = regexp.MustCompile(`[^a-z0-9]+`)
+
+// Slug returns a stable URL-safe identifier derived from title + canonical content.
+// Format: slugified-title-XXXXXX where XXXXXX is the first 6 hex chars of sha1(canonical).
+// Identical canonical strings always produce the same slug, so URLs survive reloads.
+func Slug(title, canonical string) string {
+	base := strings.ToLower(title)
+	base = slugBadChars.ReplaceAllString(base, "-")
+	base = strings.Trim(base, "-")
+	if len(base) > 60 {
+		base = base[:60]
+		base = strings.TrimRight(base, "-")
+	}
+	if base == "" {
+		base = "item"
+	}
+	h := sha1.Sum([]byte(canonical))
+	return base + "-" + hex.EncodeToString(h[:])[:6]
+}
 
 var DB *sql.DB
 
@@ -433,11 +456,14 @@ func Migrate() error {
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS islamqa (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			slug TEXT,
 			category TEXT NOT NULL,
 			question TEXT NOT NULL,
 			answer TEXT NOT NULL
 		)
 	`)
+	DB.Exec(`ALTER TABLE islamqa ADD COLUMN slug TEXT`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_islamqa_slug ON islamqa(slug)`)
 	if err != nil {
 		return err
 	}
@@ -469,6 +495,7 @@ func Migrate() error {
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS ghazali (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			slug TEXT,
 			volume INTEGER NOT NULL,
 			volume_title TEXT NOT NULL,
 			chapter TEXT NOT NULL,
@@ -479,6 +506,8 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+	DB.Exec(`ALTER TABLE ghazali ADD COLUMN slug TEXT`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_ghazali_slug ON ghazali(slug)`)
 	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS ghazali_fts USING fts4(
 		chapter, content, content='ghazali'
 	)`)
@@ -637,6 +666,7 @@ func Migrate() error {
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS adhkar (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			slug TEXT,
 			category TEXT NOT NULL,
 			title TEXT NOT NULL,
 			arabic TEXT,
@@ -650,6 +680,8 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+	DB.Exec(`ALTER TABLE adhkar ADD COLUMN slug TEXT`)
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_adhkar_slug ON adhkar(slug)`)
 
 	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS adhkar_fts USING fts4(
 		title, translation, benefits, content='adhkar'
@@ -903,7 +935,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   question,
 				"Content": answer,
 				"Role":    category,
-				"URL":     fmt.Sprintf("/islamqa/%d", q["ID"]),
+				"URL":     fmt.Sprintf("/islamqa/%s", q["Slug"]),
 			})
 		}
 	}
@@ -964,7 +996,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   title,
 				"Content": text,
 				"Role":    "hadith",
-				"URL":     fmt.Sprintf("/hadith/%d", h["ID"]),
+				"URL":     fmt.Sprintf("/hadith/%d", h["Number"]),
 			})
 		}
 	}
@@ -1002,7 +1034,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   chapter,
 				"Content": content,
 				"Role":    volumeTitle,
-				"URL":     fmt.Sprintf("/ghazali/%d", g["ID"]),
+				"URL":     fmt.Sprintf("/ghazali/%s", g["Slug"]),
 			})
 		}
 	}
@@ -1025,7 +1057,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   title,
 				"Content": text,
 				"Role":    "hadith",
-				"URL":     fmt.Sprintf("/salihin/%d", r["ID"]),
+				"URL":     fmt.Sprintf("/salihin/%d", r["Number"]),
 			})
 		}
 	}
@@ -1044,7 +1076,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   title,
 				"Content": translation,
 				"Role":    category,
-				"URL":     fmt.Sprintf("/adhkar/%d", a["ID"]),
+				"URL":     fmt.Sprintf("/adhkar/%s", a["Slug"]),
 			})
 		}
 	}
@@ -1996,14 +2028,15 @@ func IslamQACount() int {
 }
 
 func InsertIslamQA(category, question, answer string) error {
-	_, err := DB.Exec(`INSERT INTO islamqa (category, question, answer) VALUES (?, ?, ?)`,
-		category, question, answer)
+	slug := Slug(question, question+"|"+answer)
+	_, err := DB.Exec(`INSERT INTO islamqa (slug, category, question, answer) VALUES (?, ?, ?, ?)`,
+		slug, category, question, answer)
 	return err
 }
 
 func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
-		SELECT i.id, i.category, i.question, i.answer
+		SELECT i.id, i.slug, i.category, i.question, i.answer
 		FROM islamqa i
 		JOIN islamqa_fts fts ON i.id = fts.docid
 		WHERE islamqa_fts MATCH ?
@@ -2017,10 +2050,12 @@ func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var category, question, answer string
-		rows.Scan(&id, &category, &question, &answer)
+		rows.Scan(&id, &slug, &category, &question, &answer)
 		results = append(results, map[string]interface{}{
 			"ID":       id,
+			"Slug":     slug.String,
 			"Category": category,
 			"Question": question,
 			"Answer":   answer,
@@ -2029,14 +2064,16 @@ func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetIslamQA(id int64) (map[string]interface{}, error) {
+func GetIslamQA(slug string) (map[string]interface{}, error) {
+	var id int64
 	var category, question, answer string
-	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa WHERE id = ?`, id).Scan(&id, &category, &question, &answer)
+	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa WHERE slug = ?`, slug).Scan(&id, &category, &question, &answer)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":       id,
+		"Slug":     slug,
 		"Category": category,
 		"Question": question,
 		"Answer":   answer,
@@ -2108,14 +2145,17 @@ func ClearGhazali() {
 }
 
 func InsertGhazali(volume int, volumeTitle, chapter string, part int, content string) error {
-	_, err := DB.Exec(`INSERT INTO ghazali (volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?)`,
-		volume, volumeTitle, chapter, part, content)
+	title := fmt.Sprintf("v%d %s p%d", volume, chapter, part)
+	canonical := fmt.Sprintf("%d|%s|%d|%s", volume, chapter, part, content)
+	slug := Slug(title, canonical)
+	_, err := DB.Exec(`INSERT INTO ghazali (slug, volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?, ?)`,
+		slug, volume, volumeTitle, chapter, part, content)
 	return err
 }
 
 func SearchGhazali(query string) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
-		SELECT g.id, g.volume, g.volume_title, g.chapter, g.part, g.content
+		SELECT g.id, g.slug, g.volume, g.volume_title, g.chapter, g.part, g.content
 		FROM ghazali g
 		JOIN ghazali_fts fts ON g.id = fts.docid
 		WHERE ghazali_fts MATCH ?
@@ -2129,11 +2169,13 @@ func SearchGhazali(query string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var volume, part int
 		var volumeTitle, chapter, content string
-		rows.Scan(&id, &volume, &volumeTitle, &chapter, &part, &content)
+		rows.Scan(&id, &slug, &volume, &volumeTitle, &chapter, &part, &content)
 		results = append(results, map[string]interface{}{
 			"ID":          id,
+			"Slug":        slug.String,
 			"Volume":      volume,
 			"VolumeTitle": volumeTitle,
 			"Chapter":     chapter,
@@ -2144,16 +2186,18 @@ func SearchGhazali(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetGhazali(id int64) (map[string]interface{}, error) {
+func GetGhazali(slug string) (map[string]interface{}, error) {
+	var id int64
 	var volume, part int
 	var volumeTitle, chapter, content string
-	err := DB.QueryRow(`SELECT id, volume, volume_title, chapter, part, content FROM ghazali WHERE id = ?`, id).Scan(
+	err := DB.QueryRow(`SELECT id, volume, volume_title, chapter, part, content FROM ghazali WHERE slug = ?`, slug).Scan(
 		&id, &volume, &volumeTitle, &chapter, &part, &content)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":          id,
+		"Slug":        slug,
 		"Volume":      volume,
 		"VolumeTitle": volumeTitle,
 		"Chapter":     chapter,
@@ -2285,13 +2329,14 @@ func SearchHadith(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetHadith(id int64) (map[string]interface{}, error) {
-	var number int
+func GetHadith(number int64) (map[string]interface{}, error) {
+	var id int64
+	var num int
 	var bookNumber sql.NullInt64
 	var book, text string
 	var narrator, arabic sql.NullString
-	err := DB.QueryRow(`SELECT id, book, book_number, number, narrator, text, arabic FROM hadith WHERE id = ?`, id).Scan(
-		&id, &book, &bookNumber, &number, &narrator, &text, &arabic)
+	err := DB.QueryRow(`SELECT id, book, book_number, number, narrator, text, arabic FROM hadith WHERE number = ?`, number).Scan(
+		&id, &book, &bookNumber, &num, &narrator, &text, &arabic)
 	if err != nil {
 		return nil, err
 	}
@@ -2299,7 +2344,7 @@ func GetHadith(id int64) (map[string]interface{}, error) {
 		"ID":         id,
 		"Book":       book,
 		"BookNumber": bookNumber.Int64,
-		"Number":     number,
+		"Number":     num,
 		"Narrator":   narrator.String,
 		"Text":       text,
 		"Arabic":     arabic.String,
@@ -2412,7 +2457,7 @@ func GetIslamQACategories() ([]map[string]interface{}, error) {
 }
 
 func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, category, question FROM islamqa WHERE category = ? ORDER BY id`, category)
+	rows, err := DB.Query(`SELECT id, slug, category, question FROM islamqa WHERE category = ? ORDER BY id`, category)
 	if err != nil {
 		return nil, err
 	}
@@ -2421,10 +2466,12 @@ func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var cat, question string
-		rows.Scan(&id, &cat, &question)
+		rows.Scan(&id, &slug, &cat, &question)
 		results = append(results, map[string]interface{}{
 			"ID":       id,
+			"Slug":     slug.String,
 			"Category": cat,
 			"Question": question,
 		})
@@ -2433,7 +2480,7 @@ func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
 }
 
 func GetAllIslamQA() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, category, question FROM islamqa ORDER BY category, id`)
+	rows, err := DB.Query(`SELECT id, slug, category, question FROM islamqa ORDER BY category, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -2442,10 +2489,12 @@ func GetAllIslamQA() ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var category, question string
-		rows.Scan(&id, &category, &question)
+		rows.Scan(&id, &slug, &category, &question)
 		results = append(results, map[string]interface{}{
 			"ID":       id,
+			"Slug":     slug.String,
 			"Category": category,
 			"Question": question,
 		})
@@ -2453,10 +2502,16 @@ func GetAllIslamQA() ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetIslamQAPrevNext(id int64) (prevID, nextID int64) {
-	DB.QueryRow(`SELECT id FROM islamqa WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
-	DB.QueryRow(`SELECT id FROM islamqa WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
-	return
+func GetIslamQAPrevNext(slug string) (prevSlug, nextSlug string) {
+	var id int64
+	DB.QueryRow(`SELECT id FROM islamqa WHERE slug = ?`, slug).Scan(&id)
+	if id == 0 {
+		return
+	}
+	var p, n sql.NullString
+	DB.QueryRow(`SELECT slug FROM islamqa WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRow(`SELECT slug FROM islamqa WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	return p.String, n.String
 }
 
 // Ghazali index functions
@@ -2486,7 +2541,9 @@ func chapterSortKey(chapter string) int {
 }
 
 func GetGhazaliChapters() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali GROUP BY volume, chapter`)
+	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id,
+		(SELECT slug FROM ghazali g2 WHERE g2.volume = ghazali.volume AND g2.chapter = ghazali.chapter ORDER BY g2.id LIMIT 1) as first_slug
+		FROM ghazali GROUP BY volume, chapter`)
 	if err != nil {
 		return nil, err
 	}
@@ -2497,12 +2554,14 @@ func GetGhazaliChapters() ([]map[string]interface{}, error) {
 		var volume int
 		var volumeTitle, chapter string
 		var firstID int64
-		rows.Scan(&volume, &volumeTitle, &chapter, &firstID)
+		var firstSlug sql.NullString
+		rows.Scan(&volume, &volumeTitle, &chapter, &firstID, &firstSlug)
 		results = append(results, map[string]interface{}{
 			"Volume":      volume,
 			"VolumeTitle": volumeTitle,
 			"Chapter":     chapter,
 			"FirstID":     firstID,
+			"FirstSlug":   firstSlug.String,
 		})
 	}
 	sort.SliceStable(results, func(i, j int) bool {
@@ -2517,7 +2576,9 @@ func GetGhazaliChapters() ([]map[string]interface{}, error) {
 }
 
 func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY chapter`, volume)
+	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id,
+		(SELECT slug FROM ghazali g2 WHERE g2.volume = ghazali.volume AND g2.chapter = ghazali.chapter ORDER BY g2.id LIMIT 1) as first_slug
+		FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY chapter`, volume)
 	if err != nil {
 		return nil, err
 	}
@@ -2528,12 +2589,14 @@ func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
 		var vol int
 		var volumeTitle, chapter string
 		var firstID int64
-		rows.Scan(&vol, &volumeTitle, &chapter, &firstID)
+		var firstSlug sql.NullString
+		rows.Scan(&vol, &volumeTitle, &chapter, &firstID, &firstSlug)
 		results = append(results, map[string]interface{}{
 			"Volume":      vol,
 			"VolumeTitle": volumeTitle,
 			"Chapter":     chapter,
 			"FirstID":     firstID,
+			"FirstSlug":   firstSlug.String,
 		})
 	}
 	sort.SliceStable(results, func(i, j int) bool {
@@ -2542,10 +2605,16 @@ func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetGhazaliPrevNext(id int64) (prevID, nextID int64) {
-	DB.QueryRow(`SELECT id FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
-	DB.QueryRow(`SELECT id FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
-	return
+func GetGhazaliPrevNext(slug string) (prevSlug, nextSlug string) {
+	var id int64
+	DB.QueryRow(`SELECT id FROM ghazali WHERE slug = ?`, slug).Scan(&id)
+	if id == 0 {
+		return
+	}
+	var p, n sql.NullString
+	DB.QueryRow(`SELECT slug FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRow(`SELECT slug FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	return p.String, n.String
 }
 
 // Adhkar functions
@@ -2562,14 +2631,16 @@ func ClearAdhkar() {
 }
 
 func InsertAdhkar(category, title, arabic, transliteration, translation, notes, benefits, source string) error {
-	_, err := DB.Exec(`INSERT INTO adhkar (category, title, arabic, transliteration, translation, notes, benefits, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		category, title, arabic, transliteration, translation, notes, benefits, source)
+	canonical := category + "|" + title + "|" + arabic + "|" + translation
+	slug := Slug(title, canonical)
+	_, err := DB.Exec(`INSERT INTO adhkar (slug, category, title, arabic, transliteration, translation, notes, benefits, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		slug, category, title, arabic, transliteration, translation, notes, benefits, source)
 	return err
 }
 
 func SearchAdhkar(query string) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`
-		SELECT a.id, a.category, a.title, a.arabic, a.transliteration, a.translation, a.notes, a.benefits, a.source
+		SELECT a.id, a.slug, a.category, a.title, a.arabic, a.transliteration, a.translation, a.notes, a.benefits, a.source
 		FROM adhkar a
 		JOIN adhkar_fts fts ON a.id = fts.docid
 		WHERE adhkar_fts MATCH ?
@@ -2583,11 +2654,13 @@ func SearchAdhkar(query string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var category, title string
 		var arabic, transliteration, translation, notes, benefits, source sql.NullString
-		rows.Scan(&id, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
+		rows.Scan(&id, &slug, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
 		results = append(results, map[string]interface{}{
 			"ID":              id,
+			"Slug":            slug.String,
 			"Category":        category,
 			"Title":           title,
 			"Arabic":          arabic.String,
@@ -2601,16 +2674,18 @@ func SearchAdhkar(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetAdhkar(id int64) (map[string]interface{}, error) {
+func GetAdhkar(slug string) (map[string]interface{}, error) {
+	var id int64
 	var category, title string
 	var arabic, transliteration, translation, notes, benefits, source sql.NullString
-	err := DB.QueryRow(`SELECT id, category, title, arabic, transliteration, translation, notes, benefits, source FROM adhkar WHERE id = ?`, id).Scan(
+	err := DB.QueryRow(`SELECT id, category, title, arabic, transliteration, translation, notes, benefits, source FROM adhkar WHERE slug = ?`, slug).Scan(
 		&id, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":              id,
+		"Slug":            slug,
 		"Category":        category,
 		"Title":           title,
 		"Arabic":          arabic.String,
@@ -2623,7 +2698,7 @@ func GetAdhkar(id int64) (map[string]interface{}, error) {
 }
 
 func GetAdhkarByCategory(category string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, category, title, arabic, translation FROM adhkar WHERE category = ? ORDER BY id`, category)
+	rows, err := DB.Query(`SELECT id, slug, category, title, arabic, translation FROM adhkar WHERE category = ? ORDER BY id`, category)
 	if err != nil {
 		return nil, err
 	}
@@ -2632,11 +2707,13 @@ func GetAdhkarByCategory(category string) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var cat, title string
 		var arabic, translation sql.NullString
-		rows.Scan(&id, &cat, &title, &arabic, &translation)
+		rows.Scan(&id, &slug, &cat, &title, &arabic, &translation)
 		results = append(results, map[string]interface{}{
 			"ID":          id,
+			"Slug":        slug.String,
 			"Category":    cat,
 			"Title":       title,
 			"Arabic":      arabic.String,
@@ -2667,7 +2744,7 @@ func GetAdhkarCategories() ([]map[string]interface{}, error) {
 }
 
 func GetAllAdhkar() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, category, title, arabic, translation FROM adhkar ORDER BY category, id`)
+	rows, err := DB.Query(`SELECT id, slug, category, title, arabic, translation FROM adhkar ORDER BY category, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -2676,11 +2753,13 @@ func GetAllAdhkar() ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 	for rows.Next() {
 		var id int64
+		var slug sql.NullString
 		var category, title string
 		var arabic, translation sql.NullString
-		rows.Scan(&id, &category, &title, &arabic, &translation)
+		rows.Scan(&id, &slug, &category, &title, &arabic, &translation)
 		results = append(results, map[string]interface{}{
 			"ID":          id,
+			"Slug":        slug.String,
 			"Category":    category,
 			"Title":       title,
 			"Arabic":      arabic.String,
@@ -2690,10 +2769,16 @@ func GetAllAdhkar() ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetAdhkarPrevNext(id int64) (prevID, nextID int64) {
-	DB.QueryRow(`SELECT id FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
-	DB.QueryRow(`SELECT id FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
-	return
+func GetAdhkarPrevNext(slug string) (prevSlug, nextSlug string) {
+	var id int64
+	DB.QueryRow(`SELECT id FROM adhkar WHERE slug = ?`, slug).Scan(&id)
+	if id == 0 {
+		return
+	}
+	var p, n sql.NullString
+	DB.QueryRow(`SELECT slug FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRow(`SELECT slug FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	return p.String, n.String
 }
 
 // Riyad us-Saliheen functions
@@ -2747,28 +2832,29 @@ func SearchRiyad(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetRiyad(id int64) (map[string]interface{}, error) {
-	var number int
+func GetRiyad(number int64) (map[string]interface{}, error) {
+	var id int64
+	var num int
 	var book, text string
 	var narrator, arabic sql.NullString
-	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM salihin WHERE id = ?`, id).Scan(
-		&id, &book, &number, &narrator, &text, &arabic)
+	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM salihin WHERE number = ?`, number).Scan(
+		&id, &book, &num, &narrator, &text, &arabic)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":       id,
 		"Book":     book,
-		"Number":   number,
+		"Number":   num,
 		"Narrator": narrator.String,
 		"Text":     text,
 		"Arabic":   arabic.String,
 	}, nil
 }
 
-func GetRiyadPrevNext(id int64) (prevID, nextID int64) {
-	DB.QueryRow(`SELECT id FROM salihin WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
-	DB.QueryRow(`SELECT id FROM salihin WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+func GetRiyadPrevNext(number int64) (prevNumber, nextNumber int64) {
+	DB.QueryRow(`SELECT number FROM salihin WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRow(`SELECT number FROM salihin WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
 	return
 }
 

@@ -71,7 +71,7 @@
                 <span class="adhkar-category">{{index . "Category"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Title"}}">
-                    <input type="hidden" name="content" value="/adhkar/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/adhkar/{{index . "Slug"}}
 
 {{truncate (index . "Translation") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
@@ -108,9 +108,9 @@
             {{end}}
 
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
-                {{if index . "PrevID"}}<a href="/adhkar/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                {{if index . "PrevSlug"}}<a href="/adhkar/{{index . "PrevSlug"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/adhkar">All Adhkar</a>
-                {{if index . "NextID"}}<a href="/adhkar/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+                {{if index . "NextSlug"}}<a href="/adhkar/{{index . "NextSlug"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
         </main>
     </div>

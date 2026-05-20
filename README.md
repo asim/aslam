@@ -53,20 +53,34 @@ AI works in the background to help find, organise, and connect information acros
 | `/notes/{id}` | Note view with source links |
 | `/notes/edit/{id}` | Edit note |
 | `/islamqa` | IslamQA index by category |
-| `/islamqa/{id}` | IslamQA question + answer with prev/next |
+| `/islamqa/{slug}` | IslamQA question + answer with prev/next |
 | `/ghazali` | Ghazali index by volume/chapter |
-| `/ghazali/{id}` | Ghazali section with prev/next |
+| `/ghazali/{slug}` | Ghazali section with prev/next |
 | `/adhkar` | Adhkar index by category |
-| `/adhkar/{id}` | Adhkar detail — Arabic, transliteration, translation, benefits |
+| `/adhkar/{slug}` | Adhkar detail — Arabic, transliteration, translation, benefits |
 | `/salihin` | Riyad us-Salihin index by book |
-| `/salihin/{id}` | Hadith detail with prev/next |
+| `/salihin/{number}` | Hadith detail with prev/next (1-1896) |
 | `/arabic` | Arabic vocabulary — search + top 100 most frequent words |
 | `/arabic/{id}` | Word detail — Arabic, transliteration, meaning, frequency |
+| `/quran` | Quran index — 114 chapters |
+| `/quran/{ch}` | Chapter verses |
 | `/quran/{ch}/{v}` | Quran verse — Arabic + English + commentary |
-| `/hadith/{id}` | Hadith — narrator, English, Arabic |
-| `/name/{id}` | Name of Allah — Arabic, meaning, description |
+| `/hadith` | Sahih al-Bukhari index by book |
+| `/hadith/book/{n}` | Hadiths in a Bukhari book |
+| `/hadith/{number}` | Hadith — narrator, English, Arabic |
+| `/names` | 99 Names of Allah |
+| `/names/{number}` | Name of Allah — Arabic, meaning, description |
 | `/profile` | User profile and picture |
 | `/admin` | User management and system configuration |
+
+## Stable URLs
+
+Content URLs are designed to survive dataset reloads:
+
+- **Canonical numbers** where the source provides one — `/quran/2/255`, `/hadith/1`, `/salihin/1`, `/names/1`
+- **Content slugs** for everything else — `/islamqa/can-babies-see-the-angels-7a3fbc`, `/adhkar/supplication-before-sleeping-9e21b3`, `/ghazali/v1-chapter-i-knowledge-p1-b3f8a2`
+
+Slugs are `slugify(title) + "-" + sha1(canonical-content)[:6]`, computed at load time. The same source content always produces the same URL, so saved notes and shared links don't break when datasets are updated.
 
 ## AI Tools
 

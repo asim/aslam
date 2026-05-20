@@ -56,7 +56,7 @@
                 <span class="riyad-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="Riyad us-Salihin - {{index . "Book"}} - Hadith {{index . "Number"}}">
-                    <input type="hidden" name="content" value="/salihin/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/salihin/{{index . "Number"}}
 
 {{truncate (index . "Text") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
@@ -73,9 +73,9 @@
             <div class="riyad-source">Source: Riyad us-Salihin (Imam An-Nawawi)</div>
 
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
-                {{if index . "PrevID"}}<a href="/salihin/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                {{if index . "PrevNumber"}}<a href="/salihin/{{index . "PrevNumber"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/salihin">All Books</a>
-                {{if index . "NextID"}}<a href="/salihin/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+                {{if index . "NextNumber"}}<a href="/salihin/{{index . "NextNumber"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
         </main>
     </div>

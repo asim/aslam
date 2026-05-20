@@ -40,7 +40,7 @@
                 <span class="gh-volume" style="margin-bottom:0;">{{index . "VolumeTitle"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Chapter"}}">
-                    <input type="hidden" name="content" value="/ghazali/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/ghazali/{{index . "Slug"}}
 
 {{truncate (index . "Content") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
@@ -50,9 +50,9 @@
             <div class="gh-content">{{paragraphs (index . "Content")}}</div>
             <div class="gh-source">Source: Imam Al-Ghazali, Ihya Ulum al-Din (Revival of the Islamic Sciences)</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
-                {{if index . "PrevID"}}<a href="/ghazali/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                {{if index . "PrevSlug"}}<a href="/ghazali/{{index . "PrevSlug"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/ghazali">All Chapters</a>
-                {{if index . "NextID"}}<a href="/ghazali/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+                {{if index . "NextSlug"}}<a href="/ghazali/{{index . "NextSlug"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
         </main>
     </div>

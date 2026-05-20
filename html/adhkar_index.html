@@ -63,7 +63,7 @@
             <ul class="adhkar-list">
                 {{range .Items}}
                 <li>
-                    <a href="/adhkar/{{index . "ID"}}">{{index . "Title"}}</a>
+                    <a href="/adhkar/{{index . "Slug"}}">{{index . "Title"}}</a>
                     {{if index . "Arabic"}}<div class="adhkar-arabic">{{index . "Arabic"}}</div>{{end}}
                     {{if index . "Translation"}}<div class="adhkar-translation">{{truncate (index . "Translation") 120}}</div>{{end}}
                     <span class="adhkar-cat-tag">{{index . "Category"}}</span>

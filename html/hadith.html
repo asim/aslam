@@ -56,7 +56,7 @@
                 <span class="hadith-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Book"}} - {{index . "Narrator"}}">
-                    <input type="hidden" name="content" value="/hadith/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/hadith/{{index . "Number"}}
 
 {{truncate (index . "Text") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>

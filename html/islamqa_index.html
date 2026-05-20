@@ -51,7 +51,7 @@
             <ul class="qa-list">
                 {{range .Questions}}
                 <li>
-                    <a href="/islamqa/{{index . "ID"}}">{{index . "Question"}}</a>
+                    <a href="/islamqa/{{index . "Slug"}}">{{index . "Question"}}</a>
                     <span class="qa-cat-tag">{{index . "Category"}}</span>
                 </li>
                 {{end}}

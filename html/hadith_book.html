@@ -35,7 +35,7 @@
             <p class="muted" style="margin-bottom:16px;">{{len .Items}} hadiths</p>
             <div class="hadith-list">
                 {{range .Items}}
-                <a href="/hadith/{{index . "ID"}}">
+                <a href="/hadith/{{index . "Number"}}">
                     <span class="hadith-num">#{{index . "Number"}}</span>
                     {{if index . "Narrator"}}<span class="hadith-narrator">{{truncate (index . "Narrator") 140}}</span>{{end}}
                 </a>

@@ -53,7 +53,7 @@
             <ul class="riyad-list">
                 {{range .Items}}
                 <li>
-                    <a href="/salihin/{{index . "ID"}}">Hadith {{index . "Number"}}</a>
+                    <a href="/salihin/{{index . "Number"}}">Hadith {{index . "Number"}}</a>
                     {{if index . "Narrator"}}<div class="riyad-narrator">{{truncate (index . "Narrator") 120}}</div>{{end}}
                 </li>
                 {{end}}

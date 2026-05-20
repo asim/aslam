@@ -56,7 +56,7 @@
                 <span class="qa-category" style="margin-bottom:0;">{{index . "Category"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "Question"}}">
-                    <input type="hidden" name="content" value="/islamqa/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/islamqa/{{index . "Slug"}}
 
 {{truncate (index . "Answer") 200}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
@@ -73,9 +73,9 @@
 
             <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
-                {{if index . "PrevID"}}<a href="/islamqa/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                {{if index . "PrevSlug"}}<a href="/islamqa/{{index . "PrevSlug"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/islamqa">All Questions</a>
-                {{if index . "NextID"}}<a href="/islamqa/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+                {{if index . "NextSlug"}}<a href="/islamqa/{{index . "NextSlug"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
         </main>
     </div>
