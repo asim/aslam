@@ -48,7 +48,7 @@ var sourcesZip []byte
 //go:embed data/adhkar.zip
 var adhkarZip []byte
 
-//go:embed data/riyadussalihin.zip
+//go:embed data/salihin.zip
 var riyadZip []byte
 
 var (
@@ -197,8 +197,8 @@ func main() {
 	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
 	http.HandleFunc("/adhkar", requireAuth(handleAdhkarIndex))
 	http.HandleFunc("/adhkar/", requireAuth(handleAdhkarView))
-	http.HandleFunc("/riyadussalihin", requireAuth(handleRiyadIndex))
-	http.HandleFunc("/riyadussalihin/", requireAuth(handleRiyadView))
+	http.HandleFunc("/salihin", requireAuth(handleRiyadIndex))
+	http.HandleFunc("/salihin/", requireAuth(handleRiyadView))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
 	http.HandleFunc("/name/", requireAuth(handleNameView))
@@ -760,7 +760,7 @@ func loadRiyad() {
 
 	r, err := zip.NewReader(bytes.NewReader(riyadZip), int64(len(riyadZip)))
 	if err != nil {
-		log.Printf("Failed to open riyadussalihin.zip: %v", err)
+		log.Printf("Failed to open salihin.zip: %v", err)
 		return
 	}
 
@@ -818,11 +818,11 @@ func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
 		data["SelectedBook"] = book
 	}
 
-	renderTemplate(w, r, "riyadussalihin_index.html", data)
+	renderTemplate(w, r, "salihin_index.html", data)
 }
 
 func handleRiyadView(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/riyadussalihin/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/salihin/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
@@ -836,7 +836,7 @@ func handleRiyadView(w http.ResponseWriter, r *http.Request) {
 	prevID, nextID := db.GetRiyadPrevNext(id)
 	item["PrevID"] = prevID
 	item["NextID"] = nextID
-	renderTemplate(w, r, "riyadussalihin.html", item)
+	renderTemplate(w, r, "salihin.html", item)
 }
 
 func handleQuranView(w http.ResponseWriter, r *http.Request) {
@@ -1873,7 +1873,7 @@ You have tools available:
 - islamqa: Search IslamQA for scholarly answers to Islamic questions.
 - ghazali: Search Imam Al-Ghazali's Ihya Ulum al-Din (Revival of the Islamic Sciences).
 - adhkar: Search duas and dhikr (morning, evening, after salah, daily).
-- riyadussalihin: Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi for hadith on good manners, virtues, and righteousness.
+- salihin: Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi for hadith on good manners, virtues, and righteousness.
 - fetch: Fetch a URL and save its content to the knowledge base.
 - web_search: Search the web for current information.
 - wikipedia: Look up factual information.

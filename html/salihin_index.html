@@ -1,4 +1,4 @@
-{{define "riyadussalihin_index.html"}}
+{{define "salihin_index.html"}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,9 +43,9 @@
             <h2>Riyad us-Saliheen</h2>
 
             <div class="cat-filters">
-                <a href="/riyadussalihin"{{if not .SelectedBook}} class="active"{{end}}>All Books</a>
+                <a href="/salihin"{{if not .SelectedBook}} class="active"{{end}}>All Books</a>
                 {{range .Books}}
-                <a href="/riyadussalihin?book={{index . "Book"}}"{{if eq (index . "Book") $.SelectedBook}} class="active"{{end}}>{{index . "Book"}} ({{index . "Count"}})</a>
+                <a href="/salihin?book={{index . "Book"}}"{{if eq (index . "Book") $.SelectedBook}} class="active"{{end}}>{{index . "Book"}} ({{index . "Count"}})</a>
                 {{end}}
             </div>
 
@@ -53,7 +53,7 @@
             <ul class="riyad-list">
                 {{range .Items}}
                 <li>
-                    <a href="/riyadussalihin/{{index . "ID"}}">Hadith {{index . "Number"}}</a>
+                    <a href="/salihin/{{index . "ID"}}">Hadith {{index . "Number"}}</a>
                     {{if index . "Narrator"}}<div class="riyad-narrator">{{truncate (index . "Narrator") 120}}</div>{{end}}
                 </li>
                 {{end}}

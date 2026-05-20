@@ -297,7 +297,7 @@ func GetTools() []ToolDefinition {
 			},
 		},
 		{
-			Name:        "riyadussalihin",
+			Name:        "salihin",
 			Description: "Search Riyad us-Saliheen (Gardens of the Righteous) by Imam An-Nawawi. A collection of hadith on good manners, virtues, knowledge, supplication, and righteousness.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -340,7 +340,7 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 		return executeGhazali(input)
 	case "adhkar":
 		return executeAdhkar(input)
-	case "riyadussalihin":
+	case "salihin":
 		return executeRiyad(input)
 	default:
 		return "", fmt.Errorf("unknown tool: %s", name)
