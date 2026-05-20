@@ -156,8 +156,22 @@ func main() {
 			}
 			return template.HTML(out.String())
 		},
+		"lines": func(s string) template.HTML {
+			s = strings.ReplaceAll(s, "\r\n", "\n")
+			var out strings.Builder
+			for _, line := range strings.Split(s, "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+				out.WriteString("<p>")
+				out.WriteString(template.HTMLEscapeString(line))
+				out.WriteString("</p>")
+			}
+			return template.HTML(out.String())
+		},
 	}
-	
+
 	tmpl = template.Must(template.New("").Funcs(funcs).ParseFS(templates, "html/*.html"))
 
 	// Auth routes (no auth required)
