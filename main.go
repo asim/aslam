@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -944,6 +945,19 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 	prevID, nextID := db.GetArabicPrevNext(id)
 	item["PrevID"] = prevID
 	item["NextID"] = nextID
+
+	// Parse example_ref like "Al-Fatihah 1:1" to fetch the verse
+	if ref, ok := item["ExampleRef"].(string); ok && ref != "" {
+		if m := regexp.MustCompile(`(\d+):(\d+)$`).FindStringSubmatch(ref); m != nil {
+			ch, _ := strconv.Atoi(m[1])
+			v, _ := strconv.Atoi(m[2])
+			if verse, err := db.GetQuranVerse(ch, v); err == nil {
+				item["Verse"] = verse
+				item["VerseURL"] = fmt.Sprintf("/quran/%d/%d", ch, v)
+			}
+		}
+	}
+
 	renderTemplate(w, r, "arabic.html", item)
 }
 
