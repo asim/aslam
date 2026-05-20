@@ -1,0 +1,48 @@
+{{define "quran_chapter.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.ChapterName}} - Quran - Aslam</title>
+    {{template "style"}}
+    <style>
+        .verse-list a {
+            display: block;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            text-decoration: none;
+            color: #222;
+            line-height: 1.6;
+        }
+        .verse-list a:hover { background: #fafafa; }
+        .verse-num {
+            display: inline-block;
+            min-width: 32px;
+            font-size: 12px;
+            color: #999;
+            vertical-align: top;
+        }
+        .verse-text { font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <p style="margin-bottom:4px;"><a href="/quran" style="font-size:13px; color:#888;">&larr; All chapters</a></p>
+            <h2>{{.Chapter}}. {{.ChapterName}}</h2>
+            <p class="muted" style="margin-bottom:16px;">{{len .Verses}} verses</p>
+            <div class="verse-list">
+                {{range .Verses}}
+                <a href="/quran/{{$.Chapter}}/{{index . "Verse"}}">
+                    <span class="verse-num">{{index . "Verse"}}.</span>
+                    <span class="verse-text">{{truncate (index . "Text") 200}}</span>
+                </a>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,57 @@
+{{define "names_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>99 Names of Allah - Aslam</title>
+    {{template "style"}}
+    <style>
+        .names-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .names-grid a {
+            display: block;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #222;
+        }
+        .names-grid a:hover { background: #fafafa; }
+        .name-num { font-size: 11px; color: #999; }
+        .name-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 24px;
+            direction: rtl;
+            text-align: right;
+            line-height: 1.4;
+            margin: 4px 0;
+        }
+        .name-english { font-size: 14px; font-weight: 600; }
+        .name-meaning { font-size: 12px; color: #666; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>99 Names of Allah</h2>
+            <p class="muted" style="margin-bottom:20px;">Al-Asma' al-Husna</p>
+            <div class="names-grid">
+                {{range .Names}}
+                <a href="/names/{{index . "Number"}}">
+                    <div class="name-num">{{index . "Number"}}</div>
+                    {{if index . "Arabic"}}<div class="name-arabic">{{index . "Arabic"}}</div>{{end}}
+                    <div class="name-english">{{index . "English"}}</div>
+                    {{if index . "Meaning"}}<div class="name-meaning">{{index . "Meaning"}}</div>{{end}}
+                    </a>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

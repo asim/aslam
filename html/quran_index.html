@@ -1,0 +1,54 @@
+{{define "quran_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran - Aslam</title>
+    {{template "style"}}
+    <style>
+        .chapter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        .chapter-grid a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #222;
+        }
+        .chapter-grid a:hover { background: #fafafa; }
+        .chapter-num {
+            font-size: 12px;
+            color: #888;
+            min-width: 28px;
+        }
+        .chapter-name { flex: 1; font-size: 14px; }
+        .chapter-count { font-size: 11px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Quran</h2>
+            <p class="muted" style="margin-bottom:20px;">114 chapters &middot; 6,348 verses</p>
+            <div class="chapter-grid">
+                {{range .Chapters}}
+                <a href="/quran/{{index . "Chapter"}}">
+                    <span class="chapter-num">{{index . "Chapter"}}.</span>
+                    <span class="chapter-name">{{index . "Name"}}</span>
+                    <span class="chapter-count">{{index . "Count"}}</span>
+                </a>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

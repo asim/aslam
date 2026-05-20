@@ -2814,6 +2814,115 @@ func GetRiyadByBook(book string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
+// Quran index
+
+func GetQuranChapters() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT chapter, chapter_name, COUNT(*) FROM quran GROUP BY chapter ORDER BY chapter`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var chapter, count int
+		var name string
+		rows.Scan(&chapter, &name, &count)
+		results = append(results, map[string]interface{}{
+			"Chapter": chapter,
+			"Name":    name,
+			"Count":   count,
+		})
+	}
+	return results, nil
+}
+
+func GetQuranChapter(chapter int) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT verse, text FROM quran WHERE chapter = ? ORDER BY verse`, chapter)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var verse int
+		var text string
+		rows.Scan(&verse, &text)
+		results = append(results, map[string]interface{}{
+			"Verse": verse,
+			"Text":  text,
+		})
+	}
+	return results, nil
+}
+
+// Hadith index
+
+func GetHadithBooks() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT book, book_number, COUNT(*) FROM hadith GROUP BY book_number, book ORDER BY book_number`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var book string
+		var bookNumber sql.NullInt64
+		var count int
+		rows.Scan(&book, &bookNumber, &count)
+		results = append(results, map[string]interface{}{
+			"Book":       book,
+			"BookNumber": bookNumber.Int64,
+			"Count":      count,
+		})
+	}
+	return results, nil
+}
+
+func GetHadithByBook(bookNumber int64) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, number, narrator FROM hadith WHERE book_number = ? ORDER BY number`, bookNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var number int
+		var narrator sql.NullString
+		rows.Scan(&id, &number, &narrator)
+		results = append(results, map[string]interface{}{
+			"ID":       id,
+			"Number":   number,
+			"Narrator": narrator.String,
+		})
+	}
+	return results, nil
+}
+
+// Names index
+
+func GetAllNames() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT number, english, arabic, meaning FROM names ORDER BY number`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var number int
+		var english string
+		var arabic, meaning sql.NullString
+		rows.Scan(&number, &english, &arabic, &meaning)
+		results = append(results, map[string]interface{}{
+			"Number":  number,
+			"English": english,
+			"Arabic":  arabic.String,
+			"Meaning": meaning.String,
+		})
+	}
+	return results, nil
+}
+
 // Arabic vocabulary functions
 
 func ArabicCount() int {

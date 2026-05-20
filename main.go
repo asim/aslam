@@ -221,8 +221,11 @@ func main() {
 	http.HandleFunc("/arabic", requireAuth(handleArabicIndex))
 	http.HandleFunc("/arabic/", requireAuth(handleArabicView))
 	http.HandleFunc("/api/arabic/search", requireAuth(handleArabicSearch))
-	http.HandleFunc("/quran/", requireAuth(handleQuranView))
+	http.HandleFunc("/quran", requireAuth(handleQuranIndex))
+	http.HandleFunc("/quran/", requireAuth(handleQuranRouter))
+	http.HandleFunc("/hadith", requireAuth(handleHadithIndex))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
+	http.HandleFunc("/names", requireAuth(handleNamesIndex))
 	http.HandleFunc("/names/", requireAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
@@ -982,6 +985,68 @@ func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"results": results})
+}
+
+func handleQuranIndex(w http.ResponseWriter, r *http.Request) {
+	chapters, _ := db.GetQuranChapters()
+	renderTemplate(w, r, "quran_index.html", map[string]interface{}{"Chapters": chapters})
+}
+
+func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/quran/")
+	if strings.Contains(path, "/") {
+		handleQuranView(w, r)
+		return
+	}
+	chapter, err := strconv.Atoi(path)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	verses, _ := db.GetQuranChapter(chapter)
+	if len(verses) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	first, _ := db.GetQuranVerse(chapter, 1)
+	name := ""
+	if first != nil {
+		if n, ok := first["ChapterName"].(string); ok {
+			name = n
+		}
+	}
+	renderTemplate(w, r, "quran_chapter.html", map[string]interface{}{
+		"Chapter":     chapter,
+		"ChapterName": name,
+		"Verses":      verses,
+	})
+}
+
+func handleHadithIndex(w http.ResponseWriter, r *http.Request) {
+	bookStr := r.URL.Query().Get("book")
+	data := map[string]interface{}{}
+	books, _ := db.GetHadithBooks()
+	data["Books"] = books
+	if bookStr != "" {
+		bookNum, err := strconv.ParseInt(bookStr, 10, 64)
+		if err == nil {
+			items, _ := db.GetHadithByBook(bookNum)
+			data["Items"] = items
+			data["SelectedBook"] = bookNum
+			for _, b := range books {
+				if b["BookNumber"] == bookNum {
+					data["SelectedBookName"] = b["Book"]
+					break
+				}
+			}
+		}
+	}
+	renderTemplate(w, r, "hadith_index.html", data)
+}
+
+func handleNamesIndex(w http.ResponseWriter, r *http.Request) {
+	names, _ := db.GetAllNames()
+	renderTemplate(w, r, "names_index.html", map[string]interface{}{"Names": names})
 }
 
 func handleQuranView(w http.ResponseWriter, r *http.Request) {
