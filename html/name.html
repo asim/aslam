@@ -90,7 +90,9 @@
             {{if index . "Summary"}}
             <div class="name-summary">{{paragraphs (index . "Summary")}}</div>
             {{end}}
-            <div class="name-source">Source: 99 Names of Allah</div>
+            <div class="name-source">
+                <a href="https://reminder.dev/name/{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
+            </div>
         </main>
     </div>
 </body>
