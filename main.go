@@ -2919,7 +2919,11 @@ func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/notes", http.StatusSeeOther)
+	referer := r.Header.Get("Referer")
+	if referer == "" {
+		referer = "/notes"
+	}
+	http.Redirect(w, r, referer, http.StatusSeeOther)
 }
 
 func handleNoteEdit(w http.ResponseWriter, r *http.Request) {

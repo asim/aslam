@@ -68,10 +68,10 @@
     const el = document.getElementById('note-content');
     if (el) {
         const text = el.textContent;
-        const match = text.match(/(\/(?:islamqa|ghazali|quran|hadith|name|notes|chat)\/[\w\/]+)/);
+        const match = text.match(/(\/(?:islamqa|ghazali|quran|hadith|names|notes|chat|salihin|adhkar|arabic)\/[\w\/\-]+)/);
         if (match) {
             const path = match[1];
-            const label = path.split('/').filter(Boolean).join(' / ');
+            const label = path;
             const rest = text.replace(match[0], '').trim();
             el.innerHTML = '<a class="source-link" href="' + path + '">' + label + '</a>' + (rest ? '\n\n' + rest.replace(/</g,'&lt;') : '');
         }
