@@ -769,7 +769,7 @@ func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, r, "adhkar.html", item)
 }
 
-const riyadVersion = "2"
+const riyadVersion = "3"
 
 func loadRiyad() {
 	if db.GetSetting("riyad_version") == riyadVersion {

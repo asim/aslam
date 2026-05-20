@@ -14,7 +14,7 @@ AI works in the background to help find, organise, and connect information acros
 |--------|---------|-------------|
 | **Quran** | 6,348 verses | Arabic, English translation, word-by-word breakdown, commentary |
 | **Hadith** | 7,265 narrations | Sahih al-Bukhari with Arabic and English |
-| **Riyad us-Salihin** | 1,217 hadiths | Gardens of the Righteous (Imam An-Nawawi) — 19 books on manners, virtues, knowledge |
+| **Riyad us-Salihin** | 1,896 hadiths | Gardens of the Righteous (Imam An-Nawawi) — 20 books including the Book of Miscellany |
 | **Names of Allah** | 99 names | Arabic, English, meaning, description, and summary |
 | **IslamQA** | 4,200+ Q&As | Scholarly answers across faith, fiqh, family, history |
 | **Ghazali** | 1,437 sections | Ihya Ulum al-Din (Revival of the Islamic Sciences) — 4 volumes, 37 chapters |
