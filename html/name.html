@@ -71,7 +71,7 @@
                 <span class="name-number" style="margin-bottom:0;">#{{index . "Number"}}</span>
                 <form method="POST" action="/notes/add" style="display:inline;">
                     <input type="hidden" name="title" value="{{index . "English"}} — {{index . "Meaning"}}">
-                    <input type="hidden" name="content" value="/names/{{index . "ID"}}
+                    <input type="hidden" name="content" value="/names/{{index . "Number"}}
 
 {{index . "Description"}}">
                     <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>

@@ -983,7 +983,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":   english + " — " + meaning,
 				"Content": desc,
 				"Role":    "names of allah",
-				"URL":     fmt.Sprintf("/names/%d", n["ID"]),
+				"URL":     fmt.Sprintf("/names/%d", n["Number"]),
 			})
 		}
 	}
@@ -2368,18 +2368,19 @@ func SearchNames(query string) ([]map[string]interface{}, error) {
 	return results, nil
 }
 
-func GetName(id int64) (map[string]interface{}, error) {
-	var number int
+func GetName(number int64) (map[string]interface{}, error) {
+	var id int64
+	var num int
 	var english string
 	var arabic, meaning, description, summary sql.NullString
-	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names WHERE id = ?`, id).Scan(
-		&id, &number, &english, &arabic, &meaning, &description, &summary)
+	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names WHERE number = ?`, number).Scan(
+		&id, &num, &english, &arabic, &meaning, &description, &summary)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":          id,
-		"Number":      number,
+		"Number":      num,
 		"English":     english,
 		"Arabic":      arabic.String,
 		"Meaning":     meaning.String,
