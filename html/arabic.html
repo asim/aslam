@@ -113,7 +113,10 @@
                 <div class="aw-verse-ref">Surah {{index (index . "Verse") "ChapterName"}} — {{index . "ExampleRef"}}</div>
                 <div class="aw-verse-arabic">{{index (index . "Verse") "Arabic"}}</div>
                 <div class="aw-verse-english">{{index (index . "Verse") "Text"}}</div>
-                <div class="aw-verse-link"><a href="{{index . "VerseURL"}}">View full verse &rarr;</a></div>
+                <div class="aw-verse-link">
+                    <a href="{{index . "VerseURL"}}">View full verse &rarr;</a>
+                    {{if index . "VerseWBW"}}<span style="margin-left:12px;"><a href="{{index . "VerseWBW"}}" target="_blank">Word by word &rarr;</a></span>{{end}}
+                </div>
             </div>
             {{else if index . "ExampleRef"}}
             <div class="aw-detail">

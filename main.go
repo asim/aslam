@@ -954,6 +954,7 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 			if verse, err := db.GetQuranVerse(ch, v); err == nil {
 				item["Verse"] = verse
 				item["VerseURL"] = fmt.Sprintf("/quran/%d/%d", ch, v)
+				item["VerseWBW"] = fmt.Sprintf("https://reminder.dev/quran/%d#%d?wbw=1", ch, v)
 			}
 		}
 	}
