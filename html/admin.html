@@ -172,6 +172,37 @@
                 </details>
             </div>
 
+            <!-- Datasets Section -->
+            <div class="admin-section">
+                <h3>Datasets</h3>
+                <p class="muted" style="margin-bottom: 16px;">Embedded datasets loaded into SQLite on startup. Counts shown are actual / expected. Stale rows reload in the background.</p>
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="text-align:left; border-bottom:1px solid #eee;">
+                            <th style="padding:6px 8px;">Source</th>
+                            <th style="padding:6px 8px; text-align:right;">Loaded</th>
+                            <th style="padding:6px 8px; text-align:right;">Expected</th>
+                            <th style="padding:6px 8px;">Version</th>
+                            <th style="padding:6px 8px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .Datasets}}
+                        <tr style="border-bottom:1px solid #f5f5f5;">
+                            <td style="padding:6px 8px;">{{.Name}}</td>
+                            <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">{{.Count}}</td>
+                            <td style="padding:6px 8px; text-align:right; color:#888; font-variant-numeric:tabular-nums;">{{.Expected}}</td>
+                            <td style="padding:6px 8px; color:#888;">{{if .LoadedVersion}}v{{.LoadedVersion}}{{else}}—{{end}}{{if ne .LoadedVersion .WantVersion}} → v{{.WantVersion}}{{end}}</td>
+                            <td style="padding:6px 8px;">
+                                {{if .OK}}<span style="color:#16a34a;">&#10003; ok</span>
+                                {{else}}<span style="color:#c00;">{{.Status}}</span>{{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Integrations Section -->
             <div class="admin-section">
                 <h3>Integrations</h3>

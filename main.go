@@ -2542,15 +2542,27 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	emailStats := db.GetEmailStats()
 	recentEmails, _ := db.GetRecentEmails(10)
 	recentTasks, _ := db.GetRecentTasks(10)
-	
+
+	datasets := []map[string]interface{}{
+		dataset("Quran", db.QuranCount(), 6348, db.GetSetting("sources_version"), sourcesVersion),
+		dataset("Hadith", db.HadithCount(), 7265, db.GetSetting("sources_version"), sourcesVersion),
+		dataset("Names of Allah", db.NamesCount(), 99, db.GetSetting("sources_version"), sourcesVersion),
+		dataset("IslamQA", db.IslamQACount(), 4203, db.GetSetting("islamqa_version"), islamqaVersion),
+		dataset("Ghazali", db.GhazaliCount(), 1437, db.GetSetting("ghazali_version"), ghazaliVersion),
+		dataset("Adhkar", db.AdhkarCount(), 97, db.GetSetting("adhkar_version"), adhkarVersion),
+		dataset("Riyad us-Salihin", db.RiyadCount(), 1896, db.GetSetting("riyad_version"), riyadVersion),
+		dataset("Arabic", db.ArabicCount(), 21247, db.GetSetting("arabic_version"), arabicVersion),
+	}
+
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
-	
+
 	renderTemplate(w, r, "admin.html", map[string]interface{}{
 		"Accounts":     accounts,
 		"Users":        users,
 		"Integrations": integrations,
 		"Tools":        toolDefs,
+		"Datasets":     datasets,
 		"TaskStats":    taskStats,
 		"EmailStats":   emailStats,
 		"RecentEmails": recentEmails,
@@ -2559,6 +2571,27 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		"Message":      msg,
 		"Error":        errMsg,
 	})
+}
+
+func dataset(name string, got, want int, loadedVer, wantVer string) map[string]interface{} {
+	ok := got == want && loadedVer == wantVer
+	status := "ok"
+	if loadedVer == "" || got == 0 {
+		status = "not loaded"
+	} else if loadedVer != wantVer {
+		status = "stale (loading)"
+	} else if got != want {
+		status = "partial"
+	}
+	return map[string]interface{}{
+		"Name":          name,
+		"Count":         got,
+		"Expected":      want,
+		"LoadedVersion": loadedVer,
+		"WantVersion":   wantVer,
+		"OK":            ok,
+		"Status":        status,
+	}
 }
 
 func handleAddUser(w http.ResponseWriter, r *http.Request) {
