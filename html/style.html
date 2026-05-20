@@ -174,5 +174,15 @@
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
 }
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.linkify, .note-content, .daily-text, .description').forEach(function(el) {
+        if (el.dataset.linked) return;
+        el.dataset.linked = '1';
+        el.innerHTML = el.innerHTML.replace(
+            /(https?:\/\/[^\s<]+)/g,
+            '<a href="$1" target="_blank" rel="noopener">$1</a>'
+        );
+    });
+});
 </script>
 {{end}}
