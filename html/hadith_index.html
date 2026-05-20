@@ -11,7 +11,6 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 8px;
-            margin-bottom: 24px;
         }
         .book-grid a {
             display: flex;
@@ -24,28 +23,9 @@
             color: #222;
         }
         .book-grid a:hover { background: #fafafa; }
-        .book-grid a.active { background: #000; color: #fff; }
         .book-num { font-size: 12px; color: #888; min-width: 28px; }
-        .book-grid a.active .book-num { color: #ccc; }
         .book-name { flex: 1; font-size: 14px; }
         .book-count { font-size: 11px; color: #999; }
-        .hadith-list a {
-            display: block;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-            text-decoration: none;
-            color: #222;
-            line-height: 1.6;
-        }
-        .hadith-list a:hover { background: #fafafa; }
-        .hadith-num {
-            display: inline-block;
-            min-width: 48px;
-            font-size: 12px;
-            color: #999;
-            vertical-align: top;
-        }
-        .hadith-narrator { font-size: 13px; color: #555; font-style: italic; }
     </style>
 </head>
 <body>
@@ -53,29 +33,16 @@
         {{template "header" .}}
         <main class="app-content">
             <h2>Sahih al-Bukhari</h2>
-            <p class="muted" style="margin-bottom:20px;">Browse by book</p>
-
+            <p class="muted" style="margin-bottom:20px;">{{len .Books}} books &middot; 7,265 hadiths</p>
             <div class="book-grid">
                 {{range .Books}}
-                <a href="/hadith?book={{index . "BookNumber"}}"{{if eq (index . "BookNumber") $.SelectedBook}} class="active"{{end}}>
+                <a href="/hadith/book/{{index . "BookNumber"}}">
                     <span class="book-num">{{index . "BookNumber"}}.</span>
                     <span class="book-name">{{index . "Book"}}</span>
                     <span class="book-count">{{index . "Count"}}</span>
                 </a>
                 {{end}}
             </div>
-
-            {{if .Items}}
-            <h3 style="margin-bottom:8px;">{{.SelectedBookName}}</h3>
-            <div class="hadith-list">
-                {{range .Items}}
-                <a href="/hadith/{{index . "ID"}}">
-                    <span class="hadith-num">#{{index . "Number"}}</span>
-                    {{if index . "Narrator"}}<span class="hadith-narrator">{{truncate (index . "Narrator") 140}}</span>{{end}}
-                </a>
-                {{end}}
-            </div>
-            {{end}}
         </main>
     </div>
 </body>

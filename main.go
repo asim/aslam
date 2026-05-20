@@ -224,7 +224,7 @@ func main() {
 	http.HandleFunc("/quran", requireAuth(handleQuranIndex))
 	http.HandleFunc("/quran/", requireAuth(handleQuranRouter))
 	http.HandleFunc("/hadith", requireAuth(handleHadithIndex))
-	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
+	http.HandleFunc("/hadith/", requireAuth(handleHadithRouter))
 	http.HandleFunc("/names", requireAuth(handleNamesIndex))
 	http.HandleFunc("/names/", requireAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
@@ -1023,25 +1023,40 @@ func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHadithIndex(w http.ResponseWriter, r *http.Request) {
-	bookStr := r.URL.Query().Get("book")
-	data := map[string]interface{}{}
 	books, _ := db.GetHadithBooks()
-	data["Books"] = books
-	if bookStr != "" {
+	renderTemplate(w, r, "hadith_index.html", map[string]interface{}{"Books": books})
+}
+
+func handleHadithRouter(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/hadith/")
+	if strings.HasPrefix(path, "book/") {
+		bookStr := strings.TrimPrefix(path, "book/")
 		bookNum, err := strconv.ParseInt(bookStr, 10, 64)
-		if err == nil {
-			items, _ := db.GetHadithByBook(bookNum)
-			data["Items"] = items
-			data["SelectedBook"] = bookNum
-			for _, b := range books {
-				if b["BookNumber"] == bookNum {
-					data["SelectedBookName"] = b["Book"]
-					break
-				}
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		items, _ := db.GetHadithByBook(bookNum)
+		if len(items) == 0 {
+			http.NotFound(w, r)
+			return
+		}
+		books, _ := db.GetHadithBooks()
+		bookName := ""
+		for _, b := range books {
+			if b["BookNumber"] == bookNum {
+				bookName, _ = b["Book"].(string)
+				break
 			}
 		}
+		renderTemplate(w, r, "hadith_book.html", map[string]interface{}{
+			"BookNumber": bookNum,
+			"BookName":   bookName,
+			"Items":      items,
+		})
+		return
 	}
-	renderTemplate(w, r, "hadith_index.html", data)
+	handleHadithView(w, r)
 }
 
 func handleNamesIndex(w http.ResponseWriter, r *http.Request) {

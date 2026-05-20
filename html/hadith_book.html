@@ -1,0 +1,48 @@
+{{define "hadith_book.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.BookName}} - Sahih al-Bukhari - Aslam</title>
+    {{template "style"}}
+    <style>
+        .hadith-list a {
+            display: block;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            text-decoration: none;
+            color: #222;
+            line-height: 1.6;
+        }
+        .hadith-list a:hover { background: #fafafa; }
+        .hadith-num {
+            display: inline-block;
+            min-width: 56px;
+            font-size: 12px;
+            color: #999;
+            vertical-align: top;
+        }
+        .hadith-narrator { font-size: 13px; color: #555; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <p style="margin-bottom:4px;"><a href="/hadith" style="font-size:13px; color:#888;">&larr; All books</a></p>
+            <h2>{{.BookNumber}}. {{.BookName}}</h2>
+            <p class="muted" style="margin-bottom:16px;">{{len .Items}} hadiths</p>
+            <div class="hadith-list">
+                {{range .Items}}
+                <a href="/hadith/{{index . "ID"}}">
+                    <span class="hadith-num">#{{index . "Number"}}</span>
+                    {{if index . "Narrator"}}<span class="hadith-narrator">{{truncate (index . "Narrator") 140}}</span>{{end}}
+                </a>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}
