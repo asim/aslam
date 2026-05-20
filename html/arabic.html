@@ -1,0 +1,103 @@
+{{define "arabic.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{index . "Arabic"}} ({{index . "Transliteration"}}) - Arabic - Aslam</title>
+    {{template "style"}}
+    <style>
+        .aw-main-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 48px;
+            text-align: center;
+            direction: rtl;
+            color: #222;
+            margin: 24px 0;
+            line-height: 1.6;
+        }
+        .aw-translit {
+            text-align: center;
+            font-style: italic;
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .aw-english-meaning {
+            text-align: center;
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 24px;
+        }
+        .aw-detail {
+            margin-bottom: 16px;
+        }
+        .aw-detail-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .aw-detail-value {
+            font-size: 15px;
+            color: #333;
+        }
+        .aw-type-tag {
+            display: inline-block;
+            font-size: 12px;
+            background: #f0f0f0;
+            padding: 2px 10px;
+            border-radius: 4px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                {{if index . "Type"}}<span class="aw-type-tag">{{index . "Type"}}</span>{{else}}<span></span>{{end}}
+                <form method="POST" action="/notes/add" style="display:inline;">
+                    <input type="hidden" name="title" value="{{index . "Arabic"}} ({{index . "Transliteration"}}) — {{index . "English"}}">
+                    <input type="hidden" name="content" value="/arabic/{{index . "ID"}}
+
+{{index . "Arabic"}} — {{index . "English"}} (appears {{index . "Frequency"}} times in the Quran)">
+                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                </form>
+            </div>
+
+            <div class="aw-main-arabic">{{index . "Arabic"}}</div>
+            <div class="aw-translit">{{index . "Transliteration"}}</div>
+            <div class="aw-english-meaning">{{index . "English"}}</div>
+
+            <div class="aw-detail">
+                <div class="aw-detail-label">Frequency</div>
+                <div class="aw-detail-value">Appears {{index . "Frequency"}} times in the Quran</div>
+            </div>
+
+            {{if index . "ExampleRef"}}
+            <div class="aw-detail">
+                <div class="aw-detail-label">Example Reference</div>
+                <div class="aw-detail-value">{{index . "ExampleRef"}}</div>
+            </div>
+            {{end}}
+
+            {{if index . "Type"}}
+            <div class="aw-detail">
+                <div class="aw-detail-label">Grammar Type</div>
+                <div class="aw-detail-value">{{index . "Type"}}</div>
+            </div>
+            {{end}}
+
+            <div style="display:flex; justify-content:space-between; margin-top:28px; font-size:13px;">
+                {{if index . "PrevID"}}<a href="/arabic/{{index . "PrevID"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/arabic">All Words</a>
+                {{if index . "NextID"}}<a href="/arabic/{{index . "NextID"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

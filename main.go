@@ -51,6 +51,9 @@ var adhkarZip []byte
 //go:embed data/salihin.zip
 var riyadZip []byte
 
+//go:embed data/arabic.zip
+var arabicZip []byte
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -111,6 +114,7 @@ func main() {
 		loadSources()
 		loadAdhkar()
 		loadRiyad()
+		loadArabic()
 	}()
 
 	// Parse templates
@@ -213,6 +217,9 @@ func main() {
 	http.HandleFunc("/adhkar/", requireAuth(handleAdhkarView))
 	http.HandleFunc("/salihin", requireAuth(handleRiyadIndex))
 	http.HandleFunc("/salihin/", requireAuth(handleRiyadView))
+	http.HandleFunc("/arabic", requireAuth(handleArabicIndex))
+	http.HandleFunc("/arabic/", requireAuth(handleArabicView))
+	http.HandleFunc("/api/arabic/search", requireAuth(handleArabicSearch))
 	http.HandleFunc("/quran/", requireAuth(handleQuranView))
 	http.HandleFunc("/hadith/", requireAuth(handleHadithView))
 	http.HandleFunc("/name/", requireAuth(handleNameView))
@@ -851,6 +858,114 @@ func handleRiyadView(w http.ResponseWriter, r *http.Request) {
 	item["PrevID"] = prevID
 	item["NextID"] = nextID
 	renderTemplate(w, r, "salihin.html", item)
+}
+
+const arabicVersion = "1"
+
+func loadArabic() {
+	if db.GetSetting("arabic_version") == arabicVersion {
+		log.Printf("Arabic vocab v%s already loaded (%d words)", arabicVersion, db.ArabicCount())
+		return
+	}
+
+	log.Printf("Loading Arabic vocab dataset v%s...", arabicVersion)
+	db.ClearArabic()
+
+	r, err := zip.NewReader(bytes.NewReader(arabicZip), int64(len(arabicZip)))
+	if err != nil {
+		log.Printf("Failed to open arabic.zip: %v", err)
+		return
+	}
+
+	total := 0
+	for _, f := range r.File {
+		if !strings.HasSuffix(f.Name, ".json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			continue
+		}
+		var entries []struct {
+			Arabic          string `json:"arabic"`
+			Transliteration string `json:"transliteration"`
+			English         string `json:"english"`
+			Frequency       int    `json:"frequency"`
+			ExampleRef      string `json:"example_ref"`
+			Type            string `json:"type"`
+		}
+		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
+			rc.Close()
+			log.Printf("Failed to decode %s: %v", f.Name, err)
+			continue
+		}
+		rc.Close()
+		for _, e := range entries {
+			if err := db.InsertArabicWord(e.Arabic, e.Transliteration, e.English, e.Frequency, e.ExampleRef, e.Type); err != nil {
+				log.Printf("Failed to insert Arabic word: %v", err)
+			} else {
+				total++
+			}
+		}
+	}
+
+	db.SetSetting("arabic_version", arabicVersion)
+	log.Printf("Loaded %d Arabic vocab words (v%s)", total, arabicVersion)
+}
+
+func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	data := map[string]interface{}{}
+
+	if query != "" {
+		results, _ := db.SearchArabic(query)
+		data["Words"] = results
+		data["Query"] = query
+	} else {
+		words, _ := db.GetArabicByFrequency(100)
+		data["Words"] = words
+	}
+
+	renderTemplate(w, r, "arabic_index.html", data)
+}
+
+func handleArabicView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/arabic/")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	item, err := db.GetArabicWord(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	prevID, nextID := db.GetArabicPrevNext(id)
+	item["PrevID"] = prevID
+	item["NextID"] = nextID
+	renderTemplate(w, r, "arabic.html", item)
+}
+
+func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"results": []interface{}{}})
+		return
+	}
+
+	results, err := db.SearchArabic(query)
+	if err != nil {
+		jsonError(w, err.Error(), 500)
+		return
+	}
+	if results == nil {
+		results = []map[string]interface{}{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"results": results})
 }
 
 func handleQuranView(w http.ResponseWriter, r *http.Request) {

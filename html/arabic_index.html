@@ -1,0 +1,146 @@
+{{define "arabic_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arabic - Aslam</title>
+    {{template "style"}}
+    <style>
+        .arabic-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .arabic-search input {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        .arabic-search input:focus { outline: none; border-color: #999; }
+        .arabic-word-card {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            text-decoration: none;
+            color: inherit;
+        }
+        .arabic-word-card:hover { background: #fafafa; }
+        .arabic-word-card .aw-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 22px;
+            direction: rtl;
+            color: #222;
+            min-width: 80px;
+        }
+        .arabic-word-card .aw-translit {
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+        }
+        .arabic-word-card .aw-english {
+            color: #333;
+            font-size: 14px;
+        }
+        .arabic-word-card .aw-freq {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .arabic-word-card .aw-type {
+            font-size: 11px;
+            background: #f0f0f0;
+            padding: 1px 8px;
+            border-radius: 4px;
+            color: #666;
+        }
+        .arabic-subtitle {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Arabic</h2>
+            <p class="arabic-subtitle">Quranic Arabic vocabulary &mdash; 21,000+ words</p>
+
+            <div class="arabic-search">
+                <input type="text" id="arabic-search-input" placeholder="Search Arabic, transliteration, or English..." value="{{.Query}}" autofocus>
+            </div>
+
+            <div id="arabic-results">
+            {{if .Words}}
+                {{range .Words}}
+                <a href="/arabic/{{index . "ID"}}" class="arabic-word-card">
+                    <span class="aw-arabic">{{index . "Arabic"}}</span>
+                    <span class="aw-translit">({{index . "Transliteration"}})</span>
+                    <span class="aw-english">&mdash; {{index . "English"}}</span>
+                    <span class="aw-freq">[{{index . "Frequency"}}x]</span>
+                    {{if index . "Type"}}<span class="aw-type">{{index . "Type"}}</span>{{end}}
+                </a>
+                {{end}}
+            {{else}}
+            <p class="muted">No words found.</p>
+            {{end}}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const input = document.getElementById('arabic-search-input');
+        const results = document.getElementById('arabic-results');
+        let debounce = null;
+
+        input.addEventListener('input', () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                const q = input.value.trim();
+                if (!q) {
+                    window.location = '/arabic';
+                    return;
+                }
+                fetch('/api/arabic/search?q=' + encodeURIComponent(q))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.results || data.results.length === 0) {
+                            results.innerHTML = '<p class="muted">No words found.</p>';
+                            return;
+                        }
+                        let html = '';
+                        data.results.forEach(w => {
+                            html += '<a href="/arabic/' + w.ID + '" class="arabic-word-card">';
+                            html += '<span class="aw-arabic">' + esc(w.Arabic) + '</span>';
+                            html += '<span class="aw-translit">(' + esc(w.Transliteration) + ')</span>';
+                            html += '<span class="aw-english">&mdash; ' + esc(w.English) + '</span>';
+                            html += '<span class="aw-freq">[' + w.Frequency + 'x]</span>';
+                            if (w.Type) html += '<span class="aw-type">' + esc(w.Type) + '</span>';
+                            html += '</a>';
+                        });
+                        results.innerHTML = html;
+                    })
+                    .catch(() => {});
+            }, 300);
+        });
+
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // If there's a query in the URL, focus at end of input
+        if (input.value) {
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    </script>
+</body>
+</html>
+{{end}}

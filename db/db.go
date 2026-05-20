@@ -682,6 +682,31 @@ func Migrate() error {
 		DELETE FROM salihin_fts WHERE docid = old.id;
 	END`)
 
+	// Arabic vocabulary (Quranic Arabic words)
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS arabic (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			arabic TEXT NOT NULL,
+			transliteration TEXT,
+			english TEXT,
+			frequency INTEGER DEFAULT 0,
+			example_ref TEXT,
+			type TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS arabic_fts USING fts4(
+		arabic, transliteration, english, content='arabic'
+	)`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS arabic_ai AFTER INSERT ON arabic BEGIN
+		INSERT INTO arabic_fts(docid, arabic, transliteration, english) VALUES (new.id, new.arabic, new.transliteration, new.english);
+	END`)
+	DB.Exec(`CREATE TRIGGER IF NOT EXISTS arabic_ad AFTER DELETE ON arabic BEGIN
+		DELETE FROM arabic_fts WHERE docid = old.id;
+	END`)
+
 	return nil
 }
 
@@ -2781,4 +2806,109 @@ func GetRiyadByBook(book string) ([]map[string]interface{}, error) {
 		})
 	}
 	return results, nil
+}
+
+// Arabic vocabulary functions
+
+func ArabicCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM arabic`).Scan(&count)
+	return count
+}
+
+func ClearArabic() {
+	DB.Exec(`DELETE FROM arabic`)
+	DB.Exec(`DELETE FROM arabic_fts`)
+}
+
+func InsertArabicWord(arabic, transliteration, english string, frequency int, exampleRef, wordType string) error {
+	_, err := DB.Exec(`INSERT INTO arabic (arabic, transliteration, english, frequency, example_ref, type) VALUES (?, ?, ?, ?, ?, ?)`,
+		arabic, transliteration, english, frequency, exampleRef, wordType)
+	return err
+}
+
+func SearchArabic(query string) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`
+		SELECT a.id, a.arabic, a.transliteration, a.english, a.frequency, a.example_ref, a.type
+		FROM arabic a
+		JOIN arabic_fts fts ON a.id = fts.docid
+		WHERE arabic_fts MATCH ?
+		LIMIT 20
+	`, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var frequency int
+		var arabicText string
+		var transliteration, english, exampleRef, wordType sql.NullString
+		rows.Scan(&id, &arabicText, &transliteration, &english, &frequency, &exampleRef, &wordType)
+		results = append(results, map[string]interface{}{
+			"ID":              id,
+			"Arabic":          arabicText,
+			"Transliteration": transliteration.String,
+			"English":         english.String,
+			"Frequency":       frequency,
+			"ExampleRef":      exampleRef.String,
+			"Type":            wordType.String,
+		})
+	}
+	return results, nil
+}
+
+func GetArabicWord(id int64) (map[string]interface{}, error) {
+	var arabicText string
+	var frequency int
+	var transliteration, english, exampleRef, wordType sql.NullString
+	err := DB.QueryRow(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic WHERE id = ?`, id).Scan(
+		&id, &arabicText, &transliteration, &english, &frequency, &exampleRef, &wordType)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":              id,
+		"Arabic":          arabicText,
+		"Transliteration": transliteration.String,
+		"English":         english.String,
+		"Frequency":       frequency,
+		"ExampleRef":      exampleRef.String,
+		"Type":            wordType.String,
+	}, nil
+}
+
+func GetArabicByFrequency(limit int) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic ORDER BY frequency DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var id int64
+		var frequency int
+		var arabicText string
+		var transliteration, english, exampleRef, wordType sql.NullString
+		rows.Scan(&id, &arabicText, &transliteration, &english, &frequency, &exampleRef, &wordType)
+		results = append(results, map[string]interface{}{
+			"ID":              id,
+			"Arabic":          arabicText,
+			"Transliteration": transliteration.String,
+			"English":         english.String,
+			"Frequency":       frequency,
+			"ExampleRef":      exampleRef.String,
+			"Type":            wordType.String,
+		})
+	}
+	return results, nil
+}
+
+func GetArabicPrevNext(id int64) (prevID, nextID int64) {
+	DB.QueryRow(`SELECT id FROM arabic WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRow(`SELECT id FROM arabic WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
 }
