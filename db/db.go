@@ -1093,7 +1093,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 				"Title":     n.Title,
 				"Content":   content,
 				"Role":      "note",
-				"URL":       fmt.Sprintf("/notes/edit/%d", n.ID),
+				"URL":       fmt.Sprintf("/notes/%d", n.ID),
 				"CreatedAt": n.UpdatedAt,
 			})
 		}
