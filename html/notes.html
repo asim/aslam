@@ -146,7 +146,7 @@
         const match = text.match(/(?:Source: )?(\/(?:islamqa|ghazali|quran|hadith|names|notes|chat|salihin|adhkar|arabic)\/[\w\/\-]+)/);
         if (match) {
             const path = match[1];
-            const label = path;
+            const label = path.slice(1);
             const rest = text.replace(match[0], '').trim();
             el.innerHTML = '<a class="source-link" href="' + path + '">' + label + '</a>' + (rest ? '<br>' + rest : '');
         }
