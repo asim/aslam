@@ -2118,13 +2118,15 @@ func GetLatestReminderContent() (map[string]interface{}, error) {
 
 func GetRandomIslamQA() (map[string]interface{}, error) {
 	var id int64
+	var slug sql.NullString
 	var category, question, answer string
-	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa ORDER BY RANDOM() LIMIT 1`).Scan(&id, &category, &question, &answer)
+	err := DB.QueryRow(`SELECT id, slug, category, question, answer FROM islamqa ORDER BY RANDOM() LIMIT 1`).Scan(&id, &slug, &category, &question, &answer)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
 		"ID":       id,
+		"Slug":     slug.String,
 		"Category": category,
 		"Question": question,
 		"Answer":   answer,
