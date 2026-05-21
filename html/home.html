@@ -28,16 +28,18 @@
         }
         .ask-form textarea {
             flex: 1;
-            min-height: 52px;
+            height: 52px;
             max-height: 200px;
-            padding: 12px 14px;
+            padding: 14px;
             resize: none;
             font-size: 15px;
+            line-height: 1.4;
             font-family: inherit;
             border: 1px solid #ddd;
             border-radius: 10px;
             background: #fff;
             box-sizing: border-box;
+            overflow: hidden;
         }
         .ask-form textarea:focus { outline: none; border-color: #999; }
         .ask-form button {
@@ -100,7 +102,7 @@
                 <h2>Home</h2>
 
                 <form class="ask-form" id="ask-form">
-                    <textarea id="ask-input" name="message" placeholder="Ask a question…" autofocus></textarea>
+                    <textarea id="ask-input" name="message" rows="1" placeholder="Ask a question…" autofocus></textarea>
                     <button type="submit">Ask</button>
                 </form>
                 <div class="ask-hint">
