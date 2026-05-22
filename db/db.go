@@ -747,16 +747,25 @@ func Migrate() error {
 
 // Conversation functions
 
-func GetRecentConversations(limit int, userID int64, mineOnly bool) ([]Conversation, error) {
+func GetRecentConversations(limit int, userID int64, mineOnly bool, isAdmin bool) ([]Conversation, error) {
 	var query string
 	var args []interface{}
-	if mineOnly {
+	switch {
+	case isAdmin && mineOnly:
 		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
 			FROM conversations WHERE user_id = ? OR user_id IS NULL ORDER BY updated_at DESC LIMIT ?`
 		args = []interface{}{userID, limit}
-	} else {
+	case isAdmin:
 		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
-			FROM conversations WHERE user_id = ? OR public = 1 OR user_id IS NULL ORDER BY updated_at DESC LIMIT ?`
+			FROM conversations ORDER BY updated_at DESC LIMIT ?`
+		args = []interface{}{limit}
+	case mineOnly:
+		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?`
+		args = []interface{}{userID, limit}
+	default:
+		query = `SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM conversations WHERE user_id = ? OR public = 1 ORDER BY updated_at DESC LIMIT ?`
 		args = []interface{}{userID, limit}
 	}
 	rows, err := DB.Query(query, args...)
@@ -796,6 +805,22 @@ func CreateConversation(title string, userID int64) (int64, error) {
 		return 0, err
 	}
 	return result.LastInsertId()
+}
+
+// AdoptOrphanConversation assigns user_id to the given user if the conversation has none.
+func AdoptOrphanConversation(id, userID int64) {
+	if userID == 0 {
+		return
+	}
+	DB.Exec(`UPDATE conversations SET user_id = ? WHERE id = ? AND user_id IS NULL`, userID, id)
+}
+
+// AdoptOrphanNote assigns user_id to the given user if the note has none.
+func AdoptOrphanNote(id, userID int64) {
+	if userID == 0 {
+		return
+	}
+	DB.Exec(`UPDATE notes_v2 SET user_id = ? WHERE id = ? AND user_id IS NULL`, userID, id)
 }
 
 func UpdateConversationTitle(id int64, title string) error {
@@ -842,14 +867,18 @@ func AddMessage(convID int64, role, content string) error {
 	return nil
 }
 
-func SearchMessages(query string, userID int64) ([]map[string]interface{}, error) {
+func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
+	scope := `(c.user_id = ? OR c.public = 1)`
+	if isAdmin {
+		scope = `(c.user_id = ? OR c.public = 1 OR c.user_id IS NULL)`
+	}
 	rows, err := DB.Query(`
 		SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, c.title
 		FROM messages m
 		JOIN messages_fts fts ON m.id = fts.docid
 		JOIN conversations c ON m.conversation_id = c.id
 		WHERE messages_fts MATCH ?
-		AND (c.user_id = ? OR c.public = 1 OR c.user_id IS NULL)
+		AND `+scope+`
 		ORDER BY m.created_at DESC
 		LIMIT 50
 	`, query, userID)
@@ -883,7 +912,7 @@ func SearchMessages(query string, userID int64) ([]map[string]interface{}, error
 // This is the backbone of the knowledge base: anything the user has ever asked
 // the assistant, anything the assistant remembered, and anything stored in
 // notes can be found with a single query.
-func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
+func SearchAll(query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, nil
 	}
@@ -891,7 +920,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	// Chats (messages + conversation title)
-	if msgs, err := SearchMessages(query, userID); err == nil {
+	if msgs, err := SearchMessages(query, userID, isAdmin); err == nil {
 		for _, m := range msgs {
 			createdAt, _ := m["CreatedAt"].(time.Time)
 			results = append(results, map[string]interface{}{
@@ -1082,7 +1111,7 @@ func SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
 	}
 
 	// Note items
-	if items, err := SearchNotes(query, userID); err == nil {
+	if items, err := SearchNotes(query, userID, isAdmin); err == nil {
 		for _, n := range items {
 			content := n.Content
 			if len(content) > 500 {
@@ -1836,16 +1865,24 @@ type NoteItem struct {
 	UpdatedAt time.Time
 }
 
-func GetNoteItems(userID int64, mineOnly bool) ([]NoteItem, error) {
+func GetNoteItems(userID int64, mineOnly bool, isAdmin bool) ([]NoteItem, error) {
 	var query string
 	var args []interface{}
-	if mineOnly {
+	switch {
+	case isAdmin && mineOnly:
+		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM notes_v2 WHERE user_id = ? OR user_id IS NULL ORDER BY updated_at DESC`
+		args = []interface{}{userID}
+	case isAdmin:
+		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
+			FROM notes_v2 ORDER BY updated_at DESC`
+	case mineOnly:
 		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
 			FROM notes_v2 WHERE user_id = ? ORDER BY updated_at DESC`
 		args = []interface{}{userID}
-	} else {
+	default:
 		query = `SELECT id, title, content, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
-			FROM notes_v2 WHERE user_id = ? OR public = 1 OR user_id IS NULL ORDER BY updated_at DESC`
+			FROM notes_v2 WHERE user_id = ? OR public = 1 ORDER BY updated_at DESC`
 		args = []interface{}{userID}
 	}
 	rows, err := DB.Query(query, args...)
@@ -1908,13 +1945,17 @@ func DeleteNoteItem(id int64) error {
 	return err
 }
 
-func SearchNotes(query string, userID int64) ([]NoteItem, error) {
+func SearchNotes(query string, userID int64, isAdmin bool) ([]NoteItem, error) {
+	scope := `(n.user_id = ? OR n.public = 1)`
+	if isAdmin {
+		scope = `(n.user_id = ? OR n.public = 1 OR n.user_id IS NULL)`
+	}
 	rows, err := DB.Query(`
 		SELECT n.id, n.title, n.content, COALESCE(n.user_id, 0), COALESCE(n.public, 0), n.created_at, n.updated_at
 		FROM notes_v2 n
 		JOIN notes_fts fts ON n.id = fts.docid
 		WHERE notes_fts MATCH ?
-		AND (n.user_id = ? OR n.public = 1 OR n.user_id IS NULL)
+		AND `+scope+`
 		LIMIT 20
 	`, query, userID)
 	if err != nil {

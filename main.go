@@ -323,7 +323,7 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 }
 
 func (s *dbStorage) SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
-	return db.SearchAll(query, userID)
+	return db.SearchAll(query, userID, false)
 }
 
 // noteStorage implements tools.NoteStorage interface
@@ -334,7 +334,7 @@ func (v *noteStorage) AddNoteItem(title, content string, userID int64) (int64, e
 }
 
 func (v *noteStorage) SearchNotes(query string, userID int64) ([]map[string]interface{}, error) {
-	items, err := db.SearchNotes(query, userID)
+	items, err := db.SearchNotes(query, userID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1537,6 +1537,14 @@ func getUserID(r *http.Request) int64 {
 	return db.GetUserID(session.Email)
 }
 
+func isAdminReq(r *http.Request) bool {
+	session := getSession(r)
+	if session == nil {
+		return false
+	}
+	return db.IsAdmin(session.Email)
+}
+
 // Handlers
 
 func handleLanding(w http.ResponseWriter, r *http.Request) {
@@ -1655,7 +1663,7 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, _ := db.GetRecentConversations(10, userID, true)
+	convs, _ := db.GetRecentConversations(10, userID, true, isAdminReq(r))
 	dailyContent, _ := db.GetLatestReminderContent()
 	randomQA, _ := db.GetRandomIslamQA()
 
@@ -1678,7 +1686,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	showAll := r.URL.Query().Get("show") == "all"
-	convs, _ := db.GetRecentConversations(50, userID, !showAll)
+	convs, _ := db.GetRecentConversations(50, userID, !showAll, isAdminReq(r))
 	renderTemplate(w, r, "chat_list.html", map[string]interface{}{
 		"Conversations": convs,
 		"CurrentUserID": userID,
@@ -1706,8 +1714,9 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		isAdmin = db.IsAdmin(session.Email)
 	}
 
-	// Access check: owner, public, legacy (no owner), or admin
-	isOwner := conv.UserID == userID || conv.UserID == 0
+	// Access check: owner, public, or admin. Orphaned chats (user_id IS NULL)
+	// are admin-only until they get adopted by an update.
+	isOwner := userID != 0 && conv.UserID == userID
 	if !isOwner && !conv.Public && !isAdmin {
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
@@ -1769,6 +1778,8 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: convID}
 	}
 
+	db.AdoptOrphanConversation(convID, getUserID(r))
+
 	// Save user message
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -1827,6 +1838,8 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	if session != nil {
 		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
+
+	db.AdoptOrphanConversation(req.ConversationID, getUserID(r))
 
 	// Save user message
 	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
@@ -1890,14 +1903,15 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ownership: owner, legacy (no owner), or admin
+	// Verify ownership: owner or admin. Orphans (ownerID == 0) are admin-only.
 	userID := getUserID(r)
 	ownerID := db.GetConversationOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
 		isAdmin = db.IsAdmin(session.Email)
 	}
-	if ownerID != 0 && ownerID != userID && !isAdmin {
+	isOwner := userID != 0 && ownerID == userID
+	if !isOwner && !isAdmin {
 		jsonError(w, "Access denied", 403)
 		return
 	}
@@ -1914,7 +1928,7 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 
 func handleAPIChats(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, err := db.GetRecentConversations(50, userID, true)
+	convs, err := db.GetRecentConversations(50, userID, true, isAdminReq(r))
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -1949,7 +1963,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 
 	// Unified search across chats, entries, and notes.
 	userID := getUserID(r)
-	results, err := db.SearchAll(query, userID)
+	results, err := db.SearchAll(query, userID, isAdminReq(r))
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -1971,7 +1985,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	var results []map[string]interface{}
 	if query != "" {
 		userID := getUserID(r)
-		results, _ = db.SearchAll(query, userID)
+		results, _ = db.SearchAll(query, userID, isAdminReq(r))
 	}
 
 	renderTemplate(w, r, "search.html", map[string]interface{}{
@@ -2374,6 +2388,8 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
 
+	db.AdoptOrphanConversation(req.ConversationID, getUserID(r))
+
 	// Save user message
 	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
 		sendEvent("error", err.Error())
@@ -2730,17 +2746,19 @@ func handleToggleChatPublic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ownership
+	// Verify ownership; orphans are admin-only and get adopted on toggle.
 	userID := getUserID(r)
 	ownerID := db.GetConversationOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
 		isAdmin = db.IsAdmin(session.Email)
 	}
-	if ownerID != 0 && ownerID != userID && !isAdmin {
+	isOwner := userID != 0 && ownerID == userID
+	if !isOwner && !isAdmin {
 		jsonError(w, "Access denied", 403)
 		return
 	}
+	db.AdoptOrphanConversation(req.ID, userID)
 
 	if err := db.ToggleConversationPublic(req.ID, req.Public); err != nil {
 		jsonError(w, err.Error(), 500)
@@ -2766,17 +2784,19 @@ func handleToggleNotePublic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ownership
+	// Verify ownership; orphans are admin-only and get adopted on toggle.
 	userID := getUserID(r)
 	ownerID := db.GetNoteOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
 		isAdmin = db.IsAdmin(session.Email)
 	}
-	if ownerID != 0 && ownerID != userID && !isAdmin {
+	isOwner := userID != 0 && ownerID == userID
+	if !isOwner && !isAdmin {
 		jsonError(w, "Access denied", 403)
 		return
 	}
+	db.AdoptOrphanNote(req.ID, userID)
 
 	if err := db.ToggleNotePublic(req.ID, req.Public); err != nil {
 		jsonError(w, err.Error(), 500)
@@ -2867,7 +2887,7 @@ func resizeAndEncode(data []byte) string {
 func handleNotes(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	showAll := r.URL.Query().Get("show") == "all"
-	items, err := db.GetNoteItems(userID, !showAll)
+	items, err := db.GetNoteItems(userID, !showAll, isAdminReq(r))
 	if err != nil {
 		http.Error(w, "Failed to get note items", http.StatusInternalServerError)
 		return
@@ -2897,11 +2917,17 @@ func handleNoteView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := getUserID(r)
-	isOwner := item.UserID == userID || item.UserID == 0 || db.IsAdmin(getSession(r).Email)
+	isAdmin := isAdminReq(r)
+	isOwner := userID != 0 && item.UserID == userID
+	// Access: owner, public, or admin. Orphaned notes (UserID == 0) are admin-only.
+	if !isOwner && !item.Public && !isAdmin {
+		http.NotFound(w, r)
+		return
+	}
 
 	renderTemplate(w, r, "notes_view.html", map[string]interface{}{
 		"Item":    item,
-		"IsOwner": isOwner,
+		"IsOwner": isOwner || isAdmin,
 	})
 }
 
@@ -2953,10 +2979,10 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 	if session := getSession(r); session != nil {
 		isAdmin = db.IsAdmin(session.Email)
 	}
-	isOwner := ownerID == userID || ownerID == 0
+	// Orphans (ownerID == 0) are only writable by admins; an admin edit adopts the note.
+	isOwner := userID != 0 && ownerID == userID
 
 	if r.Method == "POST" {
-		// Only owner or admin can edit
 		if !isOwner && !isAdmin {
 			http.Error(w, "Access denied", http.StatusForbidden)
 			return
@@ -2965,6 +2991,7 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 		title := strings.TrimSpace(r.FormValue("title"))
 		content := strings.TrimSpace(r.FormValue("content"))
 
+		db.AdoptOrphanNote(id, userID)
 		err := db.UpdateNoteItem(id, title, content)
 		if err != nil {
 			http.Redirect(w, r, "/notes?error=Failed+to+update", http.StatusSeeOther)
@@ -3007,14 +3034,15 @@ func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ownership: owner, legacy (no owner), or admin
+	// Verify ownership: owner or admin. Orphans are admin-only.
 	userID := getUserID(r)
 	ownerID := db.GetNoteOwner(id)
 	isAdmin := false
 	if session := getSession(r); session != nil {
 		isAdmin = db.IsAdmin(session.Email)
 	}
-	if ownerID != 0 && ownerID != userID && !isAdmin {
+	isOwner := userID != 0 && ownerID == userID
+	if !isOwner && !isAdmin {
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
