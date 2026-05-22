@@ -2133,13 +2133,19 @@ func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
 	if len(toolsUsed) == 0 {
 		return response
 	}
-	
+
+	seen := make(map[string]bool)
 	var sources strings.Builder
 	sources.WriteString("\n\n---\n**Sources:**\n")
 	for _, tool := range toolsUsed {
-		sources.WriteString(fmt.Sprintf("- %s: %s\n", tool.Name, tool.Input))
+		key := tool.Name + ":" + tool.Input
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		sources.WriteString(fmt.Sprintf("- %s: `%s`\n", tool.Name, tool.Input))
 	}
-	
+
 	return response + sources.String()
 }
 
