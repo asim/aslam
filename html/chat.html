@@ -7,11 +7,12 @@
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
     <style>
-        html, body { height: 100dvh; overflow: hidden; }
+        html { height: 100dvh; }
+        body { height: 100dvh; overflow-y: auto; }
         .app { display: flex; flex-direction: column; height: 100dvh; padding-top: 0; }
-        .app-header { position: static; flex: 0 0 50px; width: 100%; max-width: none; margin: 0; }
-        .app-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .app-footer { position: static; flex: 0 0 auto; }
+        .app-header { position: sticky; top: 0; flex: 0 0 50px; width: 100%; max-width: none; margin: 0; }
+        .app-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        .app-footer { position: sticky; bottom: 0; flex: 0 0 auto; background: #fff; }
         .typing { opacity: 0.6; }
         .typing .message-content::after {
             content: '...';

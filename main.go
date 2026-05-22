@@ -55,6 +55,8 @@ var riyadZip []byte
 //go:embed data/arabic.zip
 var arabicZip []byte
 
+var buildVersion = strconv.FormatInt(time.Now().Unix(), 10)
+
 var (
 	tmpl           *template.Template
 	anthropicKey   string
@@ -120,6 +122,7 @@ func main() {
 
 	// Parse templates
 	funcs := template.FuncMap{
+		"version": func() string { return buildVersion },
 		"formatTime": func(t time.Time) string {
 			return t.Format("2006-01-02 15:04")
 		},
@@ -191,6 +194,8 @@ func main() {
 	http.HandleFunc("/icon-192.png", handleStatic("icon-192.png", "image/png"))
 	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
 	http.HandleFunc("/fonts/arabic.otf", handleStatic("arabic.otf", "font/otf"))
+	http.HandleFunc("/app.css", handleStatic("app.css", "text/css"))
+	http.HandleFunc("/app.js", handleStatic("app.js", "application/javascript"))
 
 	// Public landing page
 	http.HandleFunc("/", handleLanding)
