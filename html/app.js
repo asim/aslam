@@ -42,4 +42,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Save buttons — intercept /notes/add forms, use fetch, show toast
+    document.querySelectorAll('form[action="/notes/add"]').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) btn.disabled = true;
+            fetch('/notes/add', {
+                method: 'POST',
+                body: new URLSearchParams(new FormData(form))
+            }).then(function() {
+                showToast('Saved to notes');
+            }).catch(function() {
+                showToast('Failed to save');
+            }).finally(function() {
+                if (btn) btn.disabled = false;
+            });
+        });
+    });
 });
+
+function showToast(msg) {
+    var el = document.getElementById('toast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'toast';
+        el.className = 'toast';
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 2000);
+}
