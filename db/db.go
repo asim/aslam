@@ -721,6 +721,21 @@ func Migrate() error {
 		DELETE FROM salihin_fts WHERE docid = old.id;
 	END`)
 
+	// Reading progress — auto-tracks where each user left off per source
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS reading_progress (
+			user_id INTEGER NOT NULL,
+			source TEXT NOT NULL,
+			path TEXT NOT NULL,
+			title TEXT NOT NULL,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, source)
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Arabic vocabulary (Quranic Arabic words)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS arabic (
@@ -3179,5 +3194,23 @@ func GetArabicByFrequency(limit int) ([]map[string]interface{}, error) {
 func GetArabicPrevNext(id int64) (prevID, nextID int64) {
 	DB.QueryRow(`SELECT id FROM arabic WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
 	DB.QueryRow(`SELECT id FROM arabic WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return
+}
+
+// Reading progress
+
+func SaveReadingProgress(userID int64, source, path, title string) {
+	if userID == 0 {
+		return
+	}
+	DB.Exec(`INSERT INTO reading_progress (user_id, source, path, title, updated_at)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(user_id, source) DO UPDATE SET path=?, title=?, updated_at=CURRENT_TIMESTAMP`,
+		userID, source, path, title, path, title)
+}
+
+func GetReadingProgress(userID int64, source string) (path, title string) {
+	DB.QueryRow(`SELECT path, title FROM reading_progress WHERE user_id = ? AND source = ?`,
+		userID, source).Scan(&path, &title)
 	return
 }

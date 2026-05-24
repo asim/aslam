@@ -757,6 +757,10 @@ func handleAdhkarIndex(w http.ResponseWriter, r *http.Request) {
 		data["Items"] = items
 	}
 
+	p, t := db.GetReadingProgress(getUserID(r), "adhkar")
+	data["ContinuePath"] = p
+	data["ContinueTitle"] = t
+
 	renderTemplate(w, r, "adhkar_index.html", data)
 }
 
@@ -774,6 +778,7 @@ func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
 	prev, next := db.GetAdhkarPrevNext(slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
+	db.SaveReadingProgress(getUserID(r), "adhkar", r.URL.Path, item["Title"].(string))
 	renderTemplate(w, r, "adhkar.html", item)
 }
 
@@ -848,6 +853,10 @@ func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
 		data["SelectedBook"] = book
 	}
 
+	p, t := db.GetReadingProgress(getUserID(r), "salihin")
+	data["ContinuePath"] = p
+	data["ContinueTitle"] = t
+
 	renderTemplate(w, r, "salihin_index.html", data)
 }
 
@@ -866,6 +875,7 @@ func handleRiyadView(w http.ResponseWriter, r *http.Request) {
 	prev, next := db.GetRiyadPrevNext(number)
 	item["PrevNumber"] = prev
 	item["NextNumber"] = next
+	db.SaveReadingProgress(getUserID(r), "salihin", r.URL.Path, fmt.Sprintf("Hadith %d", number))
 	renderTemplate(w, r, "salihin.html", item)
 }
 
@@ -993,7 +1003,12 @@ func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
 
 func handleQuranIndex(w http.ResponseWriter, r *http.Request) {
 	chapters, _ := db.GetQuranChapters()
-	renderTemplate(w, r, "quran_index.html", map[string]interface{}{"Chapters": chapters})
+	p, t := db.GetReadingProgress(getUserID(r), "quran")
+	renderTemplate(w, r, "quran_index.html", map[string]interface{}{
+		"Chapters":      chapters,
+		"ContinuePath":  p,
+		"ContinueTitle": t,
+	})
 }
 
 func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
@@ -1090,6 +1105,8 @@ func handleQuranView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	chName, _ := item["ChapterName"].(string)
+	db.SaveReadingProgress(getUserID(r), "quran", r.URL.Path, fmt.Sprintf("%s %d:%d", chName, chapter, verse))
 	renderTemplate(w, r, "quran.html", item)
 }
 
@@ -2015,6 +2032,7 @@ func handleGhazaliView(w http.ResponseWriter, r *http.Request) {
 	prev, next := db.GetGhazaliPrevNext(slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
+	db.SaveReadingProgress(getUserID(r), "ghazali", r.URL.Path, item["Chapter"].(string))
 	renderTemplate(w, r, "ghazali.html", item)
 }
 
@@ -2034,6 +2052,10 @@ func handleGhazaliIndex(w http.ResponseWriter, r *http.Request) {
 		data["Chapters"] = chapters
 	}
 
+	p, t := db.GetReadingProgress(getUserID(r), "ghazali")
+	data["ContinuePath"] = p
+	data["ContinueTitle"] = t
+
 	renderTemplate(w, r, "ghazali_index.html", data)
 }
 
@@ -2051,6 +2073,11 @@ func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
 	prev, next := db.GetIslamQAPrevNext(slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
+	q, _ := item["Question"].(string)
+	if len(q) > 60 {
+		q = q[:60] + "..."
+	}
+	db.SaveReadingProgress(getUserID(r), "islamqa", r.URL.Path, q)
 	renderTemplate(w, r, "islamqa.html", item)
 }
 
@@ -2069,6 +2096,10 @@ func handleIslamQAIndex(w http.ResponseWriter, r *http.Request) {
 		questions, _ := db.GetAllIslamQA()
 		data["Questions"] = questions
 	}
+
+	p, t := db.GetReadingProgress(getUserID(r), "islamqa")
+	data["ContinuePath"] = p
+	data["ContinueTitle"] = t
 
 	renderTemplate(w, r, "islamqa_index.html", data)
 }

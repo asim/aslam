@@ -41,6 +41,11 @@
         {{template "header" .}}
         <main class="app-content">
             <h2>Riyad us-Salihin</h2>
+{{if .ContinuePath}}
+            <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+            </div>
+            {{end}}
 
             <div class="cat-filters">
                 <a href="/salihin"{{if not .SelectedBook}} class="active"{{end}}>All Books</a>
