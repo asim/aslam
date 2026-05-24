@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"crypto/rand"
 	"embed"
@@ -1865,17 +1866,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get conversation history for context
 	messages, _ := db.GetMessages(req.ConversationID)
-
-	// Generate AI response
-	response, toolsUsed, err := generateResponse(messages, req.ConversationID)
-	if err != nil {
-		response = "Error: " + err.Error()
-	} else {
-		response = formatResponseWithSources(response, toolsUsed)
-	}
-	db.AddMessage(req.ConversationID, "assistant", response)
 
 	// Update conversation title if first message
 	if len(messages) <= 1 {
@@ -1886,8 +1877,29 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		db.UpdateConversationTitle(req.ConversationID, title)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"response": response})
+	// Stream response as chunked HTTP
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		jsonError(w, "Streaming not supported", 500)
+		return
+	}
+
+	response, toolsUsed, err := generateResponseStreaming(messages, req.ConversationID, func(text string) {
+		fmt.Fprint(w, text)
+		flusher.Flush()
+	})
+	if err != nil {
+		response = "Error: " + err.Error()
+		fmt.Fprint(w, response)
+		flusher.Flush()
+	} else {
+		response = formatResponseWithSources(response, toolsUsed)
+	}
+	db.AddMessage(req.ConversationID, "assistant", response)
 }
 
 func handleAPINewChat(w http.ResponseWriter, r *http.Request) {
@@ -2329,6 +2341,204 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 	}
 
 	return "", toolsUsed, fmt.Errorf("too many tool calls")
+}
+
+func generateResponseStreaming(messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
+	var toolsUsed []ToolUsage
+	if anthropicKey == "" {
+		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
+	}
+
+	fullSystemPrompt := systemPrompt
+	if currentUserContext != nil && currentUserContext.Email != "" {
+		fullSystemPrompt += fmt.Sprintf("\n\nCurrent user: %s", currentUserContext.Email)
+		if currentUserContext.Name != "" {
+			fullSystemPrompt += fmt.Sprintf(" (%s)", currentUserContext.Name)
+		}
+	}
+
+	var apiMessages []map[string]interface{}
+	for _, m := range messages {
+		if m.Role == "system" {
+			continue
+		}
+		role := m.Role
+		if role == "context" || role == "tool" {
+			role = "assistant"
+		}
+		apiMessages = append(apiMessages, map[string]interface{}{
+			"role":    role,
+			"content": m.Content,
+		})
+	}
+
+	for i := 0; i < 10; i++ {
+		result, textSoFar, err := callAnthropicStream(apiMessages, fullSystemPrompt, onText)
+		if err != nil {
+			return "", toolsUsed, err
+		}
+
+		if result.StopReason == "tool_use" {
+			apiMessages = append(apiMessages, map[string]interface{}{
+				"role":    "assistant",
+				"content": result.Content,
+			})
+
+			var toolResults []map[string]interface{}
+			var contextLines []string
+			for _, block := range result.Content {
+				if block.Type == "tool_use" {
+					inputJSON, _ := json.Marshal(block.Input)
+					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
+					toolResult, err := tools.ExecuteTool(block.Name, block.Input)
+					if err != nil {
+						toolResult = fmt.Sprintf("Error: %v", err)
+					}
+					toolsUsed = append(toolsUsed, ToolUsage{
+						Name:   block.Name,
+						Input:  string(inputJSON),
+						Output: truncateString(toolResult, 500),
+					})
+					toolResults = append(toolResults, map[string]interface{}{
+						"type":        "tool_result",
+						"tool_use_id": block.ID,
+						"content":     toolResult,
+					})
+					contextLines = append(contextLines, fmt.Sprintf("[%s(%s): %s]", block.Name, string(inputJSON), truncateString(toolResult, 1000)))
+				}
+			}
+			apiMessages = append(apiMessages, map[string]interface{}{
+				"role":    "user",
+				"content": toolResults,
+			})
+			if convID > 0 && len(contextLines) > 0 {
+				db.AddMessage(convID, "context", strings.Join(contextLines, "\n"))
+			}
+			continue
+		}
+
+		if textSoFar == "" {
+			return "Done.", toolsUsed, nil
+		}
+		return textSoFar, toolsUsed, nil
+	}
+	return "", toolsUsed, fmt.Errorf("too many tool calls")
+}
+
+func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string, onText func(string)) (*anthropicResponse, string, error) {
+	reqBody := map[string]interface{}{
+		"model":      anthropicModel,
+		"max_tokens": 4096,
+		"tools":      tools.GetTools(),
+		"system":     sysPrompt,
+		"messages":   apiMessages,
+		"stream":     true,
+	}
+
+	jsonBody, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", anthropicKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+
+	client := &http.Client{Timeout: 120 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, "", fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse SSE stream from Anthropic
+	var fullText strings.Builder
+	var contentBlocks []contentBlock
+	var currentToolInput strings.Builder
+	var currentToolID, currentToolName string
+	stopReason := ""
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+		if data == "[DONE]" {
+			break
+		}
+
+		var event struct {
+			Type         string `json:"type"`
+			Index        int    `json:"index"`
+			ContentBlock struct {
+				Type  string `json:"type"`
+				ID    string `json:"id"`
+				Name  string `json:"name"`
+				Text  string `json:"text"`
+				Input json.RawMessage `json:"input"`
+			} `json:"content_block"`
+			Delta struct {
+				Type        string `json:"type"`
+				Text        string `json:"text"`
+				PartialJSON string `json:"partial_json"`
+				StopReason  string `json:"stop_reason"`
+			} `json:"delta"`
+			Message struct {
+				StopReason string `json:"stop_reason"`
+			} `json:"message"`
+		}
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			continue
+		}
+
+		switch event.Type {
+		case "content_block_start":
+			if event.ContentBlock.Type == "tool_use" {
+				currentToolID = event.ContentBlock.ID
+				currentToolName = event.ContentBlock.Name
+				currentToolInput.Reset()
+			}
+		case "content_block_delta":
+			if event.Delta.Type == "text_delta" && event.Delta.Text != "" {
+				fullText.WriteString(event.Delta.Text)
+				if onText != nil {
+					onText(event.Delta.Text)
+				}
+			} else if event.Delta.Type == "input_json_delta" {
+				currentToolInput.WriteString(event.Delta.PartialJSON)
+			}
+		case "content_block_stop":
+			if currentToolName != "" {
+				var input map[string]interface{}
+				json.Unmarshal([]byte(currentToolInput.String()), &input)
+				contentBlocks = append(contentBlocks, contentBlock{
+					Type:  "tool_use",
+					ID:    currentToolID,
+					Name:  currentToolName,
+					Input: input,
+				})
+				currentToolName = ""
+			} else if fullText.Len() > 0 {
+				contentBlocks = append(contentBlocks, contentBlock{
+					Type: "text",
+					Text: fullText.String(),
+				})
+			}
+		case "message_delta":
+			if event.Delta.StopReason != "" {
+				stopReason = event.Delta.StopReason
+			}
+		}
+	}
+
+	return &anthropicResponse{
+		Content:    contentBlocks,
+		StopReason: stopReason,
+	}, fullText.String(), nil
 }
 
 type anthropicResponse struct {

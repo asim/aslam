@@ -188,34 +188,42 @@
             addMessage('user', message);
             updateTitle(message);
 
-            const typingDiv = addMessage('assistant', 'Working...', true);
+            const responseDiv = addMessage('assistant', '', false);
+            const contentEl = responseDiv.querySelector('.message-content');
 
-            async function sendMessage() {
+            try {
                 const resp = await fetch('/api/chat/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ conversation_id: parseInt(convId), message: message })
                 });
-                return await resp.json();
-            }
 
-            try {
-                let data;
-                try {
-                    data = await sendMessage();
-                } catch (e) {
-                    // Retry once on network error
-                    data = await sendMessage();
-                }
-                typingDiv.remove();
-                if (data.response) {
-                    addMessage('assistant', data.response);
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    fullText += decoder.decode(value, { stream: true });
+                    if (typeof marked !== 'undefined') {
+                        contentEl.innerHTML = marked.parse(fullText);
+                    } else {
+                        contentEl.textContent = fullText;
+                    }
                     scrollToBottom();
                 }
+
+                if (!fullText) {
+                    responseDiv.remove();
+                    location.reload();
+                }
             } catch (err) {
-                typingDiv.remove();
-                location.reload();
-                return;
+                if (!contentEl.textContent) {
+                    responseDiv.remove();
+                    location.reload();
+                    return;
+                }
             }
 
             msgInput.disabled = false;
