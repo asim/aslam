@@ -207,8 +207,8 @@ func main() {
 	http.HandleFunc("/chat/", requireAuth(handleChatView))
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
 	http.HandleFunc("/chat/send", requireAuth(handleSendMessage))
-	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessage))
-	http.HandleFunc("/api/chat/stream", requireAuth(handleAPISendMessageStream))
+	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessageAsync))
+	http.HandleFunc("/api/chat/poll", requireAuth(handleAPIPollMessages))
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
@@ -1735,11 +1735,17 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	var lastMsgID int64
+	if len(messages) > 0 {
+		lastMsgID = messages[len(messages)-1].ID
+	}
+
 	renderTemplate(w, r, "chat.html", map[string]interface{}{
-		"Conversation": conv,
-		"Messages":     messages,
-		"UserName":     userName,
-		"IsOwner":      isOwner || isAdmin,
+		"Conversation":  conv,
+		"Messages":      messages,
+		"UserName":      userName,
+		"IsOwner":       isOwner || isAdmin,
+		"LastMessageID": lastMsgID,
 	})
 }
 
@@ -2354,7 +2360,7 @@ func callAnthropic(apiMessages []map[string]interface{}, sysPrompt string) (*ant
 	return &result, nil
 }
 
-func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
+func handleAPISendMessageAsync(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		jsonError(w, "Method not allowed", 405)
 		return
@@ -2375,59 +2381,18 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set up SSE
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming not supported", 500)
-		return
-	}
-
-	sendEvent := func(event, data string) {
-		fmt.Fprintf(w, "event: %s\n", event)
-		// SSE requires each line of data to have data: prefix
-		for _, line := range strings.Split(data, "\n") {
-			fmt.Fprintf(w, "data: %s\n", line)
-		}
-		fmt.Fprintf(w, "\n")
-		flusher.Flush()
-	}
-
-	// Set user context for this request
 	session := getSession(r)
-	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
-	}
-
-	db.AdoptOrphanConversation(req.ConversationID, getUserID(r))
+	userID := getUserID(r)
+	db.AdoptOrphanConversation(req.ConversationID, userID)
 
 	// Save user message
 	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
-		sendEvent("error", err.Error())
+		jsonError(w, err.Error(), 500)
 		return
 	}
 
-	// Get conversation history for context
+	// Update title if first message
 	messages, _ := db.GetMessages(req.ConversationID)
-
-	// Generate AI response with progress callback
-	response, toolsUsed, err := generateResponseWithProgress(messages, req.ConversationID, func(toolName string) {
-		log.Printf("Sending tool event: %s", toolName)
-		sendEvent("tool", toolName)
-	})
-	if err != nil {
-		// Create pending task for retry
-		db.CreatePendingTask("chat", req.ConversationID, "", "")
-		response = "Sorry, I encountered an error. I'll retry processing your message shortly."
-		log.Printf("Chat error, created pending task for conv %d: %v", req.ConversationID, err)
-	} else {
-		response = formatResponseWithSources(response, toolsUsed)
-	}
-	db.AddMessage(req.ConversationID, "assistant", response)
-
-	// Update conversation title if first message
 	if len(messages) <= 1 {
 		title := req.Message
 		if len(title) > 50 {
@@ -2436,7 +2401,50 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 		db.UpdateConversationTitle(req.ConversationID, title)
 	}
 
-	sendEvent("done", response)
+	// Process in background so the HTTP response returns immediately
+	go func() {
+		if session != nil {
+			currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
+		}
+
+		msgs, _ := db.GetMessages(req.ConversationID)
+		response, toolsUsed, err := generateResponse(msgs, req.ConversationID)
+		if err != nil {
+			response = "Sorry, I encountered an error processing your message."
+			log.Printf("Chat error for conv %d: %v", req.ConversationID, err)
+		} else {
+			response = formatResponseWithSources(response, toolsUsed)
+		}
+		db.AddMessage(req.ConversationID, "assistant", response)
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "processing"})
+}
+
+func handleAPIPollMessages(w http.ResponseWriter, r *http.Request) {
+	convID, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	afterID, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
+	if convID == 0 {
+		jsonError(w, "Missing id", 400)
+		return
+	}
+
+	messages, _ := db.GetMessagesAfter(convID, afterID)
+	var result []map[string]interface{}
+	for _, m := range messages {
+		if m.Role == "context" || m.Role == "tool" {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"id":      m.ID,
+			"role":    m.Role,
+			"content": m.Content,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"messages": result})
 }
 
 func handleDev(w http.ResponseWriter, r *http.Request) {

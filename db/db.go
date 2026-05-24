@@ -841,11 +841,32 @@ func DeleteConversation(id int64) error {
 
 func GetMessages(convID int64) ([]Message, error) {
 	rows, err := DB.Query(`
-		SELECT id, conversation_id, role, content, created_at 
-		FROM messages 
-		WHERE conversation_id = ? 
+		SELECT id, conversation_id, role, content, created_at
+		FROM messages
+		WHERE conversation_id = ?
 		ORDER BY created_at ASC
 	`, convID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var msgs []Message
+	for rows.Next() {
+		var m Message
+		rows.Scan(&m.ID, &m.ConversationID, &m.Role, &m.Content, &m.CreatedAt)
+		msgs = append(msgs, m)
+	}
+	return msgs, nil
+}
+
+func GetMessagesAfter(convID, afterID int64) ([]Message, error) {
+	rows, err := DB.Query(`
+		SELECT id, conversation_id, role, content, created_at
+		FROM messages
+		WHERE conversation_id = ? AND id > ?
+		ORDER BY created_at ASC
+	`, convID, afterID)
 	if err != nil {
 		return nil, err
 	}
