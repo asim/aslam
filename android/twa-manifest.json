@@ -1,0 +1,36 @@
+{
+  "packageId": "org.aslam.app",
+  "host": "aslam.org",
+  "name": "Aslam",
+  "launcherName": "Aslam",
+  "display": "standalone",
+  "themeColor": "#000000",
+  "navigationColor": "#000000",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/home",
+  "iconUrl": "https://aslam.org/icon-512.png",
+  "maskableIconUrl": "https://aslam.org/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "aslam-keystore.jks",
+    "alias": "aslam"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Search",
+      "shortName": "Search",
+      "url": "/search",
+      "chosenIconUrl": "https://aslam.org/icon-192.png"
+    },
+    {
+      "name": "Quran",
+      "shortName": "Quran",
+      "url": "/quran",
+      "chosenIconUrl": "https://aslam.org/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli"
+}

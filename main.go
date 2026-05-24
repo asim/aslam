@@ -196,6 +196,7 @@ func main() {
 	http.HandleFunc("/icon-192.png", handleStatic("icon-192.png", "image/png"))
 	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
 	http.HandleFunc("/fonts/arabic.otf", handleStatic("arabic.otf", "font/otf"))
+	http.HandleFunc("/.well-known/assetlinks.json", handleStatic(".well-known/assetlinks.json", "application/json"))
 	http.HandleFunc("/app.css", handleStatic("app.css", "text/css"))
 	http.HandleFunc("/app.js", handleStatic("app.js", "application/javascript"))
 

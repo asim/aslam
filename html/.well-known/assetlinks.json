@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "org.aslam.app",
+    "sha256_cert_fingerprints": ["__SHA256_FINGERPRINT__"]
+  }
+}]
