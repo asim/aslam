@@ -1365,9 +1365,9 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	// Validation
-	if email == "" {
+	if email == "" || !strings.Contains(email, "@") || !strings.Contains(email[strings.Index(email, "@"):], ".") {
 		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "Email is required",
+			"Error":         "Please enter a valid email address",
 			"GoogleEnabled": googleClientID != "",
 		})
 		return
