@@ -2433,7 +2433,7 @@ func handleAPIPollMessages(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessagesAfter(convID, afterID)
 	var result []map[string]interface{}
 	for _, m := range messages {
-		if m.Role == "context" || m.Role == "tool" {
+		if m.Role == "context" || m.Role == "tool" || m.Role == "user" {
 			continue
 		}
 		result = append(result, map[string]interface{}{
