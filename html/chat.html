@@ -171,10 +171,12 @@
         }
 
         function updateTitle(title) {
+            const short = title.length > 50 ? title.slice(0, 50) + '...' : title;
             const titleEl = document.getElementById('chat-title');
             if (titleEl.textContent === 'New conversation') {
-                titleEl.textContent = title.length > 50 ? title.slice(0, 50) + '...' : title;
+                titleEl.textContent = short;
             }
+            document.title = short + ' - Aslam';
         }
 
         form.addEventListener('submit', async (e) => {
