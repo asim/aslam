@@ -18,7 +18,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"aslam/db"
@@ -57,12 +56,6 @@ var riyadZip []byte
 var arabicZip []byte
 
 var buildVersion = strconv.FormatInt(time.Now().Unix(), 10)
-
-// Track which conversations are currently being processed
-var (
-	processingMu    sync.Mutex
-	processingChats = map[int64]bool{}
-)
 
 var (
 	tmpl           *template.Template
@@ -214,8 +207,7 @@ func main() {
 	http.HandleFunc("/chat/", requireAuth(handleChatView))
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
 	http.HandleFunc("/chat/send", requireAuth(handleSendMessage))
-	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessageAsync))
-	http.HandleFunc("/api/chat/poll", requireAuth(handleAPIPollMessages))
+	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessage))
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
@@ -1742,17 +1734,11 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	var lastMsgID int64
-	if len(messages) > 0 {
-		lastMsgID = messages[len(messages)-1].ID
-	}
-
 	renderTemplate(w, r, "chat.html", map[string]interface{}{
-		"Conversation":  conv,
-		"Messages":      messages,
-		"UserName":      userName,
-		"IsOwner":       isOwner || isAdmin,
-		"LastMessageID": lastMsgID,
+		"Conversation": conv,
+		"Messages":     messages,
+		"UserName":     userName,
+		"IsOwner":      isOwner || isAdmin,
 	})
 }
 
@@ -2365,115 +2351,6 @@ func callAnthropic(apiMessages []map[string]interface{}, sysPrompt string) (*ant
 	}
 
 	return &result, nil
-}
-
-func handleAPISendMessageAsync(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		jsonError(w, "Method not allowed", 405)
-		return
-	}
-
-	var req struct {
-		ConversationID int64  `json:"conversation_id"`
-		Message        string `json:"message"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		jsonError(w, "Invalid request", 400)
-		return
-	}
-
-	if req.ConversationID == 0 || req.Message == "" {
-		jsonError(w, "Missing fields", 400)
-		return
-	}
-
-	session := getSession(r)
-	userID := getUserID(r)
-	db.AdoptOrphanConversation(req.ConversationID, userID)
-
-	// Save user message
-	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
-		jsonError(w, err.Error(), 500)
-		return
-	}
-
-	// Update title if first message
-	messages, _ := db.GetMessages(req.ConversationID)
-	if len(messages) <= 1 {
-		title := req.Message
-		if len(title) > 50 {
-			title = title[:50] + "..."
-		}
-		db.UpdateConversationTitle(req.ConversationID, title)
-	}
-
-	// Process in background so the HTTP response returns immediately
-	processingMu.Lock()
-	processingChats[req.ConversationID] = true
-	processingMu.Unlock()
-
-	go func() {
-		defer func() {
-			processingMu.Lock()
-			delete(processingChats, req.ConversationID)
-			processingMu.Unlock()
-		}()
-
-		if session != nil {
-			currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
-		}
-
-		msgs, _ := db.GetMessages(req.ConversationID)
-		response, toolsUsed, err := generateResponse(msgs, req.ConversationID)
-		if err != nil {
-			response = "Sorry, I encountered an error processing your message."
-			log.Printf("Chat error for conv %d: %v", req.ConversationID, err)
-		} else {
-			response = formatResponseWithSources(response, toolsUsed)
-		}
-		db.AddMessage(req.ConversationID, "assistant", response)
-	}()
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "processing"})
-}
-
-func handleAPIPollMessages(w http.ResponseWriter, r *http.Request) {
-	convID, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
-	afterID, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
-	if convID == 0 {
-		jsonError(w, "Missing id", 400)
-		return
-	}
-
-	processingMu.Lock()
-	isProcessing := processingChats[convID]
-	processingMu.Unlock()
-
-	status := "complete"
-	if isProcessing {
-		status = "processing"
-	}
-
-	messages, _ := db.GetMessagesAfter(convID, afterID)
-	var result []map[string]interface{}
-	for _, m := range messages {
-		if m.Role == "context" || m.Role == "tool" || m.Role == "user" {
-			continue
-		}
-		result = append(result, map[string]interface{}{
-			"id":      m.ID,
-			"role":    m.Role,
-			"content": m.Content,
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"status":   status,
-		"messages": result,
-	})
 }
 
 func handleDev(w http.ResponseWriter, r *http.Request) {

@@ -112,8 +112,6 @@
         const messages = document.getElementById('messages');
         const sendBtn = document.getElementById('send-btn');
         const convId = form.querySelector('input[name="conversation_id"]').value;
-        let lastMsgId = {{.LastMessageID}};
-
         const userName = '{{.UserName}}';
         
         function timeAgo(date) {
@@ -192,52 +190,33 @@
 
             const typingDiv = addMessage('assistant', 'Working...', true);
 
-            try {
-                await fetch('/api/chat/send', {
+            async function sendMessage() {
+                const resp = await fetch('/api/chat/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ conversation_id: parseInt(convId), message: message })
                 });
-            } catch (err) {
-                typingDiv.remove();
-                addMessage('assistant', 'Failed to send. Please try again.');
-                msgInput.disabled = false;
-                sendBtn.disabled = false;
-                return;
+                return await resp.json();
             }
 
-            // Poll until server says status=complete
-            let attempts = 0;
-            const poll = setInterval(async () => {
-                attempts++;
+            try {
+                let data;
                 try {
-                    const resp = await fetch('/api/chat/poll?id=' + convId + '&after=' + lastMsgId);
-                    const data = await resp.json();
-
-                    if (data.messages && data.messages.length > 0) {
-                        typingDiv.remove();
-                        for (const m of data.messages) {
-                            addMessage(m.role, m.content);
-                            if (m.id) lastMsgId = m.id;
-                        }
-                        scrollToBottom();
-                    }
-
-                    if (data.status === 'complete') {
-                        clearInterval(poll);
-                        typingDiv.remove();
-                        msgInput.disabled = false;
-                        sendBtn.disabled = false;
-                        msgInput.focus();
-                    } else if (attempts >= 120) {
-                        clearInterval(poll);
-                        typingDiv.remove();
-                        addMessage('assistant', 'Still processing — refresh in a moment.');
-                        msgInput.disabled = false;
-                        sendBtn.disabled = false;
-                    }
-                } catch (_) {}
-            }, 1000);
+                    data = await sendMessage();
+                } catch (e) {
+                    // Retry once on network error
+                    data = await sendMessage();
+                }
+                typingDiv.remove();
+                if (data.response) {
+                    addMessage('assistant', data.response);
+                    scrollToBottom();
+                }
+            } catch (err) {
+                typingDiv.remove();
+                location.reload();
+                return;
+            }
 
             msgInput.disabled = false;
             sendBtn.disabled = false;
