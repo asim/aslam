@@ -206,24 +206,34 @@
                 return;
             }
 
-            // Poll for the response
+            // Poll for the response — keep polling until no new messages for 3 seconds
             let attempts = 0;
+            let gotResponse = false;
+            let idleSince = 0;
             const poll = setInterval(async () => {
                 attempts++;
                 try {
                     const resp = await fetch('/api/chat/poll?id=' + convId + '&after=' + lastMsgId);
                     const data = await resp.json();
                     if (data.messages && data.messages.length > 0) {
-                        clearInterval(poll);
-                        typingDiv.remove();
+                        if (!gotResponse) {
+                            gotResponse = true;
+                            typingDiv.remove();
+                        }
                         for (const m of data.messages) {
                             addMessage(m.role, m.content);
                             if (m.id) lastMsgId = m.id;
                         }
                         scrollToBottom();
-                        msgInput.disabled = false;
-                        sendBtn.disabled = false;
-                        msgInput.focus();
+                        idleSince = 0;
+                    } else if (gotResponse) {
+                        idleSince++;
+                        if (idleSince >= 3) {
+                            clearInterval(poll);
+                            msgInput.disabled = false;
+                            sendBtn.disabled = false;
+                            msgInput.focus();
+                        }
                     } else if (attempts >= 120) {
                         clearInterval(poll);
                         typingDiv.remove();
