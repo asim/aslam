@@ -163,6 +163,9 @@
             return div.innerHTML;
         }
 
+        function isNearBottom() {
+            return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
+        }
         function scrollToBottom() {
             messages.scrollTop = messages.scrollHeight;
         }
@@ -188,7 +191,7 @@
             addMessage('user', message);
             updateTitle(message);
 
-            const responseDiv = addMessage('assistant', '', false);
+            const responseDiv = addMessage('assistant', 'Working...', true);
             const contentEl = responseDiv.querySelector('.message-content');
 
             try {
@@ -201,25 +204,47 @@
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder();
                 let fullText = '';
+                let started = false;
+                let renderPending = false;
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    fullText += decoder.decode(value, { stream: true });
+                function render() {
+                    renderPending = false;
                     if (typeof marked !== 'undefined') {
                         contentEl.innerHTML = marked.parse(fullText);
                     } else {
                         contentEl.textContent = fullText;
                     }
-                    scrollToBottom();
+                    if (isNearBottom()) scrollToBottom();
                 }
 
-                if (!fullText) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    if (!chunk) continue;
+
+                    if (!started) {
+                        started = true;
+                        responseDiv.classList.remove('typing');
+                        contentEl.textContent = '';
+                    }
+                    fullText += chunk;
+
+                    if (!renderPending) {
+                        renderPending = true;
+                        requestAnimationFrame(render);
+                    }
+                }
+
+                // Final render
+                if (started) {
+                    render();
+                } else {
                     responseDiv.remove();
                     location.reload();
                 }
             } catch (err) {
-                if (!contentEl.textContent) {
+                if (!contentEl.textContent || contentEl.textContent === 'Working...') {
                     responseDiv.remove();
                     location.reload();
                     return;
