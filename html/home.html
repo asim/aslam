@@ -110,6 +110,18 @@
                 </div>
             </section>
 
+            {{if .ReadingProgress}}
+            <section style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 12px">Continue Reading</h3>
+                {{range .ReadingProgress}}
+                <div style="padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px;">
+                    <a href="{{index . "Path"}}">{{index . "Title"}}</a>
+                    <span style="color:#999; margin-left:6px;">{{index . "Source"}}</span>
+                </div>
+                {{end}}
+            </section>
+            {{end}}
+
             {{if or .PrayerTimes .DailyContent}}
             <section style="margin-bottom: 24px;">
                 <h3 style="margin-bottom: 12px">Today's Reminder</h3>
@@ -177,18 +189,6 @@
                 <div class="daily-card">
                     <div class="daily-label">Message</div>
                     <div class="daily-text">{{index .DailyContent "Message"}}</div>
-                </div>
-                {{end}}
-            </section>
-            {{end}}
-
-            {{if .ReadingProgress}}
-            <section style="margin-bottom: 24px;">
-                <h3 style="margin-bottom: 12px">Continue Reading</h3>
-                {{range .ReadingProgress}}
-                <div style="padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px;">
-                    <a href="{{index . "Path"}}">{{index . "Title"}}</a>
-                    <span style="color:#999; margin-left:6px;">{{index . "Source"}}</span>
                 </div>
                 {{end}}
             </section>
