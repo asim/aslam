@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"aslam/db"
@@ -56,6 +57,12 @@ var riyadZip []byte
 var arabicZip []byte
 
 var buildVersion = strconv.FormatInt(time.Now().Unix(), 10)
+
+// Track which conversations are currently being processed
+var (
+	processingMu    sync.Mutex
+	processingChats = map[int64]bool{}
+)
 
 var (
 	tmpl           *template.Template
@@ -2402,7 +2409,17 @@ func handleAPISendMessageAsync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process in background so the HTTP response returns immediately
+	processingMu.Lock()
+	processingChats[req.ConversationID] = true
+	processingMu.Unlock()
+
 	go func() {
+		defer func() {
+			processingMu.Lock()
+			delete(processingChats, req.ConversationID)
+			processingMu.Unlock()
+		}()
+
 		if session != nil {
 			currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 		}
@@ -2430,6 +2447,15 @@ func handleAPIPollMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	processingMu.Lock()
+	isProcessing := processingChats[convID]
+	processingMu.Unlock()
+
+	status := "complete"
+	if isProcessing {
+		status = "processing"
+	}
+
 	messages, _ := db.GetMessagesAfter(convID, afterID)
 	var result []map[string]interface{}
 	for _, m := range messages {
@@ -2444,7 +2470,10 @@ func handleAPIPollMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"messages": result})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   status,
+		"messages": result,
+	})
 }
 
 func handleDev(w http.ResponseWriter, r *http.Request) {
