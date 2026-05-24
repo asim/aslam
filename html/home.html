@@ -114,8 +114,8 @@
             <section style="margin-bottom: 24px;">
                 <h3 style="margin-bottom: 12px">Continue Reading</h3>
                 {{range .ReadingProgress}}
-                <div style="padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px;">
-                    <a href="{{index . "Path"}}">{{index . "Title"}}</a>
+                <div style="margin-bottom:8px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+                    <a href="{{index . "Path"}}" style="font-weight:500;">{{index . "Title"}} &rarr;</a>
                     <span style="color:#999; margin-left:6px;">{{index . "Source"}}</span>
                 </div>
                 {{end}}
