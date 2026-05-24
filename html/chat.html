@@ -190,7 +190,7 @@
             addMessage('user', message);
             updateTitle(message);
 
-            const typingDiv = addMessage('assistant', 'Thinking...', true);
+            const typingDiv = addMessage('assistant', 'Working...', true);
 
             try {
                 await fetch('/api/chat/send', {
