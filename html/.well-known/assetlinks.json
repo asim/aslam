@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "org.aslam.app",
-    "sha256_cert_fingerprints": ["__SHA256_FINGERPRINT__"]
+    "package_name": "org.aslam.twa",
+    "sha256_cert_fingerprints": ["D6:08:CF:4D:65:78:B7:39:01:9F:21:54:C7:6F:BD:4B:E6:05:0D:7C:79:B3:F6:1C:34:89:86:17:03:2A:0F:55"]
   }
 }]
