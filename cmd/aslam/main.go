@@ -50,9 +50,9 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`nas - Aslam CLI
+	fmt.Println(`aslam - Aslam CLI
 
-Usage: nas <command> [args]
+Usage: aslam <command> [args]
 
 Commands:
   chat [id]          Start or continue a chat (interactive mode)
@@ -124,7 +124,7 @@ func handleChat(args []string) {
 			break
 		}
 
-		fmt.Println("\nThinking...")
+		fmt.Println("\nWorking...")
 		resp, err := sendMessage(convID, input)
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -173,7 +173,7 @@ func handleChats() {
 
 func handleSearch(args []string) {
 	if len(args) == 0 {
-		fmt.Println("Usage: nas search <query>")
+		fmt.Println("Usage: aslam search <query>")
 		os.Exit(1)
 	}
 
@@ -220,7 +220,7 @@ func handleNewChat() {
 		os.Exit(1)
 	}
 	fmt.Printf("Created conversation #%d\n", convID)
-	fmt.Printf("Start chatting with: nas chat %d\n", convID)
+	fmt.Printf("Start chatting with: aslam chat %d\n", convID)
 }
 
 func createConversation() (int64, error) {
