@@ -1692,11 +1692,12 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate(w, r, "home.html", map[string]interface{}{
-		"Conversations": convs,
-		"DailyContent":  dailyContent,
-		"RandomQA":      randomQA,
-		"PrayerTimes":   getPrayerTimesForUser(userID),
-		"HasLocation":   hasLocation,
+		"Conversations":   convs,
+		"DailyContent":    dailyContent,
+		"RandomQA":        randomQA,
+		"PrayerTimes":     getPrayerTimesForUser(userID),
+		"HasLocation":     hasLocation,
+		"ReadingProgress": db.GetAllReadingProgress(userID),
 	})
 }
 

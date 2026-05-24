@@ -3214,3 +3214,22 @@ func GetReadingProgress(userID int64, source string) (path, title string) {
 		userID, source).Scan(&path, &title)
 	return
 }
+
+func GetAllReadingProgress(userID int64) []map[string]interface{} {
+	rows, err := DB.Query(`SELECT source, path, title FROM reading_progress WHERE user_id = ? ORDER BY updated_at DESC`, userID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var source, path, title string
+		rows.Scan(&source, &path, &title)
+		results = append(results, map[string]interface{}{
+			"Source": source,
+			"Path":  path,
+			"Title": title,
+		})
+	}
+	return results
+}
