@@ -280,6 +280,10 @@ func Migrate() error {
 
 	DB.Exec(`ALTER TABLE hadith ADD COLUMN book_number INTEGER`)
 
+	// Clean up any broken tool/JSON messages from prior implementation
+	DB.Exec(`DELETE FROM messages WHERE role = 'tool'`)
+	DB.Exec(`DELETE FROM messages WHERE role = 'assistant' AND content LIKE '[{"type"%'`)
+
 	// Users - people who can access the system
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS users (

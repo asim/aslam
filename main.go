@@ -2205,29 +2205,18 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 		fullSystemPrompt += "\nIf the user asks you to send them an email, use this address."
 	}
 
-	// Build messages for API, reconstructing tool interactions from JSON
+	// Build messages for API
 	var apiMessages []map[string]interface{}
 	for _, m := range messages {
 		if m.Role == "system" {
 			continue
 		}
-		// Tool messages stored as JSON arrays need to be parsed back
-		if strings.HasPrefix(m.Content, "[") {
-			var parsed json.RawMessage
-			if json.Unmarshal([]byte(m.Content), &parsed) == nil {
-				role := m.Role
-				if role == "tool" {
-					role = "user"
-				}
-				apiMessages = append(apiMessages, map[string]interface{}{
-					"role":    role,
-					"content": parsed,
-				})
-				continue
-			}
+		role := m.Role
+		if role == "context" || role == "tool" {
+			role = "assistant"
 		}
 		apiMessages = append(apiMessages, map[string]interface{}{
-			"role":    m.Role,
+			"role":    role,
 			"content": m.Content,
 		})
 	}
@@ -2242,20 +2231,14 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 		// Check if we need to handle tool use
 		if result.StopReason == "tool_use" {
 			// Add assistant message with tool use
-			assistantMsg := map[string]interface{}{
+			apiMessages = append(apiMessages, map[string]interface{}{
 				"role":    "assistant",
 				"content": result.Content,
-			}
-			apiMessages = append(apiMessages, assistantMsg)
-
-			// Persist tool_use to DB so future turns have context
-			if convID > 0 {
-				toolUseJSON, _ := json.Marshal(result.Content)
-				db.AddMessage(convID, "assistant", string(toolUseJSON))
-			}
+			})
 
 			// Process tool calls and build tool results
 			var toolResults []map[string]interface{}
+			var contextLines []string
 			for _, block := range result.Content {
 				if block.Type == "tool_use" {
 					inputJSON, _ := json.Marshal(block.Input)
@@ -2280,20 +2263,20 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 						"tool_use_id": block.ID,
 						"content":     toolResult,
 					})
+
+					contextLines = append(contextLines, fmt.Sprintf("[%s(%s): %s]", block.Name, string(inputJSON), truncateString(toolResult, 1000)))
 				}
 			}
 
 			// Add tool results as user message
-			toolResultMsg := map[string]interface{}{
+			apiMessages = append(apiMessages, map[string]interface{}{
 				"role":    "user",
 				"content": toolResults,
-			}
-			apiMessages = append(apiMessages, toolResultMsg)
+			})
 
-			// Persist tool_results to DB
-			if convID > 0 {
-				toolResultJSON, _ := json.Marshal(toolResults)
-				db.AddMessage(convID, "tool", string(toolResultJSON))
+			// Save a text summary so the AI can reference it in follow-up turns
+			if convID > 0 && len(contextLines) > 0 {
+				db.AddMessage(convID, "context", strings.Join(contextLines, "\n"))
 			}
 			continue
 		}
