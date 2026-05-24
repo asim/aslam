@@ -123,6 +123,7 @@ func main() {
 	// Parse templates
 	funcs := template.FuncMap{
 		"version": func() string { return buildVersion },
+		"hasPrefix": strings.HasPrefix,
 		"formatTime": func(t time.Time) string {
 			return t.Format("2006-01-02 15:04")
 		},
@@ -1790,7 +1791,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(convID)
 	
 	// Generate AI response
-	response, toolsUsed, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages, convID)
 	if err != nil {
 		// Save error as assistant message
 		db.AddMessage(convID, "assistant", "Error: "+err.Error())
@@ -1851,7 +1852,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(req.ConversationID)
 
 	// Generate AI response
-	response, toolsUsed, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages, req.ConversationID)
 	if err != nil {
 		response = "Error: " + err.Error()
 	} else {
@@ -2184,11 +2185,11 @@ type ToolUsage struct {
 	Output string
 }
 
-func generateResponse(messages []db.Message) (string, []ToolUsage, error) {
-	return generateResponseWithProgress(messages, nil)
+func generateResponse(messages []db.Message, convID int64) (string, []ToolUsage, error) {
+	return generateResponseWithProgress(messages, convID, nil)
 }
 
-func generateResponseWithProgress(messages []db.Message, onTool func(string)) (string, []ToolUsage, error) {
+func generateResponseWithProgress(messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
 	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
@@ -2204,11 +2205,26 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 		fullSystemPrompt += "\nIf the user asks you to send them an email, use this address."
 	}
 
-	// Build messages for API
+	// Build messages for API, reconstructing tool interactions from JSON
 	var apiMessages []map[string]interface{}
 	for _, m := range messages {
 		if m.Role == "system" {
 			continue
+		}
+		// Tool messages stored as JSON arrays need to be parsed back
+		if strings.HasPrefix(m.Content, "[") {
+			var parsed json.RawMessage
+			if json.Unmarshal([]byte(m.Content), &parsed) == nil {
+				role := m.Role
+				if role == "tool" {
+					role = "user"
+				}
+				apiMessages = append(apiMessages, map[string]interface{}{
+					"role":    role,
+					"content": parsed,
+				})
+				continue
+			}
 		}
 		apiMessages = append(apiMessages, map[string]interface{}{
 			"role":    m.Role,
@@ -2226,10 +2242,17 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 		// Check if we need to handle tool use
 		if result.StopReason == "tool_use" {
 			// Add assistant message with tool use
-			apiMessages = append(apiMessages, map[string]interface{}{
+			assistantMsg := map[string]interface{}{
 				"role":    "assistant",
 				"content": result.Content,
-			})
+			}
+			apiMessages = append(apiMessages, assistantMsg)
+
+			// Persist tool_use to DB so future turns have context
+			if convID > 0 {
+				toolUseJSON, _ := json.Marshal(result.Content)
+				db.AddMessage(convID, "assistant", string(toolUseJSON))
+			}
 
 			// Process tool calls and build tool results
 			var toolResults []map[string]interface{}
@@ -2244,14 +2267,14 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 					if err != nil {
 						toolResult = fmt.Sprintf("Error: %v", err)
 					}
-					
+
 					// Track tool usage
 					toolsUsed = append(toolsUsed, ToolUsage{
 						Name:   block.Name,
 						Input:  string(inputJSON),
 						Output: truncateString(toolResult, 500),
 					})
-					
+
 					toolResults = append(toolResults, map[string]interface{}{
 						"type":        "tool_result",
 						"tool_use_id": block.ID,
@@ -2261,10 +2284,17 @@ func generateResponseWithProgress(messages []db.Message, onTool func(string)) (s
 			}
 
 			// Add tool results as user message
-			apiMessages = append(apiMessages, map[string]interface{}{
+			toolResultMsg := map[string]interface{}{
 				"role":    "user",
 				"content": toolResults,
-			})
+			}
+			apiMessages = append(apiMessages, toolResultMsg)
+
+			// Persist tool_results to DB
+			if convID > 0 {
+				toolResultJSON, _ := json.Marshal(toolResults)
+				db.AddMessage(convID, "tool", string(toolResultJSON))
+			}
 			continue
 		}
 
@@ -2400,7 +2430,7 @@ func handleAPISendMessageStream(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(req.ConversationID)
 
 	// Generate AI response with progress callback
-	response, toolsUsed, err := generateResponseWithProgress(messages, func(toolName string) {
+	response, toolsUsed, err := generateResponseWithProgress(messages, req.ConversationID, func(toolName string) {
 		log.Printf("Sending tool event: %s", toolName)
 		sendEvent("tool", toolName)
 	})

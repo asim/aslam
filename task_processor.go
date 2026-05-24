@@ -100,7 +100,7 @@ func processChatTask(task db.PendingTask) error {
 	}
 
 	// Generate response
-	response, toolsUsed, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages, task.ConversationID)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func processEmailTask(task db.PendingTask) error {
 	}
 
 	// Generate response
-	response, toolsUsed, err := generateResponse(messages)
+	response, toolsUsed, err := generateResponse(messages, task.ConversationID)
 	if err != nil {
 		return err
 	}
