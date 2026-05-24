@@ -1,0 +1,46 @@
+{{define "privacy.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Aslam</title>
+    {{template "style"}}
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content" style="line-height:1.8;">
+            <h2>Privacy Policy</h2>
+            <p class="muted" style="margin-bottom:24px;">Last updated: May 2025</p>
+
+            <h3>What we collect</h3>
+            <p>When you create an account, we store your email address and name. If you sign in with Google, we receive your email and name from Google — nothing else.</p>
+            <p>Your chats, notes, and reading progress are stored on our servers so you can access them across devices.</p>
+            <p>If you grant location permission, we use your coordinates solely to calculate prayer times. Your location is stored on your account and is not shared.</p>
+
+            <h3>How we use it</h3>
+            <p>Your data is used only to provide the service — showing your chats, notes, prayer times, and reading progress. We do not sell, share, or monetise your data.</p>
+            <p>When you ask a question in chat, your message is sent to Anthropic's API to generate a response. Anthropic's <a href="https://www.anthropic.com/privacy" target="_blank">privacy policy</a> applies to that processing.</p>
+
+            <h3>What we don't do</h3>
+            <ul style="list-style:disc; padding-left:20px; margin-bottom:16px;">
+                <li style="border:none; padding:4px 0;">No tracking or analytics</li>
+                <li style="border:none; padding:4px 0;">No advertising</li>
+                <li style="border:none; padding:4px 0;">No selling of data</li>
+                <li style="border:none; padding:4px 0;">No third-party cookies</li>
+            </ul>
+
+            <h3>Data storage</h3>
+            <p>All data is stored in an encrypted database on our servers. Content is private by default — only you can see your chats and notes unless you explicitly make them public.</p>
+
+            <h3>Deleting your data</h3>
+            <p>You can delete individual chats and notes at any time. To delete your account entirely, contact us and we will remove all your data.</p>
+
+            <h3>Contact</h3>
+            <p>Questions about this policy: <a href="mailto:privacy@aslam.org">privacy@aslam.org</a></p>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

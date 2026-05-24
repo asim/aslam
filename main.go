@@ -187,6 +187,7 @@ func main() {
 	// Auth routes (no auth required)
 	http.HandleFunc("/auth/login", handleAuthLogin)
 	http.HandleFunc("/auth/signup", handleSignup)
+	http.HandleFunc("/privacy", handlePrivacy)
 	http.HandleFunc("/auth/callback", handleOAuthCallback)
 	http.HandleFunc("/auth/logout", handleLogout)
 
@@ -1344,6 +1345,10 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User logged in via password: %s (%s)", user.Name, email)
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+func handlePrivacy(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, r, "privacy.html", nil)
 }
 
 func handleSignup(w http.ResponseWriter, r *http.Request) {
