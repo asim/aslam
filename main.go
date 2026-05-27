@@ -1206,6 +1206,23 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
+		// Accept session token from URL (OAuth redirect into PWA)
+		if authToken := r.URL.Query().Get("auth"); authToken != "" {
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session",
+				Value:    authToken,
+				Path:     "/",
+				Domain:   "aslam.org",
+				HttpOnly: true,
+				Secure:   true,
+				SameSite: http.SameSiteLaxMode,
+				MaxAge:   30 * 24 * 60 * 60,
+				Expires:  time.Now().Add(30 * 24 * time.Hour),
+			})
+			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+			return
+		}
+
 		session := getSession(r)
 		if session == nil {
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
@@ -1533,7 +1550,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("User logged in: %s (%s)", userInfo.Name, email)
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
+	http.Redirect(w, r, "/home?auth="+url.QueryEscape(token), http.StatusSeeOther)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
