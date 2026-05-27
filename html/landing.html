@@ -181,7 +181,9 @@
     </div>
 <script>
 var deferredPrompt;
-window.addEventListener('beforeinstallprompt', function(e) {
+var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (isMobile) {
+    window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
     var btn = document.getElementById('install-btn');
@@ -195,6 +197,7 @@ window.addEventListener('beforeinstallprompt', function(e) {
         });
     };
 });
+}
 </script>
 </body>
 </html>
