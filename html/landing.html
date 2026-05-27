@@ -108,7 +108,6 @@
     </style>
 </head>
 <body>
-    <a href="/home" id="app-btn" style="display:none; position:fixed; top:12px; right:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Open App</a>
     <div class="landing">
         <h1>Aslam</h1>
         <p class="tagline">An Islamic knowledge base for Muslims</p>
@@ -120,6 +119,9 @@
         <div class="buttons">
             <a href="/auth/signup" class="btn-primary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
+        </div>
+        <div class="buttons" id="install-btn" style="display:none; margin-top:-36px;">
+            <a href="#" class="btn-secondary">Install App</a>
         </div>
 
         <div class="sources">
@@ -178,22 +180,18 @@
         <p class="footer">Free and open source &middot; <a href="/privacy" style="color:#999;">Privacy Policy</a></p>
     </div>
 <script>
-var appBtn = document.getElementById('app-btn');
-appBtn.style.display = 'block';
-
+var deferredPrompt;
 window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
-    var deferredPrompt = e;
-    appBtn.textContent = 'Install App';
-    appBtn.href = '#';
-    appBtn.onclick = function(ev) {
+    deferredPrompt = e;
+    var btn = document.getElementById('install-btn');
+    btn.style.display = 'flex';
+    btn.querySelector('a').onclick = function(ev) {
         ev.preventDefault();
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(function() {
             deferredPrompt = null;
-            appBtn.textContent = 'Open App';
-            appBtn.href = '/home';
-            appBtn.onclick = null;
+            btn.style.display = 'none';
         });
     };
 });
