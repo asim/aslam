@@ -120,9 +120,7 @@
             <a href="/auth/signup" class="btn-primary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
         </div>
-        <div class="buttons" id="install-btn" style="display:none; margin-top:-36px;">
-            <a href="#" class="btn-secondary">Install App</a>
-        </div>
+        <a href="#" id="install-btn" style="display:none; position:fixed; top:12px; right:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Install App</a>
 
         <div class="sources">
             <div class="source-card">
@@ -187,8 +185,8 @@ if (isMobile) {
     e.preventDefault();
     deferredPrompt = e;
     var btn = document.getElementById('install-btn');
-    btn.style.display = 'flex';
-    btn.querySelector('a').onclick = function(ev) {
+    btn.style.display = 'block';
+    btn.onclick = function(ev) {
         ev.preventDefault();
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(function() {
