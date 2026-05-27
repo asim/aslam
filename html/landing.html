@@ -179,31 +179,24 @@
     </div>
 <script>
 var appBtn = document.getElementById('app-btn');
-var deferredPrompt;
-var isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+appBtn.style.display = 'block';
 
-if (isInstalled) {
-    appBtn.textContent = 'Open App';
-    appBtn.style.display = 'block';
-} else {
-    window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        deferredPrompt = e;
-        appBtn.textContent = 'Install App';
-        appBtn.href = '#';
-        appBtn.style.display = 'block';
-        appBtn.onclick = function(ev) {
-            ev.preventDefault();
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function() {
-                deferredPrompt = null;
-                appBtn.textContent = 'Open App';
-                appBtn.href = '/home';
-                appBtn.onclick = null;
-            });
-        };
-    });
-}
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    var deferredPrompt = e;
+    appBtn.textContent = 'Install App';
+    appBtn.href = '#';
+    appBtn.onclick = function(ev) {
+        ev.preventDefault();
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() {
+            deferredPrompt = null;
+            appBtn.textContent = 'Open App';
+            appBtn.href = '/home';
+            appBtn.onclick = null;
+        });
+    };
+});
 </script>
 </body>
 </html>
