@@ -108,6 +108,7 @@
     </style>
 </head>
 <body>
+    <a href="/home" id="app-btn" style="display:none; position:fixed; top:12px; right:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Open App</a>
     <div class="landing">
         <h1>Aslam</h1>
         <p class="tagline">An Islamic knowledge base for Muslims</p>
@@ -119,12 +120,6 @@
         <div class="buttons">
             <a href="/auth/signup" class="btn-primary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
-        </div>
-        <div class="buttons" id="install-btn" style="display:none; margin-top:-36px;">
-            <a href="#" onclick="installApp(event)" class="btn-secondary">Install App</a>
-        </div>
-        <div id="install-ios" style="display:none; margin-bottom:32px; text-align:center; font-size:13px; color:#666; background:#f8f8f8; padding:12px 16px; border-radius:8px;">
-            Tap <svg style="vertical-align:middle;margin:0 2px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> then <strong>"Add to Home Screen"</strong>
         </div>
 
         <div class="sources">
@@ -183,24 +178,31 @@
         <p class="footer">Free and open source &middot; <a href="/privacy" style="color:#999;">Privacy Policy</a></p>
     </div>
 <script>
-// Android/Chrome install prompt
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('install-btn').style.display = 'flex';
-});
-function installApp(e) {
-    e.preventDefault();
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-    document.getElementById('install-btn').style.display = 'none';
-}
+var appBtn = document.getElementById('app-btn');
+var deferredPrompt;
+var isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-// iOS detection — Safari doesn't fire beforeinstallprompt
-if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone) {
-    document.getElementById('install-ios').style.display = 'block';
+if (isInstalled) {
+    appBtn.textContent = 'Open App';
+    appBtn.style.display = 'block';
+} else {
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        appBtn.textContent = 'Install App';
+        appBtn.href = '#';
+        appBtn.style.display = 'block';
+        appBtn.onclick = function(ev) {
+            ev.preventDefault();
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                appBtn.textContent = 'Open App';
+                appBtn.href = '/home';
+                appBtn.onclick = null;
+            });
+        };
+    });
 }
 </script>
 </body>
