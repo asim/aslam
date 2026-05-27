@@ -117,9 +117,7 @@
         <div class="buttons">
             <a href="/auth/signup" class="btn-primary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
-        </div>
-        <div id="install-btn" style="display:none; margin-bottom:32px;">
-            <a href="#" onclick="installApp(event)" class="btn-primary" style="display:inline-block;">Install App</a>
+            <a href="#" id="install-link" onclick="installApp(event)" class="btn-primary" style="display:none;">Install App</a>
         </div>
         <div id="install-ios" style="display:none; margin-bottom:32px; text-align:center; font-size:13px; color:#666; background:#f8f8f8; padding:12px 16px; border-radius:8px;">
             Tap <svg style="vertical-align:middle;margin:0 2px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> then <strong>"Add to Home Screen"</strong>
@@ -186,14 +184,14 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    document.getElementById('install-btn').style.display = 'block';
+    document.getElementById('install-link').style.display = 'inline-block';
 });
 function installApp(e) {
     e.preventDefault();
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-    document.getElementById('install-btn').style.display = 'none';
+    document.getElementById('install-link').style.display = 'none';
 }
 
 // iOS detection — Safari doesn't fire beforeinstallprompt
