@@ -941,7 +941,7 @@ func loadArabic() {
 	log.Printf("Loaded %d Arabic vocab words (v%s)", total, arabicVersion)
 }
 
-const prophetsVersion = "2"
+const prophetsVersion = "3"
 
 func loadProphets() {
 	if db.GetSetting("prophets_version") == prophetsVersion {

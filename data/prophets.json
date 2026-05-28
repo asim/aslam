@@ -278,6 +278,73 @@
             "context": "The parting of the sea and Pharaoh's end"
           }
         ]
+      },
+      {
+        "narrative": "After crossing the sea, the Children of Israel came upon a people devoted to idols. They said to Musa: \"Make for us a god just as they have gods.\" Musa was appalled: \"Indeed, you are a people behaving ignorantly. What they are engaged in is destined for destruction, and worthless is what they used to do.\" He reminded them that Allah had favoured them above all nations.\n\nAllah summoned Musa to Mount Sinai for forty nights to receive the Torah. Before leaving, Musa appointed his brother Harun in charge: \"Take my place among my people, do right, and do not follow the way of the corrupters.\"\n\nBut in his absence, a man named Samiri collected gold jewellery from the people, melted it down, and fashioned a golden calf that made a lowing sound. The people began worshipping it. Harun warned them: \"O my people, you are only being tested by it, and indeed your Lord is the Most Merciful, so follow me and obey my command.\" They said: \"We will never cease being devoted to it until Musa returns to us.\"",
+        "verses": [
+          {
+            "ref": "7:138-152",
+            "chapter": 7,
+            "start": 138,
+            "end": 152,
+            "context": "The golden calf and Harun's warning"
+          }
+        ]
+      },
+      {
+        "narrative": "When Musa returned and saw his people worshipping the calf, he was filled with rage and grief. He threw down the tablets of the Torah and seized his brother by the head, pulling him toward him. Harun cried: \"O son of my mother, indeed the people overpowered me and were about to kill me. So let not the enemies rejoice over me and do not place me among the wrongdoing people.\"\n\nMusa turned to Samiri: \"And what is your case, O Samiri?\" Samiri said he had seen what others did not see — he had taken a handful of dust from the trace of the angel Jibril's horse and thrown it into the molten gold. \"And thus did my soul entice me,\" he said. Musa declared: \"Then go. And indeed, it is for you in this life to say, 'No contact.' And indeed, you have an appointment in the Hereafter you will never fail to keep. And look at your god to which you remained devoted. We will surely burn it and blow it into the sea with a blast.\"\n\nMusa then prayed: \"My Lord, forgive me and my brother and admit us into Your mercy, for You are the most merciful of the merciful.\"",
+        "verses": [
+          {
+            "ref": "20:83-98",
+            "chapter": 20,
+            "start": 83,
+            "end": 98,
+            "context": "Musa confronts Samiri and destroys the calf"
+          }
+        ]
+      },
+      {
+        "narrative": "Musa chose seventy men from his people to come to Mount Sinai to repent before Allah. When they arrived, they were seized by a violent earthquake. Musa pleaded: \"My Lord, if You had willed, You could have destroyed them before and me as well. Would You destroy us for what the foolish among us have done? This is not but Your trial by which You send astray whom You will and guide whom You will. You are our Protector, so forgive us and have mercy upon us; and You are the best of forgivers.\"\n\nAllah prescribed for them good in this world and in the Hereafter. He told Musa: \"My punishment — I afflict with it whom I will, but My mercy encompasses all things.\"",
+        "verses": [
+          {
+            "ref": "7:155-156",
+            "chapter": 7,
+            "start": 155,
+            "end": 156,
+            "context": "The seventy at Mount Sinai and Allah's mercy"
+          }
+        ]
+      },
+      {
+        "narrative": "The Children of Israel were commanded to enter the Holy Land. Musa said: \"O my people, enter the Holy Land which Allah has assigned to you and do not turn back, or you will become losers.\" But the people were afraid of the inhabitants and refused: \"O Musa, indeed within it is a people of tyrannical strength, and indeed, we will never enter it until they leave it. But if they leave it, then we will enter.\"\n\nTwo righteous men among them urged: \"Enter upon them through the gate, for when you have entered it, you will be predominant. And upon Allah rely, if you should be believers.\" But the people still refused: \"O Musa, indeed we will not enter it, ever, as long as they are within it; so go, you and your Lord, and fight. Indeed, we are remaining right here.\"\n\nMusa, in despair, prayed: \"My Lord, indeed I do not possess except myself and my brother, so part us from the defiantly disobedient people.\" Allah declared that the land would be forbidden to them for forty years, during which they would wander in the earth.",
+        "verses": [
+          {
+            "ref": "5:20-26",
+            "chapter": 5,
+            "start": 20,
+            "end": 26,
+            "context": "Refusal to enter the Holy Land and 40 years of wandering"
+          }
+        ]
+      },
+      {
+        "narrative": "During their years in the wilderness, the Children of Israel constantly tested Musa's patience. They complained about the food Allah provided — manna and quails — saying: \"O Musa, we can never endure one kind of food. So call upon your Lord to bring forth for us from the earth its green herbs and its cucumbers and its garlic and its lentils and its onions.\" Musa said: \"Would you exchange what is better for what is less?\"\n\nThey were also commanded not to fish on the Sabbath, but some of them devised tricks to catch fish. They were told to slaughter a cow as a sacrifice, but kept asking questions to delay and complicate a simple command until it became nearly impossible.\n\nDespite all of this, Musa remained steadfast. He is the prophet Allah spoke to directly — Kalimullah. When Musa asked to see Allah, he was told: \"You will not see Me, but look at the mountain; if it should remain in its place, then you will see Me.\" When Allah revealed Himself to the mountain, it crumbled to dust, and Musa fell unconscious. When he awoke, he said: \"Exalted are You! I have repented to You, and I am the first of the believers.\"",
+        "verses": [
+          {
+            "ref": "2:61",
+            "chapter": 2,
+            "start": 61,
+            "end": 61,
+            "context": "Complaints about food in the wilderness"
+          },
+          {
+            "ref": "7:143",
+            "chapter": 7,
+            "start": 143,
+            "end": 143,
+            "context": "Musa asks to see Allah and the mountain crumbles"
+          }
+        ]
       }
     ]
   },
@@ -287,21 +354,33 @@
     "title": "David — The King-Prophet",
     "sections": [
       {
-        "narrative": "Dawud was given both kingship and prophethood — a rare combination. Allah gave him the Zabur (Psalms) and softened iron in his hands so he could shape it without fire, making coats of armor. The mountains and birds would join him in glorifying Allah, echoing his praise at sunrise and sunset.\n\nHe was known for his wisdom in judgement. Allah tested him and he sought forgiveness, falling into prostration. Allah forgave him and gave him nearness and a good return.",
+        "narrative": "Dawud was a young man when he faced Jalut (Goliath), the mighty warrior king. When the armies met, the soldiers of Talut (Saul) were afraid. But Dawud, with Allah's permission, killed Jalut. Allah gave Dawud the kingdom, wisdom, and taught him what He willed.\n\nAs both king and prophet, Dawud was given extraordinary gifts. Allah softened iron in his hands — he could shape it without fire, crafting coats of chainmail armor. He was given the Zabur (Psalms), and when he recited, the mountains and birds would echo his praise of Allah, glorifying at sunrise and sunset.",
         "verses": [
+          {
+            "ref": "2:251",
+            "chapter": 2,
+            "start": 251,
+            "end": 251,
+            "context": "Dawud defeats Jalut"
+          },
           {
             "ref": "34:10-11",
             "chapter": 34,
             "start": 10,
             "end": 11,
             "context": "Mountains and birds glorify with Dawud"
-          },
+          }
+        ]
+      },
+      {
+        "narrative": "Dawud was also tested in his judgement. Two men came to him with a dispute — one had ninety-nine ewes and the other had just one, yet the first demanded the other's single ewe. Dawud ruled in favour of the weaker party, then realised this was a test from Allah. He fell into prostration and repented. Allah forgave him and gave him nearness and a beautiful return.\n\nAllah told him: \"O Dawud, indeed We have made you a successor upon the earth, so judge between the people in truth and do not follow your own desire, as it will lead you astray from the way of Allah.\"",
+        "verses": [
           {
-            "ref": "38:17-26",
+            "ref": "38:21-26",
             "chapter": 38,
-            "start": 17,
+            "start": 21,
             "end": 26,
-            "context": "His patience and judgement"
+            "context": "The test of judgement"
           }
         ]
       }
@@ -333,6 +412,18 @@
             "start": 20,
             "end": 44,
             "context": "The Queen of Sheba"
+          }
+        ]
+      },
+      {
+        "narrative": "Sulayman's death itself was remarkable. He died while leaning on his staff, and the jinn continued working, not realising he had passed away. It was only when a small creature of the earth gnawed through his staff and his body fell that they knew. Had the jinn known the unseen, they would not have remained in the humiliating punishment of hard labour. This was a clear sign that the jinn have no knowledge of the unseen.",
+        "verses": [
+          {
+            "ref": "34:14",
+            "chapter": 34,
+            "start": 14,
+            "end": 14,
+            "context": "Sulayman's death and the jinn's ignorance of the unseen"
           }
         ]
       }
@@ -390,6 +481,18 @@
             "start": 22,
             "end": 33,
             "context": "The miraculous birth and speaking from the cradle"
+          }
+        ]
+      },
+      {
+        "narrative": "Isa called the Children of Israel to worship Allah alone. He told them: \"Indeed, Allah is my Lord and your Lord, so worship Him. That is the straight path.\" He confirmed the Torah that came before him, but made lawful some things that had been forbidden to them.\n\nWhen Isa sensed disbelief from his people, he asked: \"Who are my supporters for the cause of Allah?\" The disciples said: \"We are supporters for Allah. We have believed in Allah and testify that we are Muslims.\" They asked him to pray for a table spread with food to be sent down from heaven as a sign. Isa prayed, and Allah sent it down, saying it would be a festival for them — but whoever disbelieved after that would face a severe punishment.",
+        "verses": [
+          {
+            "ref": "5:110-115",
+            "chapter": 5,
+            "start": 110,
+            "end": 115,
+            "context": "The disciples and the table from heaven"
           }
         ]
       },
