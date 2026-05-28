@@ -2120,7 +2120,14 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		// Strip tool markers before saving
 		response = regexp.MustCompile(`\n?!tool:\w+\n?`).ReplaceAllString(response, "")
 		response = strings.TrimSpace(response)
-		response = formatResponseWithSources(response, toolsUsed)
+
+		// Send sources footer through the stream too
+		sourcesFooter := formatSourcesFooter(toolsUsed)
+		if sourcesFooter != "" {
+			fmt.Fprint(w, sourcesFooter)
+			flusher.Flush()
+		}
+		response = response + sourcesFooter
 	}
 	db.AddMessage(req.ConversationID, "assistant", response)
 }
@@ -2415,9 +2422,9 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
-func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
+func formatSourcesFooter(toolsUsed []ToolUsage) string {
 	if len(toolsUsed) == 0 {
-		return response
+		return ""
 	}
 
 	seen := make(map[string]bool)
@@ -2432,7 +2439,11 @@ func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
 		sources.WriteString(fmt.Sprintf("- %s: `%s`\n", tool.Name, tool.Input))
 	}
 
-	return response + sources.String()
+	return sources.String()
+}
+
+func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
+	return response + formatSourcesFooter(toolsUsed)
 }
 
 // UserContext contains info about the current user for personalization

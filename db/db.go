@@ -20,6 +20,22 @@ import (
 )
 
 var slugBadChars = regexp.MustCompile(`[^a-z0-9]+`)
+var ftsSpecialChars = regexp.MustCompile(`[*"():]`)
+
+func sanitiseFTS(query string) string {
+	query = ftsSpecialChars.ReplaceAllString(query, "")
+	query = strings.TrimSpace(query)
+	words := strings.Fields(query)
+	var clean []string
+	for _, w := range words {
+		upper := strings.ToUpper(w)
+		if upper == "AND" || upper == "OR" || upper == "NOT" || upper == "NEAR" {
+			continue
+		}
+		clean = append(clean, w)
+	}
+	return strings.Join(clean, " ")
+}
 
 // Slug returns a stable URL-safe identifier derived from title + canonical content.
 // Format: slugified-title-XXXXXX where XXXXXX is the first 6 hex chars of sha1(canonical).
@@ -971,7 +987,8 @@ func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]inte
 // the assistant, anything the assistant remembered, and anything stored in
 // notes can be found with a single query.
 func SearchAll(query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
-	if strings.TrimSpace(query) == "" {
+	query = sanitiseFTS(query)
+	if query == "" {
 		return nil, nil
 	}
 
@@ -3161,6 +3178,10 @@ func InsertArabicWord(arabic, transliteration, english string, frequency int, ex
 }
 
 func SearchArabic(query string) ([]map[string]interface{}, error) {
+	query = sanitiseFTS(query)
+	if query == "" {
+		return nil, nil
+	}
 	rows, err := DB.Query(`
 		SELECT a.id, a.arabic, a.transliteration, a.english, a.frequency, a.example_ref, a.type
 		FROM arabic a
