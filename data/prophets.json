@@ -43,6 +43,25 @@
     ]
   },
   {
+    "name": "Idris",
+    "arabic": "إدريس",
+    "title": "Enoch — Raised to a High Station",
+    "sections": [
+      {
+        "narrative": "Idris is mentioned briefly in the Quran but with great honour. He was a man of truth and a prophet. Allah raised him to a high station — scholars interpret this as a physical raising to the heavens, or an elevation in rank and closeness to Allah. He is counted among the patient and the righteous.",
+        "verses": [
+          {
+            "ref": "19:56-57",
+            "chapter": 19,
+            "start": 56,
+            "end": 57,
+            "context": "A man of truth, raised to a high station"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "Nuh",
     "arabic": "نوح",
     "title": "Noah — Builder of the Ark",
@@ -80,6 +99,58 @@
             "start": 42,
             "end": 48,
             "context": "The flood, his son, and the landing"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Hud",
+    "arabic": "هود",
+    "title": "Sent to the People of 'Ad",
+    "sections": [
+      {
+        "narrative": "The people of 'Ad were powerful and prosperous, building great monuments and towers on every elevation. They thought they were invincible. Allah sent them the prophet Hud, who said: \"O my people, worship Allah; you have no deity other than Him. Will you not fear Him?\"\n\nThey mocked him: \"We are not going to leave our gods for your saying, and we are not believers in you.\" They challenged him to bring the punishment he threatened. So Allah sent upon them a furious wind for seven nights and eight days without stopping — it destroyed everything in its path. After the wind, nothing remained of the great people of 'Ad but their empty ruins.",
+        "verses": [
+          {
+            "ref": "7:65-72",
+            "chapter": 7,
+            "start": 65,
+            "end": 72,
+            "context": "Hud's mission and the destruction of 'Ad"
+          },
+          {
+            "ref": "69:6-8",
+            "chapter": 69,
+            "start": 6,
+            "end": 8,
+            "context": "The furious wind"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Salih",
+    "arabic": "صالح",
+    "title": "Sent to the People of Thamud",
+    "sections": [
+      {
+        "narrative": "The people of Thamud carved magnificent homes from the mountainside — rock-cut dwellings that can still be seen in the region of Al-Hijr in modern Saudi Arabia. They were skilled and powerful, but they rejected Allah. The prophet Salih was sent to them.\n\nAs a sign, Allah brought forth a she-camel from a rock. Salih told his people: \"This is the she-camel of Allah — a sign for you. So let her eat within Allah's earth and do not touch her with harm, or you will be taken by a painful punishment.\" He told them to share the water — one day for the camel, one day for them.\n\nBut they hamstrung the camel and killed it defiantly. Salih warned them: \"Enjoy yourselves in your homes for three days. That is a promise not to be denied.\" On the third day, a thunderous blast seized them. They lay fallen in their homes, as if they had never prospered there.",
+        "verses": [
+          {
+            "ref": "7:73-79",
+            "chapter": 7,
+            "start": 73,
+            "end": 79,
+            "context": "The she-camel and the destruction of Thamud"
+          },
+          {
+            "ref": "91:11-15",
+            "chapter": 91,
+            "start": 11,
+            "end": 15,
+            "context": "Their denial and the blast"
           }
         ]
       }
@@ -153,6 +224,25 @@
     ]
   },
   {
+    "name": "Lut",
+    "arabic": "لوط",
+    "title": "Lot — Righteous Among the Wicked",
+    "sections": [
+      {
+        "narrative": "Lut was the nephew of Ibrahim. He was sent to the people of Sodom, who practiced a sin unprecedented among all of creation. Lut pleaded with them: \"Do you approach males among the worlds and leave what your Lord has created for you as mates? Rather, you are a transgressing people.\"\n\nThey threatened to expel him: \"If you do not desist, O Lut, you will surely be of those evicted.\" When angels came to Lut in the form of handsome young men to warn him, the people of the city rushed to his door with evil intent. Lut was distressed, saying: \"This is a difficult day.\" The angels told him: \"Do not fear. We are the messengers of your Lord; they will never reach you.\"\n\nLut was told to leave with his family during the night and not to look back. At dawn, the punishment came — Allah turned the cities upside down and rained upon them stones of baked clay, marked from your Lord. And they are not from the wrongdoers very far.",
+        "verses": [
+          {
+            "ref": "11:77-83",
+            "chapter": 11,
+            "start": 77,
+            "end": 83,
+            "context": "The angels' visit and the destruction of Sodom"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "Ismail",
     "arabic": "إسماعيل",
     "title": "Ishmael — The Patient Son",
@@ -178,6 +268,58 @@
             "start": 102,
             "end": 107,
             "context": "Willing submission to Allah's command"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Ishaq",
+    "arabic": "إسحاق",
+    "title": "Isaac — The Promised Son",
+    "sections": [
+      {
+        "narrative": "When the angels visited Ibrahim on their way to destroy the people of Lut, they brought good news. Ibrahim's wife Sarah laughed in astonishment when they told her she would have a son — she was old and her husband was elderly. The angels said: \"Do you wonder at the decree of Allah? May the mercy of Allah and His blessings be upon you, people of the house.\"\n\nIshaq was born as promised. Through him, the line of Israelite prophets continued — his son was Yaqub, and from Yaqub came the twelve tribes of Israel. Allah blessed both Ishaq and his descendants, among whom were those who did good and those who clearly wronged themselves.",
+        "verses": [
+          {
+            "ref": "11:71-73",
+            "chapter": 11,
+            "start": 71,
+            "end": 73,
+            "context": "The glad tidings of Ishaq's birth"
+          },
+          {
+            "ref": "37:112-113",
+            "chapter": 37,
+            "start": 112,
+            "end": 113,
+            "context": "Blessed after the sacrifice"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Yaqub",
+    "arabic": "يعقوب",
+    "title": "Jacob — The Grieving Father",
+    "sections": [
+      {
+        "narrative": "Yaqub's story is inseparable from his son Yusuf's. When his sons brought him Yusuf's shirt stained with false blood, claiming a wolf had eaten him, Yaqub knew they were lying. He said: \"Rather, your souls have enticed you to something. So patience is beautiful. And Allah is the one sought for help against that which you describe.\"\n\nYears passed. Yaqub never stopped grieving. His eyes turned white from sorrow — he wept until he went blind. His sons said: \"By Allah, you will not cease remembering Yusuf until you become fatally ill or become of those who perish.\" He replied: \"I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.\"\n\nWhen Yusuf finally sent his shirt back from Egypt with his brothers, Yaqub recognised the scent before it arrived. They placed it over his face, and his sight was restored. The family travelled to Egypt and were reunited. Yaqub fell into prostration, and the dream Yusuf had seen as a child — eleven stars, the sun, and the moon bowing — was fulfilled.",
+        "verses": [
+          {
+            "ref": "12:84-87",
+            "chapter": 12,
+            "start": 84,
+            "end": 87,
+            "context": "Grief, patience, and hope"
+          },
+          {
+            "ref": "12:93-100",
+            "chapter": 12,
+            "start": 93,
+            "end": 100,
+            "context": "Reunion and sight restored"
           }
         ]
       }
@@ -221,6 +363,51 @@
             "start": 43,
             "end": 100,
             "context": "Rise to power, reunion with his family"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Ayyub",
+    "arabic": "أيوب",
+    "title": "Job — The Patient",
+    "sections": [
+      {
+        "narrative": "Ayyub was a prophet blessed with wealth, health, and a large family. Then he was tested — he lost everything. His wealth vanished, his children died, and his body was struck with a terrible illness that lasted for years. People abandoned him. Through all of it, Ayyub remained patient, never complaining against Allah.\n\nFinally, he called out: \"Indeed, adversity has touched me, and You are the Most Merciful of the merciful.\" Allah responded immediately: \"Strike the ground with your foot — this is a cool wash and a drink.\" A spring gushed forth. Allah restored his health, returned his family to him, and gave him double of what he had lost. His story is the ultimate example of sabr — beautiful patience in the face of overwhelming loss.",
+        "verses": [
+          {
+            "ref": "21:83-84",
+            "chapter": 21,
+            "start": 83,
+            "end": 84,
+            "context": "His prayer and Allah's response"
+          },
+          {
+            "ref": "38:41-44",
+            "chapter": 38,
+            "start": 41,
+            "end": 44,
+            "context": "His patience rewarded"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Shuayb",
+    "arabic": "شعيب",
+    "title": "Sent to the People of Madyan",
+    "sections": [
+      {
+        "narrative": "The people of Madyan were merchants who cheated in their measurements. They gave less when they sold and demanded more when they bought. The prophet Shu'ayb — known for his eloquence — was sent to them.\n\nHe said: \"O my people, worship Allah; you have no deity other than Him. And do not decrease from the measure and the scale. Indeed, I see you in prosperity, but I fear for you the punishment of an all-encompassing Day.\" They said he was just a man bewitched, and they denied him. An earthquake seized them, and they lay fallen in their homes — as if they had never prospered there.",
+        "verses": [
+          {
+            "ref": "11:84-95",
+            "chapter": 11,
+            "start": 84,
+            "end": 95,
+            "context": "Shu'ayb's plea against fraud and the earthquake"
           }
         ]
       }
@@ -349,6 +536,58 @@
     ]
   },
   {
+    "name": "Harun",
+    "arabic": "هارون",
+    "title": "Aaron — The Helper",
+    "sections": [
+      {
+        "narrative": "Harun was Musa's older brother, given prophethood alongside him. When Musa prayed for a helper, he asked for Harun: \"And appoint for me a minister from my family — Harun, my brother. Increase through him my strength and let him share my task.\" Allah granted this request.\n\nWhen Musa went to Mount Sinai to receive the Torah, he left Harun in charge of the people. In his absence, a man named Samiri fashioned a golden calf from the people's jewellery, and it made a sound. The people began worshipping it. Harun warned them: \"O my people, you are only being tested by it, and indeed, your Lord is the Most Merciful, so follow me and obey my command.\" But they refused to stop until Musa returned.\n\nWhen Musa came back and saw them worshipping the calf, he was furious. He grabbed his brother by the beard. Harun cried: \"O son of my mother, do not seize me by my beard or by my head. Indeed, I feared that you would say, 'You caused division among the Children of Israel, and you did not observe my word.'\"",
+        "verses": [
+          {
+            "ref": "20:29-36",
+            "chapter": 20,
+            "start": 29,
+            "end": 36,
+            "context": "Appointed as Musa's helper"
+          },
+          {
+            "ref": "20:85-94",
+            "chapter": 20,
+            "start": 85,
+            "end": 94,
+            "context": "The golden calf and Harun's plea"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Dhul-Kifl",
+    "arabic": "ذو الكفل",
+    "title": "The One of the Portion",
+    "sections": [
+      {
+        "narrative": "Dhul-Kifl is mentioned twice in the Quran, both times alongside other prophets. His identity is debated among scholars — some say he was Ezekiel, others that he was a righteous man who was given a portion of responsibility and fulfilled it with patience and devotion. What is clear is that Allah counted him among the patient, among the righteous, and among the best of creation.",
+        "verses": [
+          {
+            "ref": "21:85-86",
+            "chapter": 21,
+            "start": 85,
+            "end": 86,
+            "context": "Among the patient and righteous"
+          },
+          {
+            "ref": "38:48",
+            "chapter": 38,
+            "start": 48,
+            "end": 48,
+            "context": "Among the best of men"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "Dawud",
     "arabic": "داود",
     "title": "David — The King-Prophet",
@@ -430,6 +669,51 @@
     ]
   },
   {
+    "name": "Ilyas",
+    "arabic": "إلياس",
+    "title": "Elijah — Against Baal Worship",
+    "sections": [
+      {
+        "narrative": "Ilyas was sent to his people who had begun worshipping an idol called Baal. He confronted them directly: \"Will you not fear Allah? Do you call upon Baal and leave the best of creators — Allah, your Lord and the Lord of your first forefathers?\" They denied him. But Ilyas is praised: \"Indeed, he was of Our believing servants. And indeed, Ilyas was from among the messengers. Peace upon Ilyas.\"",
+        "verses": [
+          {
+            "ref": "37:123-132",
+            "chapter": 37,
+            "start": 123,
+            "end": 132,
+            "context": "Calling his people away from Baal"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Al-Yasa",
+    "arabic": "اليسع",
+    "title": "Elisha — The Chosen",
+    "sections": [
+      {
+        "narrative": "Al-Yasa is mentioned alongside the greatest prophets in the Quran — with Ibrahim, Ishaq, Yaqub, Musa, and Harun. Allah says of him and others: \"All were favoured above the nations.\" He continued the mission of Ilyas, guiding his people to the worship of Allah alone. He is counted among the best of creation.",
+        "verses": [
+          {
+            "ref": "6:86",
+            "chapter": 6,
+            "start": 86,
+            "end": 86,
+            "context": "Favoured above the nations"
+          },
+          {
+            "ref": "38:48",
+            "chapter": 38,
+            "start": 48,
+            "end": 48,
+            "context": "Among the best of men"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "Yunus",
     "arabic": "يونس",
     "title": "Jonah — The One Who Called from Darkness",
@@ -450,6 +734,44 @@
             "start": 87,
             "end": 88,
             "context": "His prayer from the darkness"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Zakariya",
+    "arabic": "زكريا",
+    "title": "Zechariah — The Devoted Elder",
+    "sections": [
+      {
+        "narrative": "Zakariya was an elderly priest who cared for Maryam in the temple. Every time he visited her prayer chamber, he found fresh provisions — fruits out of season, food he had not brought. He asked: \"O Maryam, from where is this?\" She said: \"It is from Allah.\"\n\nSeeing this miracle kindled a longing in Zakariya's heart. Though he was old and his wife was barren, he prayed in secret: \"My Lord, indeed my bones have weakened, and my head has filled with white hair, and never have I been in my supplication to You, my Lord, unhappy. And indeed, I fear my relatives after me, and my wife has been barren, so give me from Yourself an heir.\"\n\nAllah answered: \"O Zakariya, indeed We give you good tidings of a boy whose name will be Yahya. We have not assigned to any before him that name.\" Zakariya was overcome: \"My Lord, how will I have a boy when my wife has been barren and I have reached extreme old age?\" Allah said: \"It is easy for Me — I created you before, when you were nothing.\"",
+        "verses": [
+          {
+            "ref": "19:1-11",
+            "chapter": 19,
+            "start": 1,
+            "end": 11,
+            "context": "His prayer answered with Yahya"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Yahya",
+    "arabic": "يحيى",
+    "title": "John — The First of His Name",
+    "sections": [
+      {
+        "narrative": "Yahya was given a name no one had borne before him — Allah Himself named him. He was given wisdom as a child and grew up with tenderness from Allah. He was devout, dutiful to his parents, and neither arrogant nor disobedient. He confirmed the word from Allah and was a leader, chaste, and a prophet from among the righteous.\n\nAllah's peace was upon him the day he was born, the day he died, and the day he will be raised alive.",
+        "verses": [
+          {
+            "ref": "19:12-15",
+            "chapter": 19,
+            "start": 12,
+            "end": 15,
+            "context": "Given wisdom, compassion, and purity"
           }
         ]
       }
@@ -562,328 +884,6 @@
             "start": 1,
             "end": 3,
             "context": "Victory and the completion of the message"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Ayyub",
-    "arabic": "أيوب",
-    "title": "Job — The Patient",
-    "sections": [
-      {
-        "narrative": "Ayyub was a prophet blessed with wealth, health, and a large family. Then he was tested — he lost everything. His wealth vanished, his children died, and his body was struck with a terrible illness that lasted for years. People abandoned him. Through all of it, Ayyub remained patient, never complaining against Allah.\n\nFinally, he called out: \"Indeed, adversity has touched me, and You are the Most Merciful of the merciful.\" Allah responded immediately: \"Strike the ground with your foot — this is a cool wash and a drink.\" A spring gushed forth. Allah restored his health, returned his family to him, and gave him double of what he had lost. His story is the ultimate example of sabr — beautiful patience in the face of overwhelming loss.",
-        "verses": [
-          {
-            "ref": "21:83-84",
-            "chapter": 21,
-            "start": 83,
-            "end": 84,
-            "context": "His prayer and Allah's response"
-          },
-          {
-            "ref": "38:41-44",
-            "chapter": 38,
-            "start": 41,
-            "end": 44,
-            "context": "His patience rewarded"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Hud",
-    "arabic": "هود",
-    "title": "Sent to the People of 'Ad",
-    "sections": [
-      {
-        "narrative": "The people of 'Ad were powerful and prosperous, building great monuments and towers on every elevation. They thought they were invincible. Allah sent them the prophet Hud, who said: \"O my people, worship Allah; you have no deity other than Him. Will you not fear Him?\"\n\nThey mocked him: \"We are not going to leave our gods for your saying, and we are not believers in you.\" They challenged him to bring the punishment he threatened. So Allah sent upon them a furious wind for seven nights and eight days without stopping — it destroyed everything in its path. After the wind, nothing remained of the great people of 'Ad but their empty ruins.",
-        "verses": [
-          {
-            "ref": "7:65-72",
-            "chapter": 7,
-            "start": 65,
-            "end": 72,
-            "context": "Hud's mission and the destruction of 'Ad"
-          },
-          {
-            "ref": "69:6-8",
-            "chapter": 69,
-            "start": 6,
-            "end": 8,
-            "context": "The furious wind"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Salih",
-    "arabic": "صالح",
-    "title": "Sent to the People of Thamud",
-    "sections": [
-      {
-        "narrative": "The people of Thamud carved magnificent homes from the mountainside — rock-cut dwellings that can still be seen in the region of Al-Hijr in modern Saudi Arabia. They were skilled and powerful, but they rejected Allah. The prophet Salih was sent to them.\n\nAs a sign, Allah brought forth a she-camel from a rock. Salih told his people: \"This is the she-camel of Allah — a sign for you. So let her eat within Allah's earth and do not touch her with harm, or you will be taken by a painful punishment.\" He told them to share the water — one day for the camel, one day for them.\n\nBut they hamstrung the camel and killed it defiantly. Salih warned them: \"Enjoy yourselves in your homes for three days. That is a promise not to be denied.\" On the third day, a thunderous blast seized them. They lay fallen in their homes, as if they had never prospered there.",
-        "verses": [
-          {
-            "ref": "7:73-79",
-            "chapter": 7,
-            "start": 73,
-            "end": 79,
-            "context": "The she-camel and the destruction of Thamud"
-          },
-          {
-            "ref": "91:11-15",
-            "chapter": 91,
-            "start": 11,
-            "end": 15,
-            "context": "Their denial and the blast"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Lut",
-    "arabic": "لوط",
-    "title": "Lot — Righteous Among the Wicked",
-    "sections": [
-      {
-        "narrative": "Lut was the nephew of Ibrahim. He was sent to the people of Sodom, who practiced a sin unprecedented among all of creation. Lut pleaded with them: \"Do you approach males among the worlds and leave what your Lord has created for you as mates? Rather, you are a transgressing people.\"\n\nThey threatened to expel him: \"If you do not desist, O Lut, you will surely be of those evicted.\" When angels came to Lut in the form of handsome young men to warn him, the people of the city rushed to his door with evil intent. Lut was distressed, saying: \"This is a difficult day.\" The angels told him: \"Do not fear. We are the messengers of your Lord; they will never reach you.\"\n\nLut was told to leave with his family during the night and not to look back. At dawn, the punishment came — Allah turned the cities upside down and rained upon them stones of baked clay, marked from your Lord. And they are not from the wrongdoers very far.",
-        "verses": [
-          {
-            "ref": "11:77-83",
-            "chapter": 11,
-            "start": 77,
-            "end": 83,
-            "context": "The angels' visit and the destruction of Sodom"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Shuayb",
-    "arabic": "شعيب",
-    "title": "Sent to the People of Madyan",
-    "sections": [
-      {
-        "narrative": "The people of Madyan were merchants who cheated in their measurements. They gave less when they sold and demanded more when they bought. The prophet Shu'ayb — known for his eloquence — was sent to them.\n\nHe said: \"O my people, worship Allah; you have no deity other than Him. And do not decrease from the measure and the scale. Indeed, I see you in prosperity, but I fear for you the punishment of an all-encompassing Day.\" They said he was just a man bewitched, and they denied him. An earthquake seized them, and they lay fallen in their homes — as if they had never prospered there.",
-        "verses": [
-          {
-            "ref": "11:84-95",
-            "chapter": 11,
-            "start": 84,
-            "end": 95,
-            "context": "Shu'ayb's plea against fraud and the earthquake"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Idris",
-    "arabic": "إدريس",
-    "title": "Enoch — Raised to a High Station",
-    "sections": [
-      {
-        "narrative": "Idris is mentioned briefly in the Quran but with great honour. He was a man of truth and a prophet. Allah raised him to a high station — scholars interpret this as a physical raising to the heavens, or an elevation in rank and closeness to Allah. He is counted among the patient and the righteous.",
-        "verses": [
-          {
-            "ref": "19:56-57",
-            "chapter": 19,
-            "start": 56,
-            "end": 57,
-            "context": "A man of truth, raised to a high station"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Ishaq",
-    "arabic": "إسحاق",
-    "title": "Isaac — The Promised Son",
-    "sections": [
-      {
-        "narrative": "When the angels visited Ibrahim on their way to destroy the people of Lut, they brought good news. Ibrahim's wife Sarah laughed in astonishment when they told her she would have a son — she was old and her husband was elderly. The angels said: \"Do you wonder at the decree of Allah? May the mercy of Allah and His blessings be upon you, people of the house.\"\n\nIshaq was born as promised. Through him, the line of Israelite prophets continued — his son was Yaqub, and from Yaqub came the twelve tribes of Israel. Allah blessed both Ishaq and his descendants, among whom were those who did good and those who clearly wronged themselves.",
-        "verses": [
-          {
-            "ref": "11:71-73",
-            "chapter": 11,
-            "start": 71,
-            "end": 73,
-            "context": "The glad tidings of Ishaq's birth"
-          },
-          {
-            "ref": "37:112-113",
-            "chapter": 37,
-            "start": 112,
-            "end": 113,
-            "context": "Blessed after the sacrifice"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Yaqub",
-    "arabic": "يعقوب",
-    "title": "Jacob — The Grieving Father",
-    "sections": [
-      {
-        "narrative": "Yaqub's story is inseparable from his son Yusuf's. When his sons brought him Yusuf's shirt stained with false blood, claiming a wolf had eaten him, Yaqub knew they were lying. He said: \"Rather, your souls have enticed you to something. So patience is beautiful. And Allah is the one sought for help against that which you describe.\"\n\nYears passed. Yaqub never stopped grieving. His eyes turned white from sorrow — he wept until he went blind. His sons said: \"By Allah, you will not cease remembering Yusuf until you become fatally ill or become of those who perish.\" He replied: \"I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.\"\n\nWhen Yusuf finally sent his shirt back from Egypt with his brothers, Yaqub recognised the scent before it arrived. They placed it over his face, and his sight was restored. The family travelled to Egypt and were reunited. Yaqub fell into prostration, and the dream Yusuf had seen as a child — eleven stars, the sun, and the moon bowing — was fulfilled.",
-        "verses": [
-          {
-            "ref": "12:84-87",
-            "chapter": 12,
-            "start": 84,
-            "end": 87,
-            "context": "Grief, patience, and hope"
-          },
-          {
-            "ref": "12:93-100",
-            "chapter": 12,
-            "start": 93,
-            "end": 100,
-            "context": "Reunion and sight restored"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Harun",
-    "arabic": "هارون",
-    "title": "Aaron — The Helper",
-    "sections": [
-      {
-        "narrative": "Harun was Musa's older brother, given prophethood alongside him. When Musa prayed for a helper, he asked for Harun: \"And appoint for me a minister from my family — Harun, my brother. Increase through him my strength and let him share my task.\" Allah granted this request.\n\nWhen Musa went to Mount Sinai to receive the Torah, he left Harun in charge of the people. In his absence, a man named Samiri fashioned a golden calf from the people's jewellery, and it made a sound. The people began worshipping it. Harun warned them: \"O my people, you are only being tested by it, and indeed, your Lord is the Most Merciful, so follow me and obey my command.\" But they refused to stop until Musa returned.\n\nWhen Musa came back and saw them worshipping the calf, he was furious. He grabbed his brother by the beard. Harun cried: \"O son of my mother, do not seize me by my beard or by my head. Indeed, I feared that you would say, 'You caused division among the Children of Israel, and you did not observe my word.'\"",
-        "verses": [
-          {
-            "ref": "20:29-36",
-            "chapter": 20,
-            "start": 29,
-            "end": 36,
-            "context": "Appointed as Musa's helper"
-          },
-          {
-            "ref": "20:85-94",
-            "chapter": 20,
-            "start": 85,
-            "end": 94,
-            "context": "The golden calf and Harun's plea"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Zakariya",
-    "arabic": "زكريا",
-    "title": "Zechariah — The Devoted Elder",
-    "sections": [
-      {
-        "narrative": "Zakariya was an elderly priest who cared for Maryam in the temple. Every time he visited her prayer chamber, he found fresh provisions — fruits out of season, food he had not brought. He asked: \"O Maryam, from where is this?\" She said: \"It is from Allah.\"\n\nSeeing this miracle kindled a longing in Zakariya's heart. Though he was old and his wife was barren, he prayed in secret: \"My Lord, indeed my bones have weakened, and my head has filled with white hair, and never have I been in my supplication to You, my Lord, unhappy. And indeed, I fear my relatives after me, and my wife has been barren, so give me from Yourself an heir.\"\n\nAllah answered: \"O Zakariya, indeed We give you good tidings of a boy whose name will be Yahya. We have not assigned to any before him that name.\" Zakariya was overcome: \"My Lord, how will I have a boy when my wife has been barren and I have reached extreme old age?\" Allah said: \"It is easy for Me — I created you before, when you were nothing.\"",
-        "verses": [
-          {
-            "ref": "19:1-11",
-            "chapter": 19,
-            "start": 1,
-            "end": 11,
-            "context": "His prayer answered with Yahya"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Yahya",
-    "arabic": "يحيى",
-    "title": "John — The First of His Name",
-    "sections": [
-      {
-        "narrative": "Yahya was given a name no one had borne before him — Allah Himself named him. He was given wisdom as a child and grew up with tenderness from Allah. He was devout, dutiful to his parents, and neither arrogant nor disobedient. He confirmed the word from Allah and was a leader, chaste, and a prophet from among the righteous.\n\nAllah's peace was upon him the day he was born, the day he died, and the day he will be raised alive.",
-        "verses": [
-          {
-            "ref": "19:12-15",
-            "chapter": 19,
-            "start": 12,
-            "end": 15,
-            "context": "Given wisdom, compassion, and purity"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Dhul-Kifl",
-    "arabic": "ذو الكفل",
-    "title": "The One of the Portion",
-    "sections": [
-      {
-        "narrative": "Dhul-Kifl is mentioned twice in the Quran, both times alongside other prophets. His identity is debated among scholars — some say he was Ezekiel, others that he was a righteous man who was given a portion of responsibility and fulfilled it with patience and devotion. What is clear is that Allah counted him among the patient, among the righteous, and among the best of creation.",
-        "verses": [
-          {
-            "ref": "21:85-86",
-            "chapter": 21,
-            "start": 85,
-            "end": 86,
-            "context": "Among the patient and righteous"
-          },
-          {
-            "ref": "38:48",
-            "chapter": 38,
-            "start": 48,
-            "end": 48,
-            "context": "Among the best of men"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Ilyas",
-    "arabic": "إلياس",
-    "title": "Elijah — Against Baal Worship",
-    "sections": [
-      {
-        "narrative": "Ilyas was sent to his people who had begun worshipping an idol called Baal. He confronted them directly: \"Will you not fear Allah? Do you call upon Baal and leave the best of creators — Allah, your Lord and the Lord of your first forefathers?\" They denied him. But Ilyas is praised: \"Indeed, he was of Our believing servants. And indeed, Ilyas was from among the messengers. Peace upon Ilyas.\"",
-        "verses": [
-          {
-            "ref": "37:123-132",
-            "chapter": 37,
-            "start": 123,
-            "end": 132,
-            "context": "Calling his people away from Baal"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Al-Yasa",
-    "arabic": "اليسع",
-    "title": "Elisha — The Chosen",
-    "sections": [
-      {
-        "narrative": "Al-Yasa is mentioned alongside the greatest prophets in the Quran — with Ibrahim, Ishaq, Yaqub, Musa, and Harun. Allah says of him and others: \"All were favoured above the nations.\" He continued the mission of Ilyas, guiding his people to the worship of Allah alone. He is counted among the best of creation.",
-        "verses": [
-          {
-            "ref": "6:86",
-            "chapter": 6,
-            "start": 86,
-            "end": 86,
-            "context": "Favoured above the nations"
-          },
-          {
-            "ref": "38:48",
-            "chapter": 38,
-            "start": 48,
-            "end": 48,
-            "context": "Among the best of men"
           }
         ]
       }
