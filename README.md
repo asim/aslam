@@ -20,6 +20,7 @@ AI works in the background to help find, organise, and connect information acros
 | **Ghazali** | 1,437 sections | Ihya Ulum al-Din (Revival of the Islamic Sciences) — 4 volumes, 37 chapters |
 | **Adhkar** | 97 duas/dhikr | Morning, evening, after salah, daily, and selected supplications |
 | **Arabic** | 21,000+ words | Quranic vocabulary — Arabic, transliteration, English, frequency |
+| **Stories** | 25 prophets | Stories of the Prophets told through Quran verses — narrative prose with citations |
 | **Reminder** | Hourly feed | Verse, hadith, name of Allah + message from reminder.dev |
 
 ~41,000 indexed records of Islamic knowledge, all searchable.
@@ -30,7 +31,8 @@ AI works in the background to help find, organise, and connect information acros
 - **Prayer times** — Moonsighting Committee method, auto-detected location
 - **Daily reminder** — hourly verse, hadith, name of Allah, and message
 - **Question of the day** — random IslamQA question on the home page
-- **Browse** — index pages for IslamQA, Ghazali, Adhkar, Riyad us-Salihin (with prev/next navigation)
+- **Stories of the Prophets** — 25 prophets, narrative prose with Quran verse citations
+- **Browse** — index pages for Quran, Hadith, Names, IslamQA, Ghazali, Adhkar, Riyad us-Salihin (with prev/next navigation)
 - **Arabic vocabulary** — search 21,000+ Quranic words by English or Arabic, with transliteration and frequency
 - **Chats** — ask questions, AI searches authentic sources with query reformulation
 - **Notes** — save reflections, bookmarks from any content page
@@ -69,6 +71,8 @@ AI works in the background to help find, organise, and connect information acros
 | `/hadith/book/{n}` | Hadiths in a Bukhari book |
 | `/hadith/{number}` | Hadith — narrator, English, Arabic |
 | `/names` | 99 Names of Allah |
+| `/stories` | Stories of the Prophets |
+| `/stories/{slug}` | Prophet story — narrative with Quran verse citations |
 | `/names/{number}` | Name of Allah — Arabic, meaning, description |
 | `/profile` | User profile and picture |
 | `/admin` | User management and system configuration |
