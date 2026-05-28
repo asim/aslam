@@ -271,11 +271,35 @@
                     location.reload();
                 }
             } catch (err) {
-                if (!contentEl.textContent || contentEl.textContent === 'Working...') {
-                    responseDiv.remove();
-                    location.reload();
-                    return;
-                }
+                // Connection dropped — poll for the saved response
+                statusEl.textContent = 'Reconnecting...';
+                let attempts = 0;
+                const recover = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const r = await fetch('/api/chat/latest?id=' + convId);
+                        const d = await r.json();
+                        if (d.role === 'assistant') {
+                            clearInterval(recover);
+                            statusEl.remove();
+                            responseDiv.classList.remove('typing');
+                            if (typeof marked !== 'undefined') {
+                                contentEl.innerHTML = marked.parse(d.content);
+                            } else {
+                                contentEl.textContent = d.content;
+                            }
+                            msgInput.disabled = false;
+                            sendBtn.disabled = false;
+                            msgInput.focus();
+                        } else if (attempts >= 60) {
+                            clearInterval(recover);
+                            statusEl.remove();
+                            responseDiv.remove();
+                            location.reload();
+                        }
+                    } catch (_) {}
+                }, 2000);
+                return;
             }
 
             msgInput.disabled = false;

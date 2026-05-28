@@ -215,6 +215,7 @@ func main() {
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
 	http.HandleFunc("/chat/send", requireAuth(handleSendMessage))
 	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessage))
+	http.HandleFunc("/api/chat/latest", requireAuth(handleAPIChatLatest))
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
@@ -2028,6 +2029,26 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", convID), http.StatusSeeOther)
+}
+
+func handleAPIChatLatest(w http.ResponseWriter, r *http.Request) {
+	convID, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	if convID == 0 {
+		jsonError(w, "Missing id", 400)
+		return
+	}
+	messages, _ := db.GetMessages(convID)
+	if len(messages) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"role": "", "content": ""})
+		return
+	}
+	last := messages[len(messages)-1]
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"role":    last.Role,
+		"content": last.Content,
+	})
 }
 
 func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
