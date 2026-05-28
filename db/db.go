@@ -721,6 +721,24 @@ func Migrate() error {
 		DELETE FROM salihin_fts WHERE docid = old.id;
 	END`)
 
+	// Stories of the Prophets
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS prophets (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			slug TEXT UNIQUE,
+			name TEXT NOT NULL,
+			arabic TEXT,
+			title TEXT,
+			summary TEXT,
+			verses TEXT,
+			image_url TEXT,
+			sort_order INTEGER DEFAULT 0
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
 	// Reading progress — auto-tracks where each user left off per source
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS reading_progress (
@@ -2361,6 +2379,29 @@ func GetQuranVerse(chapter, verse int) (map[string]interface{}, error) {
 	}, nil
 }
 
+func GetQuranVerseRange(chapter, start, end int) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT verse, text, arabic FROM quran WHERE chapter = ? AND verse >= ? AND verse <= ? ORDER BY verse`,
+		chapter, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var verse int
+		var text string
+		var arabic sql.NullString
+		rows.Scan(&verse, &text, &arabic)
+		results = append(results, map[string]interface{}{
+			"Chapter": chapter,
+			"Verse":   verse,
+			"Text":    text,
+			"Arabic":  arabic.String,
+		})
+	}
+	return results, nil
+}
+
 // Hadith functions
 
 func HadithCount() int {
@@ -3199,6 +3240,81 @@ func GetArabicPrevNext(id int64) (prevID, nextID int64) {
 	DB.QueryRow(`SELECT id FROM arabic WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
 	DB.QueryRow(`SELECT id FROM arabic WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
 	return
+}
+
+// Prophets
+
+func ProphetCount() int {
+	var count int
+	DB.QueryRow(`SELECT COUNT(*) FROM prophets`).Scan(&count)
+	return count
+}
+
+func ClearProphets() {
+	DB.Exec(`DELETE FROM prophets`)
+}
+
+func InsertProphet(slug, name, arabic, title, summary, versesJSON, imageURL string, sortOrder int) error {
+	_, err := DB.Exec(`INSERT INTO prophets (slug, name, arabic, title, summary, verses, image_url, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		slug, name, arabic, title, summary, versesJSON, imageURL, sortOrder)
+	return err
+}
+
+func UpdateProphetImage(slug, imageURL string) {
+	DB.Exec(`UPDATE prophets SET image_url = ? WHERE slug = ?`, imageURL, slug)
+}
+
+func GetAllProphets() ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT slug, name, arabic, title, summary, image_url FROM prophets ORDER BY sort_order`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var results []map[string]interface{}
+	for rows.Next() {
+		var slug, name string
+		var arabic, title, summary, imageURL sql.NullString
+		rows.Scan(&slug, &name, &arabic, &title, &summary, &imageURL)
+		results = append(results, map[string]interface{}{
+			"Slug":     slug,
+			"Name":     name,
+			"Arabic":   arabic.String,
+			"Title":    title.String,
+			"Summary":  summary.String,
+			"ImageURL": imageURL.String,
+		})
+	}
+	return results, nil
+}
+
+func GetProphet(slug string) (map[string]interface{}, error) {
+	var id int64
+	var name string
+	var arabic, title, summary, versesJSON, imageURL sql.NullString
+	err := DB.QueryRow(`SELECT id, name, arabic, title, summary, verses, image_url FROM prophets WHERE slug = ?`, slug).Scan(
+		&id, &name, &arabic, &title, &summary, &versesJSON, &imageURL)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"ID":        id,
+		"Slug":      slug,
+		"Name":      name,
+		"Arabic":    arabic.String,
+		"Title":     title.String,
+		"Summary":   summary.String,
+		"VersesJSON": versesJSON.String,
+		"ImageURL":  imageURL.String,
+	}, nil
+}
+
+func GetProphetPrevNext(slug string) (prevSlug, nextSlug string) {
+	var sortOrder int
+	DB.QueryRow(`SELECT sort_order FROM prophets WHERE slug = ?`, slug).Scan(&sortOrder)
+	var p, n sql.NullString
+	DB.QueryRow(`SELECT slug FROM prophets WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1`, sortOrder).Scan(&p)
+	DB.QueryRow(`SELECT slug FROM prophets WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1`, sortOrder).Scan(&n)
+	return p.String, n.String
 }
 
 // Reading progress

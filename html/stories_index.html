@@ -1,0 +1,71 @@
+{{define "stories_index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stories of the Prophets - Aslam</title>
+    {{template "style"}}
+    <style>
+        .prophet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .prophet-card {
+            display: block;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            text-decoration: none;
+            color: #222;
+        }
+        .prophet-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .prophet-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        .prophet-card .card-body { padding: 12px; }
+        .prophet-card .card-arabic {
+            font-family: 'Uthmanic', 'Traditional Arabic', serif;
+            font-size: 20px;
+            direction: rtl;
+            color: #444;
+            margin-bottom: 2px;
+        }
+        .prophet-card .card-name { font-size: 15px; font-weight: 600; }
+        .prophet-card .card-title { font-size: 12px; color: #888; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        {{template "header" .}}
+        <main class="app-content">
+            <h2>Stories of the Prophets</h2>
+            <p class="muted" style="margin-bottom:16px;">25 prophets mentioned in the Quran &mdash; their stories told through the verses</p>
+
+            {{if .ContinuePath}}
+            <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+            </div>
+            {{end}}
+
+            <div class="prophet-grid">
+                {{range .Prophets}}
+                <a href="/stories/{{index . "Slug"}}" class="prophet-card">
+                    {{if index . "ImageURL"}}<img src="{{index . "ImageURL"}}" alt="{{index . "Name"}}">{{end}}
+                    <div class="card-body">
+                        <div class="card-arabic">{{index . "Arabic"}}</div>
+                        <div class="card-name">{{index . "Name"}}</div>
+                        <div class="card-title">{{index . "Title"}}</div>
+                    </div>
+                </a>
+                {{end}}
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+{{end}}

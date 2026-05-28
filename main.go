@@ -56,6 +56,9 @@ var riyadZip []byte
 //go:embed data/arabic.zip
 var arabicZip []byte
 
+//go:embed data/prophets.json
+var prophetsJSON []byte
+
 var buildVersion = strconv.FormatInt(time.Now().Unix(), 10)
 
 var (
@@ -119,6 +122,7 @@ func main() {
 		loadAdhkar()
 		loadRiyad()
 		loadArabic()
+		loadProphets()
 	}()
 
 	// Parse templates
@@ -228,6 +232,9 @@ func main() {
 	http.HandleFunc("/salihin/", requireAuth(handleRiyadView))
 	http.HandleFunc("/arabic", requireAuth(handleArabicIndex))
 	http.HandleFunc("/arabic/", requireAuth(handleArabicView))
+	http.HandleFunc("/images/", handleImages)
+	http.HandleFunc("/stories", requireAuth(handleStoriesIndex))
+	http.HandleFunc("/stories/", requireAuth(handleStoriesView))
 	http.HandleFunc("/api/arabic/search", requireAuth(handleArabicSearch))
 	http.HandleFunc("/quran", requireAuth(handleQuranIndex))
 	http.HandleFunc("/quran/", requireAuth(handleQuranRouter))
@@ -933,6 +940,224 @@ func loadArabic() {
 
 	db.SetSetting("arabic_version", arabicVersion)
 	log.Printf("Loaded %d Arabic vocab words (v%s)", total, arabicVersion)
+}
+
+const prophetsVersion = "1"
+
+func loadProphets() {
+	if db.GetSetting("prophets_version") == prophetsVersion {
+		log.Printf("Prophets v%s already loaded (%d entries)", prophetsVersion, db.ProphetCount())
+		return
+	}
+
+	log.Printf("Loading Prophets dataset v%s...", prophetsVersion)
+	db.ClearProphets()
+
+	var prophets []struct {
+		Name        string `json:"name"`
+		Arabic      string `json:"arabic"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary"`
+		Verses      []struct {
+			Ref     string `json:"ref"`
+			Chapter int    `json:"chapter"`
+			Start   int    `json:"start"`
+			End     int    `json:"end"`
+			Context string `json:"context"`
+		} `json:"verses"`
+		ImagePrompt string `json:"image_prompt"`
+	}
+	if err := json.Unmarshal(prophetsJSON, &prophets); err != nil {
+		log.Printf("Failed to parse prophets.json: %v", err)
+		return
+	}
+
+	total := 0
+	for i, p := range prophets {
+		slug := strings.ToLower(p.Name)
+		slug = strings.ReplaceAll(slug, " ", "-")
+		slug = strings.ReplaceAll(slug, "'", "")
+		versesJSON, _ := json.Marshal(p.Verses)
+		if err := db.InsertProphet(slug, p.Name, p.Arabic, p.Title, p.Summary, string(versesJSON), "", i); err != nil {
+			log.Printf("Failed to insert prophet %s: %v", p.Name, err)
+		} else {
+			total++
+		}
+	}
+
+	db.SetSetting("prophets_version", prophetsVersion)
+	log.Printf("Loaded %d prophets (v%s)", total, prophetsVersion)
+
+	// Generate images for prophets that don't have one yet
+	atlasKey := os.Getenv("ATLAS_API_KEY")
+	if atlasKey == "" {
+		log.Println("ATLAS_API_KEY not set, skipping prophet image generation")
+		return
+	}
+	go generateProphetImages(prophets, atlasKey)
+}
+
+func generateProphetImages(prophets []struct {
+	Name        string `json:"name"`
+	Arabic      string `json:"arabic"`
+	Title       string `json:"title"`
+	Summary     string `json:"summary"`
+	Verses      []struct {
+		Ref     string `json:"ref"`
+		Chapter int    `json:"chapter"`
+		Start   int    `json:"start"`
+		End     int    `json:"end"`
+		Context string `json:"context"`
+	} `json:"verses"`
+	ImagePrompt string `json:"image_prompt"`
+}, atlasKey string) {
+	for _, p := range prophets {
+		slug := strings.ToLower(p.Name)
+		slug = strings.ReplaceAll(slug, " ", "-")
+		slug = strings.ReplaceAll(slug, "'", "")
+
+		// Check if image already exists
+		prophet, err := db.GetProphet(slug)
+		if err != nil {
+			continue
+		}
+		if prophet["ImageURL"].(string) != "" {
+			continue
+		}
+		if p.ImagePrompt == "" {
+			continue
+		}
+
+		log.Printf("Generating image for %s...", p.Name)
+		imgURL, err := generateAtlasImage(p.ImagePrompt, atlasKey, slug)
+		if err != nil {
+			log.Printf("Failed to generate image for %s: %v", p.Name, err)
+			continue
+		}
+		db.UpdateProphetImage(slug, imgURL)
+		log.Printf("Generated image for %s: %s", p.Name, imgURL)
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func generateAtlasImage(prompt, apiKey, slug string) (string, error) {
+	reqBody, _ := json.Marshal(map[string]interface{}{
+		"model":           "openai/gpt-image-2",
+		"prompt":          prompt,
+		"n":               1,
+		"size":            "1024x1024",
+		"response_format": "b64_json",
+	})
+
+	req, _ := http.NewRequest("POST", "https://api.atlascloud.ai/v1/images/generations", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("API error %d: %s", resp.StatusCode, string(body[:min(200, len(body))]))
+	}
+
+	var result struct {
+		Data []struct {
+			B64JSON string `json:"b64_json"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil || len(result.Data) == 0 {
+		return "", fmt.Errorf("failed to parse image response")
+	}
+
+	// Decode and save as file
+	imgData, err := base64.StdEncoding.DecodeString(result.Data[0].B64JSON)
+	if err != nil {
+		return "", err
+	}
+
+	// Save to a static path
+	imgDir := filepath.Join(os.Getenv("HOME"), ".aslam", "images")
+	os.MkdirAll(imgDir, 0755)
+	imgPath := filepath.Join(imgDir, slug+".png")
+	if err := os.WriteFile(imgPath, imgData, 0644); err != nil {
+		return "", err
+	}
+
+	return "/images/" + slug + ".png", nil
+}
+
+func handleImages(w http.ResponseWriter, r *http.Request) {
+	name := filepath.Base(r.URL.Path)
+	imgPath := filepath.Join(os.Getenv("HOME"), ".aslam", "images", name)
+	http.ServeFile(w, r, imgPath)
+}
+
+func handleStoriesIndex(w http.ResponseWriter, r *http.Request) {
+	prophets, _ := db.GetAllProphets()
+	p, t := db.GetReadingProgress(getUserID(r), "stories")
+	renderTemplate(w, r, "stories_index.html", map[string]interface{}{
+		"Prophets":      prophets,
+		"ContinuePath":  p,
+		"ContinueTitle": t,
+	})
+}
+
+func handleStoriesView(w http.ResponseWriter, r *http.Request) {
+	slug := strings.TrimPrefix(r.URL.Path, "/stories/")
+	if slug == "" {
+		http.NotFound(w, r)
+		return
+	}
+	prophet, err := db.GetProphet(slug)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Parse verses JSON and fetch actual Quran text
+	var verseRefs []struct {
+		Ref     string `json:"ref"`
+		Chapter int    `json:"chapter"`
+		Start   int    `json:"start"`
+		End     int    `json:"end"`
+		Context string `json:"context"`
+	}
+	versesJSON, _ := prophet["VersesJSON"].(string)
+	json.Unmarshal([]byte(versesJSON), &verseRefs)
+
+	type VerseSection struct {
+		Ref     string
+		Context string
+		Chapter int
+		Start   int
+		End     int
+		Verses  []map[string]interface{}
+	}
+	var sections []VerseSection
+	for _, vr := range verseRefs {
+		verses, _ := db.GetQuranVerseRange(vr.Chapter, vr.Start, vr.End)
+		sections = append(sections, VerseSection{
+			Ref:     vr.Ref,
+			Context: vr.Context,
+			Chapter: vr.Chapter,
+			Start:   vr.Start,
+			End:     vr.End,
+			Verses:  verses,
+		})
+	}
+	prophet["Sections"] = sections
+
+	prev, next := db.GetProphetPrevNext(slug)
+	prophet["PrevSlug"] = prev
+	prophet["NextSlug"] = next
+
+	db.SaveReadingProgress(getUserID(r), "stories", r.URL.Path, prophet["Name"].(string))
+	renderTemplate(w, r, "stories.html", prophet)
 }
 
 func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
@@ -2772,6 +2997,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		dataset("Adhkar", db.AdhkarCount(), 97, db.GetSetting("adhkar_version"), adhkarVersion),
 		dataset("Riyad us-Salihin", db.RiyadCount(), 1896, db.GetSetting("riyad_version"), riyadVersion),
 		dataset("Arabic", db.ArabicCount(), 21247, db.GetSetting("arabic_version"), arabicVersion),
+		dataset("Prophets", db.ProphetCount(), 25, db.GetSetting("prophets_version"), prophetsVersion),
 	}
 
 	msg := r.URL.Query().Get("msg")
