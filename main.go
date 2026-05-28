@@ -1277,6 +1277,15 @@ func handleQuranView(w http.ResponseWriter, r *http.Request) {
 	}
 	chName, _ := item["ChapterName"].(string)
 	db.SaveReadingProgress(getUserID(r), "quran", r.URL.Path, fmt.Sprintf("%s %d:%d", chName, chapter, verse))
+
+	prevCh, prevV, nextCh, nextV := db.GetQuranVersePrevNext(chapter, verse)
+	if prevCh > 0 {
+		item["PrevURL"] = fmt.Sprintf("/quran/%d/%d", prevCh, prevV)
+	}
+	if nextCh > 0 {
+		item["NextURL"] = fmt.Sprintf("/quran/%d/%d", nextCh, nextV)
+	}
+
 	renderTemplate(w, r, "quran.html", item)
 }
 

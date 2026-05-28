@@ -2379,6 +2379,14 @@ func GetQuranVerse(chapter, verse int) (map[string]interface{}, error) {
 	}, nil
 }
 
+func GetQuranVersePrevNext(chapter, verse int) (prevCh, prevV, nextCh, nextV int) {
+	DB.QueryRow(`SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse < ?) OR chapter < ? ORDER BY chapter DESC, verse DESC LIMIT 1`,
+		chapter, verse, chapter).Scan(&prevCh, &prevV)
+	DB.QueryRow(`SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse > ?) OR chapter > ? ORDER BY chapter ASC, verse ASC LIMIT 1`,
+		chapter, verse, chapter).Scan(&nextCh, &nextV)
+	return
+}
+
 func GetQuranVerseRange(chapter, start, end int) ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`SELECT verse, text, arabic FROM quran WHERE chapter = ? AND verse >= ? AND verse <= ? ORDER BY verse`,
 		chapter, start, end)

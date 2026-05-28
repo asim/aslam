@@ -91,6 +91,12 @@
             <div class="quran-source">
                 <a href="https://reminder.dev/quran/{{index . "Chapter"}}#{{index . "Verse"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
             </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevURL"}}<a href="{{index . "PrevURL"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/quran/{{index . "Chapter"}}">{{index . "ChapterName"}}</a>
+                {{if index . "NextURL"}}<a href="{{index . "NextURL"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
         </main>
     </div>
 </body>
