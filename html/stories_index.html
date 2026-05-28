@@ -20,13 +20,7 @@
             text-decoration: none;
             color: #222;
         }
-        .prophet-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .prophet-card img {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-            background: #f0f0f0;
-        }
+        .prophet-card:hover { background: #fafafa; }
         .prophet-card .card-body { padding: 12px; }
         .prophet-card .card-arabic {
             font-family: 'Uthmanic', 'Traditional Arabic', serif;
@@ -55,7 +49,6 @@
             <div class="prophet-grid">
                 {{range .Prophets}}
                 <a href="/stories/{{index . "Slug"}}" class="prophet-card">
-                    {{if index . "ImageURL"}}<img src="{{index . "ImageURL"}}" alt="{{index . "Name"}}">{{end}}
                     <div class="card-body">
                         <div class="card-arabic">{{index . "Arabic"}}</div>
                         <div class="card-name">{{index . "Name"}}</div>

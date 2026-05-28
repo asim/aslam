@@ -24,11 +24,6 @@
         .story-section {
             margin-bottom: 36px;
         }
-        .story-section img {
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 16px;
-        }
         .story-narrative {
             line-height: 1.9;
             font-size: 15px;
@@ -67,7 +62,6 @@
 
             {{range .Sections}}
             <div class="story-section">
-                {{if .ImageURL}}<img src="{{.ImageURL}}" alt="">{{end}}
                 <div class="story-narrative">{{.Narrative}}</div>
                 {{if .Groups}}
                 <div class="verse-refs">
