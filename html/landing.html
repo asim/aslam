@@ -77,7 +77,6 @@
         .source-card .label { font-size: 12px; color: #888; margin-top: 2px; }
         .features {
             max-width: 500px;
-            text-align: center;
             margin-bottom: 40px;
         }
         .features h3 {
@@ -86,9 +85,11 @@
             letter-spacing: 0.5px;
             color: #888;
             margin-bottom: 12px;
+            text-align: center;
         }
         .features ul {
-            list-style: none;
+            list-style: disc;
+            padding-left: 20px;
             display: grid;
             gap: 8px;
         }
@@ -104,7 +105,9 @@
             font-size: 12px;
             color: #999;
             text-align: center;
-            margin-bottom: 4px;
+        }
+        .landing .footer + .footer {
+            margin-top: 12px;
         }
     </style>
 </head>
