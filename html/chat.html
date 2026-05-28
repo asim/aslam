@@ -195,6 +195,9 @@
 
             const responseDiv = addMessage('assistant', 'Working...', true);
             const contentEl = responseDiv.querySelector('.message-content');
+            const statusEl = document.createElement('div');
+            statusEl.style.cssText = 'font-size:12px; color:#999; margin-top:4px;';
+            responseDiv.appendChild(statusEl);
 
             try {
                 const resp = await fetch('/api/chat/send', {
@@ -209,12 +212,26 @@
                 let started = false;
                 let renderPending = false;
 
+                const toolNames = {
+                    search: 'Searching knowledge base',
+                    reminder: 'Searching Quran & Hadith',
+                    islamqa: 'Searching IslamQA',
+                    ghazali: 'Searching Ghazali',
+                    adhkar: 'Searching Adhkar',
+                    salihin: 'Searching Riyad us-Salihin',
+                    web_search: 'Searching the web',
+                    fetch: 'Fetching URL',
+                    note_add: 'Saving note',
+                    note_update: 'Updating note'
+                };
+
                 function render() {
                     renderPending = false;
+                    const displayText = fullText.replace(/\n?!tool:\w+\n?/g, '').trim();
                     if (typeof marked !== 'undefined') {
-                        contentEl.innerHTML = marked.parse(fullText);
+                        contentEl.innerHTML = marked.parse(displayText);
                     } else {
-                        contentEl.textContent = fullText;
+                        contentEl.textContent = displayText;
                     }
                     if (isNearBottom()) scrollToBottom();
                 }
@@ -232,13 +249,21 @@
                     }
                     fullText += chunk;
 
+                    // Check for tool markers
+                    const toolMatch = chunk.match(/!tool:(\w+)/);
+                    if (toolMatch) {
+                        const name = toolMatch[1];
+                        statusEl.textContent = (toolNames[name] || 'Using ' + name) + '...';
+                    }
+
                     if (!renderPending) {
                         renderPending = true;
                         requestAnimationFrame(render);
                     }
                 }
 
-                // Final render
+                // Final render — clean up
+                statusEl.remove();
                 if (started) {
                     render();
                 } else {

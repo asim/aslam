@@ -2096,6 +2096,9 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, response)
 		flusher.Flush()
 	} else {
+		// Strip tool markers before saving
+		response = regexp.MustCompile(`\n?!tool:\w+\n?`).ReplaceAllString(response, "")
+		response = strings.TrimSpace(response)
 		response = formatResponseWithSources(response, toolsUsed)
 	}
 	db.AddMessage(req.ConversationID, "assistant", response)
@@ -2589,6 +2592,9 @@ func generateResponseStreaming(messages []db.Message, convID int64, onText func(
 				if block.Type == "tool_use" {
 					inputJSON, _ := json.Marshal(block.Input)
 					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
+					if onText != nil {
+						onText("\n!tool:" + block.Name + "\n")
+					}
 					toolResult, err := tools.ExecuteTool(block.Name, block.Input)
 					if err != nil {
 						toolResult = fmt.Sprintf("Error: %v", err)
