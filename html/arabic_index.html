@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arabic - Aslam</title>
+    <title>Learn Arabic - Aslam</title>
     {{template "style"}}
     <style>
         .arabic-search {
@@ -21,6 +21,25 @@
             font-family: inherit;
         }
         .arabic-search input:focus { outline: none; border-color: #999; }
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .level-card {
+            display: block;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #222;
+        }
+        .level-card:hover { background: #fafafa; }
+        .level-card.active { background: #000; color: #fff; }
+        .level-card.active .level-desc { color: #ccc; }
+        .level-label { font-size: 14px; font-weight: 500; }
+        .level-desc { font-size: 11px; color: #888; margin-top: 2px; }
         .arabic-word-card {
             display: flex;
             align-items: baseline;
@@ -51,29 +70,32 @@
             font-size: 12px;
             color: #aaa;
         }
-        .arabic-word-card .aw-type {
-            font-size: 11px;
-            background: #f0f0f0;
-            padding: 1px 8px;
-            border-radius: 4px;
-            color: #666;
-        }
-        .arabic-subtitle {
-            color: #888;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
     </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <h2>Arabic</h2>
-            <p class="arabic-subtitle">Quranic Arabic vocabulary &mdash; 21,000+ words</p>
+            <h2>Learn Arabic</h2>
+            <p class="muted" style="margin-bottom:16px;">Quranic vocabulary by frequency &mdash; learn the most common words first</p>
+
+            {{if .ContinuePath}}
+            <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+            </div>
+            {{end}}
 
             <div class="arabic-search">
-                <input type="text" id="arabic-search-input" placeholder="Search Arabic, transliteration, or English..." value="{{.Query}}" autofocus>
+                <input type="text" id="arabic-search-input" placeholder="Search Arabic, transliteration, or English..." value="{{.Query}}">
+            </div>
+
+            <div class="level-grid">
+                {{range .Levels}}
+                <a href="/arabic?level={{.Level}}" class="level-card{{if eq .Level $.SelectedLevel}} active{{end}}">
+                    <div class="level-label">{{.Label}}</div>
+                    <div class="level-desc">{{.Desc}}</div>
+                </a>
+                {{end}}
             </div>
 
             <div id="arabic-results">
@@ -84,7 +106,6 @@
                     <span class="aw-translit">({{index . "Transliteration"}})</span>
                     <span class="aw-english">&mdash; {{index . "English"}}</span>
                     <span class="aw-freq">[{{index . "Frequency"}}x]</span>
-                    {{if index . "Type"}}<span class="aw-type">{{index . "Type"}}</span>{{end}}
                 </a>
                 {{end}}
             {{else}}
@@ -121,7 +142,6 @@
                             html += '<span class="aw-translit">(' + esc(w.Transliteration) + ')</span>';
                             html += '<span class="aw-english">&mdash; ' + esc(w.English) + '</span>';
                             html += '<span class="aw-freq">[' + w.Frequency + 'x]</span>';
-                            if (w.Type) html += '<span class="aw-type">' + esc(w.Type) + '</span>';
                             html += '</a>';
                         });
                         results.innerHTML = html;
@@ -136,7 +156,6 @@
             return d.innerHTML;
         }
 
-        // If there's a query in the URL, focus at end of input
         if (input.value) {
             input.setSelectionRange(input.value.length, input.value.length);
         }

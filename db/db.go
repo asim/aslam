@@ -3165,7 +3165,11 @@ func GetArabicWord(id int64) (map[string]interface{}, error) {
 }
 
 func GetArabicByFrequency(limit int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic ORDER BY frequency DESC LIMIT ?`, limit)
+	return GetArabicByFrequencyRange(0, limit)
+}
+
+func GetArabicByFrequencyRange(offset, limit int) ([]map[string]interface{}, error) {
+	rows, err := DB.Query(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic ORDER BY frequency DESC LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, err
 	}

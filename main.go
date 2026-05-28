@@ -937,16 +937,46 @@ func loadArabic() {
 
 func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	level := r.URL.Query().Get("level")
 	data := map[string]interface{}{}
+
+	// Levels: each is 50 words by frequency
+	levels := []map[string]interface{}{
+		{"Level": 1, "Label": "Essential (1-50)", "Desc": "The 50 most frequent words — covers ~25% of the Quran"},
+		{"Level": 2, "Label": "Core (51-100)", "Desc": "The next 50 most common words"},
+		{"Level": 3, "Label": "Common (101-200)", "Desc": "100 more frequently used words"},
+		{"Level": 4, "Label": "Intermediate (201-500)", "Desc": "300 words to deepen your vocabulary"},
+		{"Level": 5, "Label": "Advanced (501-1000)", "Desc": "500 words for strong comprehension"},
+	}
+	data["Levels"] = levels
 
 	if query != "" {
 		results, _ := db.SearchArabic(query)
 		data["Words"] = results
 		data["Query"] = query
-	} else {
-		words, _ := db.GetArabicByFrequency(100)
+	} else if level != "" {
+		lvl, _ := strconv.Atoi(level)
+		var offset, limit int
+		switch lvl {
+		case 1: offset, limit = 0, 50
+		case 2: offset, limit = 50, 50
+		case 3: offset, limit = 100, 100
+		case 4: offset, limit = 200, 300
+		case 5: offset, limit = 500, 500
+		default: offset, limit = 0, 50; lvl = 1
+		}
+		words, _ := db.GetArabicByFrequencyRange(offset, limit)
 		data["Words"] = words
+		data["SelectedLevel"] = lvl
+	} else {
+		words, _ := db.GetArabicByFrequency(50)
+		data["Words"] = words
+		data["SelectedLevel"] = 1
 	}
+
+	p, t := db.GetReadingProgress(getUserID(r), "arabic")
+	data["ContinuePath"] = p
+	data["ContinueTitle"] = t
 
 	renderTemplate(w, r, "arabic_index.html", data)
 }
@@ -980,6 +1010,8 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	translit, _ := item["Transliteration"].(string)
+	db.SaveReadingProgress(getUserID(r), "arabic", r.URL.Path, translit)
 	renderTemplate(w, r, "arabic.html", item)
 }
 
