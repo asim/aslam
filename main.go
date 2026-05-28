@@ -959,13 +959,13 @@ func loadProphets() {
 		Title       string `json:"title"`
 		Summary     string `json:"summary"`
 		Verses      []struct {
-			Ref     string `json:"ref"`
-			Chapter int    `json:"chapter"`
-			Start   int    `json:"start"`
-			End     int    `json:"end"`
-			Context string `json:"context"`
+			Ref         string `json:"ref"`
+			Chapter     int    `json:"chapter"`
+			Start       int    `json:"start"`
+			End         int    `json:"end"`
+			Context     string `json:"context"`
+			ImagePrompt string `json:"image_prompt"`
 		} `json:"verses"`
-		ImagePrompt string `json:"image_prompt"`
 	}
 	if err := json.Unmarshal(prophetsJSON, &prophets); err != nil {
 		log.Printf("Failed to parse prophets.json: %v", err)
@@ -988,56 +988,58 @@ func loadProphets() {
 	db.SetSetting("prophets_version", prophetsVersion)
 	log.Printf("Loaded %d prophets (v%s)", total, prophetsVersion)
 
-	// Generate images for prophets that don't have one yet
+	// Generate section images in background
 	atlasKey := os.Getenv("ATLAS_API_KEY")
 	if atlasKey == "" {
-		log.Println("ATLAS_API_KEY not set, skipping prophet image generation")
+		log.Println("ATLAS_API_KEY not set, skipping story image generation")
 		return
 	}
-	go generateProphetImages(prophets, atlasKey)
+	go generateStoryImages(prophets, atlasKey)
 }
 
-func generateProphetImages(prophets []struct {
-	Name        string `json:"name"`
-	Arabic      string `json:"arabic"`
-	Title       string `json:"title"`
-	Summary     string `json:"summary"`
-	Verses      []struct {
-		Ref     string `json:"ref"`
-		Chapter int    `json:"chapter"`
-		Start   int    `json:"start"`
-		End     int    `json:"end"`
-		Context string `json:"context"`
+func generateStoryImages(prophets []struct {
+	Name    string `json:"name"`
+	Arabic  string `json:"arabic"`
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+	Verses  []struct {
+		Ref         string `json:"ref"`
+		Chapter     int    `json:"chapter"`
+		Start       int    `json:"start"`
+		End         int    `json:"end"`
+		Context     string `json:"context"`
+		ImagePrompt string `json:"image_prompt"`
 	} `json:"verses"`
-	ImagePrompt string `json:"image_prompt"`
 }, atlasKey string) {
+	imgDir := filepath.Join(os.Getenv("HOME"), ".aslam", "images")
+	os.MkdirAll(imgDir, 0755)
+
 	for _, p := range prophets {
 		slug := strings.ToLower(p.Name)
 		slug = strings.ReplaceAll(slug, " ", "-")
 		slug = strings.ReplaceAll(slug, "'", "")
 
-		// Check if image already exists
-		prophet, err := db.GetProphet(slug)
-		if err != nil {
-			continue
-		}
-		if prophet["ImageURL"].(string) != "" {
-			continue
-		}
-		if p.ImagePrompt == "" {
-			continue
-		}
+		for i, v := range p.Verses {
+			if v.ImagePrompt == "" {
+				continue
+			}
+			imgName := fmt.Sprintf("%s-%d.png", slug, i)
+			imgPath := filepath.Join(imgDir, imgName)
+			if _, err := os.Stat(imgPath); err == nil {
+				continue
+			}
 
-		log.Printf("Generating image for %s...", p.Name)
-		imgURL, err := generateAtlasImage(p.ImagePrompt, atlasKey, slug)
-		if err != nil {
-			log.Printf("Failed to generate image for %s: %v", p.Name, err)
-			continue
+			log.Printf("Generating image: %s section %d (%s)...", p.Name, i, v.Context)
+			_, err := generateAtlasImage(v.ImagePrompt, atlasKey, fmt.Sprintf("%s-%d", slug, i))
+			if err != nil {
+				log.Printf("Failed to generate image %s-%d: %v", slug, i, err)
+				continue
+			}
+			log.Printf("Generated image: %s", imgName)
+			time.Sleep(3 * time.Second)
 		}
-		db.UpdateProphetImage(slug, imgURL)
-		log.Printf("Generated image for %s: %s", p.Name, imgURL)
-		time.Sleep(2 * time.Second)
 	}
+	log.Println("Story image generation complete")
 }
 
 func generateAtlasImage(prompt, apiKey, slug string) (string, error) {
@@ -1099,6 +1101,14 @@ func handleImages(w http.ResponseWriter, r *http.Request) {
 
 func handleStoriesIndex(w http.ResponseWriter, r *http.Request) {
 	prophets, _ := db.GetAllProphets()
+	imgDir := filepath.Join(os.Getenv("HOME"), ".aslam", "images")
+	for _, p := range prophets {
+		slug, _ := p["Slug"].(string)
+		imgPath := filepath.Join(imgDir, slug+"-0.png")
+		if _, err := os.Stat(imgPath); err == nil {
+			p["ImageURL"] = "/images/" + slug + "-0.png"
+		}
+	}
 	p, t := db.GetReadingProgress(getUserID(r), "stories")
 	renderTemplate(w, r, "stories_index.html", map[string]interface{}{
 		"Prophets":      prophets,
@@ -1131,23 +1141,31 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal([]byte(versesJSON), &verseRefs)
 
 	type VerseSection struct {
-		Ref     string
-		Context string
-		Chapter int
-		Start   int
-		End     int
-		Verses  []map[string]interface{}
+		Ref      string
+		Context  string
+		Chapter  int
+		Start    int
+		End      int
+		Verses   []map[string]interface{}
+		ImageURL string
 	}
 	var sections []VerseSection
-	for _, vr := range verseRefs {
+	for i, vr := range verseRefs {
 		verses, _ := db.GetQuranVerseRange(vr.Chapter, vr.Start, vr.End)
+		imgName := fmt.Sprintf("%s-%d.png", slug, i)
+		imgPath := filepath.Join(os.Getenv("HOME"), ".aslam", "images", imgName)
+		imgURL := ""
+		if _, err := os.Stat(imgPath); err == nil {
+			imgURL = "/images/" + imgName
+		}
 		sections = append(sections, VerseSection{
-			Ref:     vr.Ref,
-			Context: vr.Context,
-			Chapter: vr.Chapter,
-			Start:   vr.Start,
-			End:     vr.End,
-			Verses:  verses,
+			Ref:      vr.Ref,
+			Context:  vr.Context,
+			Chapter:  vr.Chapter,
+			Start:    vr.Start,
+			End:      vr.End,
+			Verses:   verses,
+			ImageURL: imgURL,
 		})
 	}
 	prophet["Sections"] = sections

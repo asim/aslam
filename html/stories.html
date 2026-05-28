@@ -91,12 +91,11 @@
             <div class="prophet-arabic">{{.Arabic}}</div>
             <div class="prophet-title">{{.Title}}</div>
 
-            {{if .ImageURL}}<img src="{{.ImageURL}}" class="prophet-image" alt="{{.Name}}">{{end}}
-
             <div class="prophet-summary">{{.Summary}}</div>
 
             {{range .Sections}}
             <div class="verse-section">
+                {{if .ImageURL}}<img src="{{.ImageURL}}" style="width:100%; border-radius:8px; margin-bottom:12px;" alt="{{.Context}}">{{end}}
                 <div class="verse-section-header">{{.Ref}}</div>
                 <div class="verse-section-context">{{.Context}}</div>
                 {{range .Verses}}
