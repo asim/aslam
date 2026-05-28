@@ -942,7 +942,7 @@ func loadArabic() {
 	log.Printf("Loaded %d Arabic vocab words (v%s)", total, arabicVersion)
 }
 
-const prophetsVersion = "1"
+const prophetsVersion = "2"
 
 func loadProphets() {
 	if db.GetSetting("prophets_version") == prophetsVersion {
@@ -954,18 +954,20 @@ func loadProphets() {
 	db.ClearProphets()
 
 	var prophets []struct {
-		Name        string `json:"name"`
-		Arabic      string `json:"arabic"`
-		Title       string `json:"title"`
-		Summary     string `json:"summary"`
-		Verses      []struct {
-			Ref         string `json:"ref"`
-			Chapter     int    `json:"chapter"`
-			Start       int    `json:"start"`
-			End         int    `json:"end"`
-			Context     string `json:"context"`
+		Name     string `json:"name"`
+		Arabic   string `json:"arabic"`
+		Title    string `json:"title"`
+		Sections []struct {
+			Narrative   string `json:"narrative"`
+			Verses      []struct {
+				Ref     string `json:"ref"`
+				Chapter int    `json:"chapter"`
+				Start   int    `json:"start"`
+				End     int    `json:"end"`
+				Context string `json:"context"`
+			} `json:"verses"`
 			ImagePrompt string `json:"image_prompt"`
-		} `json:"verses"`
+		} `json:"sections"`
 	}
 	if err := json.Unmarshal(prophetsJSON, &prophets); err != nil {
 		log.Printf("Failed to parse prophets.json: %v", err)
@@ -977,8 +979,15 @@ func loadProphets() {
 		slug := strings.ToLower(p.Name)
 		slug = strings.ReplaceAll(slug, " ", "-")
 		slug = strings.ReplaceAll(slug, "'", "")
-		versesJSON, _ := json.Marshal(p.Verses)
-		if err := db.InsertProphet(slug, p.Name, p.Arabic, p.Title, p.Summary, string(versesJSON), "", i); err != nil {
+		sectionsJSON, _ := json.Marshal(p.Sections)
+		summary := ""
+		if len(p.Sections) > 0 {
+			summary = p.Sections[0].Narrative
+			if len(summary) > 200 {
+				summary = summary[:200] + "..."
+			}
+		}
+		if err := db.InsertProphet(slug, p.Name, p.Arabic, p.Title, summary, string(sectionsJSON), "", i); err != nil {
 			log.Printf("Failed to insert prophet %s: %v", p.Name, err)
 		} else {
 			total++
@@ -998,18 +1007,20 @@ func loadProphets() {
 }
 
 func generateStoryImages(prophets []struct {
-	Name    string `json:"name"`
-	Arabic  string `json:"arabic"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
-	Verses  []struct {
-		Ref         string `json:"ref"`
-		Chapter     int    `json:"chapter"`
-		Start       int    `json:"start"`
-		End         int    `json:"end"`
-		Context     string `json:"context"`
+	Name     string `json:"name"`
+	Arabic   string `json:"arabic"`
+	Title    string `json:"title"`
+	Sections []struct {
+		Narrative   string `json:"narrative"`
+		Verses      []struct {
+			Ref     string `json:"ref"`
+			Chapter int    `json:"chapter"`
+			Start   int    `json:"start"`
+			End     int    `json:"end"`
+			Context string `json:"context"`
+		} `json:"verses"`
 		ImagePrompt string `json:"image_prompt"`
-	} `json:"verses"`
+	} `json:"sections"`
 }, atlasKey string) {
 	imgDir := filepath.Join(os.Getenv("HOME"), ".aslam", "images")
 	os.MkdirAll(imgDir, 0755)
@@ -1019,8 +1030,8 @@ func generateStoryImages(prophets []struct {
 		slug = strings.ReplaceAll(slug, " ", "-")
 		slug = strings.ReplaceAll(slug, "'", "")
 
-		for i, v := range p.Verses {
-			if v.ImagePrompt == "" {
+		for i, s := range p.Sections {
+			if s.ImagePrompt == "" {
 				continue
 			}
 			imgName := fmt.Sprintf("%s-%d.png", slug, i)
@@ -1029,8 +1040,8 @@ func generateStoryImages(prophets []struct {
 				continue
 			}
 
-			log.Printf("Generating image: %s section %d (%s)...", p.Name, i, v.Context)
-			_, err := generateAtlasImage(v.ImagePrompt, atlasKey, fmt.Sprintf("%s-%d", slug, i))
+			log.Printf("Generating image: %s section %d...", p.Name, i)
+			_, err := generateAtlasImage(s.ImagePrompt, atlasKey, fmt.Sprintf("%s-%d", slug, i))
 			if err != nil {
 				log.Printf("Failed to generate image %s-%d: %v", slug, i, err)
 				continue
@@ -1129,43 +1140,53 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse verses JSON and fetch actual Quran text
-	var verseRefs []struct {
-		Ref     string `json:"ref"`
-		Chapter int    `json:"chapter"`
-		Start   int    `json:"start"`
-		End     int    `json:"end"`
-		Context string `json:"context"`
+	// Parse sections JSON
+	var rawSections []struct {
+		Narrative string `json:"narrative"`
+		Verses    []struct {
+			Ref     string `json:"ref"`
+			Chapter int    `json:"chapter"`
+			Start   int    `json:"start"`
+			End     int    `json:"end"`
+			Context string `json:"context"`
+		} `json:"verses"`
 	}
-	versesJSON, _ := prophet["VersesJSON"].(string)
-	json.Unmarshal([]byte(versesJSON), &verseRefs)
+	sectionsJSON, _ := prophet["VersesJSON"].(string)
+	json.Unmarshal([]byte(sectionsJSON), &rawSections)
 
-	type VerseSection struct {
-		Ref      string
-		Context  string
-		Chapter  int
-		Start    int
-		End      int
-		Verses   []map[string]interface{}
-		ImageURL string
+	type VerseGroup struct {
+		Ref     string
+		Context string
+		Verses  []map[string]interface{}
 	}
-	var sections []VerseSection
-	for i, vr := range verseRefs {
-		verses, _ := db.GetQuranVerseRange(vr.Chapter, vr.Start, vr.End)
+	type StorySection struct {
+		Narrative template.HTML
+		Groups    []VerseGroup
+		ImageURL  string
+	}
+	var sections []StorySection
+	for i, rs := range rawSections {
 		imgName := fmt.Sprintf("%s-%d.png", slug, i)
 		imgPath := filepath.Join(os.Getenv("HOME"), ".aslam", "images", imgName)
 		imgURL := ""
 		if _, err := os.Stat(imgPath); err == nil {
 			imgURL = "/images/" + imgName
 		}
-		sections = append(sections, VerseSection{
-			Ref:      vr.Ref,
-			Context:  vr.Context,
-			Chapter:  vr.Chapter,
-			Start:    vr.Start,
-			End:      vr.End,
-			Verses:   verses,
-			ImageURL: imgURL,
+		var groups []VerseGroup
+		for _, vr := range rs.Verses {
+			verses, _ := db.GetQuranVerseRange(vr.Chapter, vr.Start, vr.End)
+			groups = append(groups, VerseGroup{
+				Ref:     vr.Ref,
+				Context: vr.Context,
+				Verses:  verses,
+			})
+		}
+		narrative := strings.ReplaceAll(rs.Narrative, "\n\n", "</p><p>")
+		narrative = "<p>" + narrative + "</p>"
+		sections = append(sections, StorySection{
+			Narrative: template.HTML(narrative),
+			Groups:    groups,
+			ImageURL:  imgURL,
 		})
 	}
 	prophet["Sections"] = sections

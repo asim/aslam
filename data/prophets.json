@@ -3,31 +3,45 @@
     "name": "Adam",
     "arabic": "آدم",
     "title": "The First Man",
-    "summary": "The first human being, created by Allah from clay. Allah taught him the names of all things and commanded the angels to prostrate before him. He lived in Paradise with his wife Hawwa (Eve) until they were tempted by Shaytan and sent to earth.",
-    "verses": [
+    "sections": [
       {
-        "ref": "2:30-37",
-        "chapter": 2,
-        "start": 30,
-        "end": 37,
-        "context": "Creation and the fall from Paradise",
-        "image_prompt": "A lush garden paradise with flowing rivers, fruit trees, and golden light filtering through canopy, no people visible, painterly Islamic art style"
+        "narrative": "Before there was any human on earth, Allah announced to the angels that He would place a khalifah — a vicegerent — upon the earth. The angels questioned this, wondering why He would place there one who would cause corruption and shed blood, while they glorified and praised Him. But Allah said: \"I know what you do not know.\"\n\nAllah then created Adam from clay, shaping him with His own hands, and breathed into him from His spirit. He taught Adam the names of all things — knowledge that even the angels did not possess. When Allah asked the angels to name these things, they could not, and admitted they had no knowledge except what He had taught them. But when Adam was asked, he named them all. Allah then commanded the angels to prostrate before Adam, and they all did — except Iblis.",
+        "verses": [
+          {
+            "ref": "2:30-34",
+            "chapter": 2,
+            "start": 30,
+            "end": 34,
+            "context": "Creation of Adam and the angels' prostration"
+          }
+        ],
+        "image_prompt": "A luminous figure of light being shaped from clay on a cosmic stage with angels watching from above, ethereal and divine atmosphere, no people visible, painterly Islamic art style"
       },
       {
-        "ref": "7:11-25",
-        "chapter": 7,
-        "start": 11,
-        "end": 25,
-        "context": "The command to prostrate and Shaytan's refusal",
-        "image_prompt": "Ethereal beings of light bowing toward the earth in a celestial realm with swirling cosmic clouds, abstract and luminous, no people visible, painterly style"
+        "narrative": "Iblis, full of pride, refused to bow. When Allah asked him why, he said: \"I am better than him. You created me from fire and created him from clay.\" For this arrogance, Iblis was cast out and cursed until the Day of Judgement. But Iblis made a vow — he would sit in wait on the straight path and come at mankind from every direction, leading them astray.\n\nAllah warned Adam and his wife to dwell in Paradise and eat freely from wherever they wished, but not to approach one tree, or they would be among the wrongdoers.",
+        "verses": [
+          {
+            "ref": "7:11-19",
+            "chapter": 7,
+            "start": 11,
+            "end": 19,
+            "context": "Iblis refuses and vows to lead mankind astray"
+          }
+        ],
+        "image_prompt": "A dark smoky figure of fire turning away defiantly from a luminous scene, a single forbidden tree glowing in the center of a paradise garden, no people visible, dramatic painterly style"
       },
       {
-        "ref": "20:115-123",
-        "chapter": 20,
-        "start": 115,
-        "end": 123,
-        "context": "Adam forgets and is forgiven",
-        "image_prompt": "A single tree in a vast garden with one forbidden fruit glowing, a path leading away from the garden toward an earthly landscape below, no people visible, painterly style"
+        "narrative": "But Shaytan whispered to them both. He told Adam and his wife that Allah had only forbidden the tree because eating from it would make them angels or give them eternal life. He swore to them that he was a sincere advisor.\n\nWhen they ate from the tree, their shame became apparent to them and they began covering themselves with leaves from Paradise. Allah called out to them — had He not forbidden them from that tree and told them that Shaytan was an open enemy?\n\nThey replied with words that would echo through all of human history: \"Our Lord, we have wronged ourselves, and if You do not forgive us and have mercy upon us, we will surely be among the losers.\"\n\nAllah forgave Adam. He chose him, turned to him in mercy, and guided him. Then He sent them down to earth, telling them that from it they were created, to it they would return, and from it they would be brought out once more.",
+        "verses": [
+          {
+            "ref": "7:20-25",
+            "chapter": 7,
+            "start": 20,
+            "end": 25,
+            "context": "The fall from Paradise"
+          }
+        ],
+        "image_prompt": "A lush garden paradise with a path leading downward through clouds toward a vast earthly landscape below, leaves scattering in the wind, transition from paradise to earth, no people visible, painterly style"
       }
     ]
   },
@@ -35,31 +49,45 @@
     "name": "Nuh",
     "arabic": "نوح",
     "title": "Noah — Builder of the Ark",
-    "summary": "Prophet Nuh called his people to worship Allah alone for 950 years. When they rejected him, Allah commanded him to build an ark. A great flood destroyed the disbelievers while Nuh and the believers were saved on the ark.",
-    "verses": [
+    "sections": [
       {
-        "ref": "11:25-49",
-        "chapter": 11,
-        "start": 25,
-        "end": 49,
-        "context": "Nuh's mission and the flood",
-        "image_prompt": "Dark storm clouds unleashing torrential rain over rising floodwaters engulfing a village, lightning illuminating a massive wooden ark floating above, no people visible, dramatic painterly style"
+        "narrative": "Prophet Nuh was sent to his people when they had begun worshipping idols named Wadd, Suwa, Yaghuth, Ya'uq, and Nasr. For 950 years he called them to Allah, day and night, in public and in private. But every time he called them, they put their fingers in their ears, covered themselves with their garments, and persisted in arrogance.\n\nHe tried everything. He reminded them that Allah would send rain from the sky in abundance, give them wealth and children, and provide gardens and rivers — if only they would turn to Him. He asked them: \"What is wrong with you that you do not attribute to Allah proper grandeur, while He has created you in stages?\"",
+        "verses": [
+          {
+            "ref": "71:1-20",
+            "chapter": 71,
+            "start": 1,
+            "end": 20,
+            "context": "Nuh's 950-year mission"
+          }
+        ],
+        "image_prompt": "A lone figure's shadow cast long across an ancient village square with stone idols in the background, villagers' dwellings with closed doors and shuttered windows, atmosphere of rejection, no people visible, painterly style"
       },
       {
-        "ref": "71:1-28",
-        "chapter": 71,
-        "start": 1,
-        "end": 28,
-        "context": "Surah Nuh — his plea to his people",
-        "image_prompt": "A barren desert village with stone idols standing in a dusty square, overcast sky, signs of neglect and arrogance, no people visible, painterly style"
+        "narrative": "When it became clear that his people would never believe, Nuh prayed to Allah: \"My Lord, do not leave upon the earth any inhabitant from among the disbelievers. Indeed, if You leave them, they will mislead Your servants and not beget except wicked disbelievers.\"\n\nAllah commanded Nuh to build an ark. Every time the chiefs of his people passed by him while he was constructing it, they mocked him. He said: \"If you ridicule us, then we will ridicule you just as you ridicule us. You are going to know who will get a humiliating punishment.\"\n\nThen the command came. The oven overflowed with water — the sign that the flood had begun. Allah told Nuh to carry on the ark a pair of every creature and his family, except those against whom the word had already been pronounced.",
+        "verses": [
+          {
+            "ref": "11:36-44",
+            "chapter": 11,
+            "start": 36,
+            "end": 44,
+            "context": "Building the ark and the great flood"
+          }
+        ],
+        "image_prompt": "A massive wooden ark under construction on dry land with timber and tools scattered around, dark storm clouds gathering on the distant horizon, no people visible, dramatic painterly style"
       },
       {
-        "ref": "23:23-30",
-        "chapter": 23,
-        "start": 23,
-        "end": 30,
-        "context": "Building the ark",
-        "image_prompt": "A half-built massive wooden ark on dry land surrounded by timber and tools, clear sky with no water in sight, no people visible, painterly style"
+        "narrative": "The ark sailed with them through waves like mountains. Nuh called out to his son, who had separated himself: \"O my son, come aboard with us and be not with the disbelievers.\" His son replied: \"I will take refuge on a mountain to protect me from the water.\" Nuh cried out: \"There is no protector today from the decree of Allah, except for whom He gives mercy.\" And the waves came between them, and his son was among the drowned.\n\nNuh called upon his Lord: \"My Lord, indeed my son is of my family, and indeed Your promise is true.\" Allah replied: \"O Nuh, indeed he is not of your family; indeed, his work was other than righteous.\" Nuh understood, and sought refuge in Allah from asking for that of which he had no knowledge.\n\nThe earth swallowed its water, the sky cleared, the ark settled on Mount Judi, and it was said: \"Away with the wrongdoing people.\"",
+        "verses": [
+          {
+            "ref": "11:42-48",
+            "chapter": 11,
+            "start": 42,
+            "end": 48,
+            "context": "The flood, his son, and the landing"
+          }
+        ],
+        "image_prompt": "A massive wooden ark riding enormous waves like mountains in a dark stormy sea, a lone mountain peak barely visible above the water in the distance, no people visible, dramatic painterly style"
       }
     ]
   },
@@ -67,39 +95,71 @@
     "name": "Ibrahim",
     "arabic": "إبراهيم",
     "title": "Abraham — The Friend of Allah",
-    "summary": "Ibrahim rejected the idol worship of his people and was thrown into a fire which Allah made cool for him. He rebuilt the Ka'bah with his son Ismail and was tested with the command to sacrifice his son, demonstrating ultimate submission to Allah.",
-    "verses": [
+    "sections": [
       {
-        "ref": "2:124-132",
-        "chapter": 2,
-        "start": 124,
-        "end": 132,
-        "context": "Building the Ka'bah with Ismail",
-        "image_prompt": "The Ka'bah being built from stone blocks in an empty desert valley of Makkah, ancient construction with scattered stones, no people visible, painterly Islamic art style"
+        "narrative": "Even as a young man, Ibrahim's heart could not accept what his people worshipped. One night he looked at the sky and saw a star. \"This is my Lord,\" he said, testing the idea. But when it set, he said: \"I do not like those that set.\" Then he saw the moon rising in splendour. \"This is my Lord,\" he said. But when it too set, he said: \"Unless my Lord guides me, I will surely be among the people gone astray.\" Then when he saw the sun rising, he said: \"This is my Lord; this is greater.\" But when it also set, he declared: \"O my people, indeed I am free from what you associate with Allah. Indeed, I have turned my face toward He who created the heavens and the earth, inclining toward truth, and I am not of those who associate others with Allah.\"",
+        "verses": [
+          {
+            "ref": "6:74-79",
+            "chapter": 6,
+            "start": 74,
+            "end": 79,
+            "context": "Ibrahim reasons his way to the truth"
+          }
+        ],
+        "image_prompt": "A night sky transitioning to dawn with brilliant stars fading, a crescent moon setting, and the sun rising over a desert horizon, vast and contemplative, no people visible, painterly style"
       },
       {
-        "ref": "6:74-83",
-        "chapter": 6,
-        "start": 74,
-        "end": 83,
-        "context": "Ibrahim's reasoning about the stars, moon and sun",
-        "image_prompt": "A night sky transitioning to dawn with brilliant stars fading, a crescent moon setting, and the sun rising over a desert horizon, contemplative and vast, no people visible, painterly style"
+        "narrative": "Ibrahim challenged his people directly. He asked his father and his people: \"What are these statues to which you are devoted?\" They replied: \"We found our fathers worshipping them.\" Ibrahim said: \"You and your fathers have been in clear error.\"\n\nWhen his people left for a festival, Ibrahim took an axe to their idols, smashing them all — except the largest one. He hung the axe around its neck. When they returned and found their gods destroyed, they demanded to know who had done this. Someone said: \"We heard a young man mention them — he is called Ibrahim.\" They brought him and asked: \"Have you done this to our gods, O Ibrahim?\" He replied: \"Rather, this — the largest of them — did it. So ask them, if they should speak.\" They were confounded, knowing their idols could not speak.",
+        "verses": [
+          {
+            "ref": "21:51-67",
+            "chapter": 21,
+            "start": 51,
+            "end": 67,
+            "context": "Destroying the idols"
+          }
+        ],
+        "image_prompt": "Shattered stone idols scattered across a temple floor with one large idol still standing with an axe hung around its neck, dust and debris, dramatic lighting, no people visible, painterly style"
       },
       {
-        "ref": "21:51-70",
-        "chapter": 21,
-        "start": 51,
-        "end": 70,
-        "context": "Destroying the idols and the fire",
-        "image_prompt": "Shattered stone idols scattered across a temple floor with one large idol still standing, dust and debris, no people visible, dramatic painterly style"
+        "narrative": "Furious, they said: \"Burn him and support your gods, if you are to act!\" They built an enormous fire and threw Ibrahim into it. But Allah said: \"O fire, be cool and safe for Ibrahim.\" The fire did not harm him. They intended a plan against him, but Allah made them the greatest losers.",
+        "verses": [
+          {
+            "ref": "21:68-70",
+            "chapter": 21,
+            "start": 68,
+            "end": 70,
+            "context": "The fire made cool and safe"
+          }
+        ],
+        "image_prompt": "An enormous bonfire with flames towering high but a cool peaceful center where flowers bloom amid the fire, miraculous contrast of destruction and tranquility, no people visible, dramatic painterly style"
       },
       {
-        "ref": "37:99-113",
-        "chapter": 37,
-        "start": 99,
-        "end": 113,
-        "context": "The sacrifice of his son",
-        "image_prompt": "A knife laid upon a stone altar on a mountaintop with a ram appearing nearby, dramatic divine light breaking through clouds, no people visible, painterly style"
+        "narrative": "Years later, Ibrahim was tested with the greatest trial a father could face. He saw in a dream that he was sacrificing his son. For a prophet, dreams are revelation. He said to his son: \"O my son, indeed I have seen in a dream that I am sacrificing you, so see what you think.\" His son — young and righteous — replied: \"O my father, do as you are commanded. You will find me, if Allah wills, among the patient.\"\n\nWhen they had both submitted to Allah's will and Ibrahim had laid his son down on his forehead ready to sacrifice, Allah called out: \"O Ibrahim, you have fulfilled the vision.\" Allah ransomed his son with a great sacrifice. This was the clear trial, and Ibrahim had passed.",
+        "verses": [
+          {
+            "ref": "37:102-111",
+            "chapter": 37,
+            "start": 102,
+            "end": 111,
+            "context": "The sacrifice"
+          }
+        ],
+        "image_prompt": "A knife laid upon a stone altar on a mountaintop with a ram appearing nearby, brilliant divine light breaking through heavy clouds from above, peaceful resolution, no people visible, painterly style"
+      },
+      {
+        "narrative": "Ibrahim and his son Ismail together raised the foundations of the Ka'bah in the barren valley of Makkah, praying: \"Our Lord, accept this from us. Indeed You are the Hearing, the Knowing. Our Lord, and make us Muslims in submission to You and from our descendants a Muslim nation in submission to You. And show us our rites and accept our repentance. Indeed, You are the Accepting of repentance, the Merciful.\"",
+        "verses": [
+          {
+            "ref": "2:127-129",
+            "chapter": 2,
+            "start": 127,
+            "end": 129,
+            "context": "Building the Ka'bah"
+          }
+        ],
+        "image_prompt": "The Ka'bah's stone foundations being raised in an empty desert valley of Makkah, ancient construction with scattered stones, clear sky, sacred atmosphere, no people visible, painterly Islamic art style"
       }
     ]
   },
@@ -107,31 +167,32 @@
     "name": "Ismail",
     "arabic": "إسماعيل",
     "title": "Ishmael — The Patient Son",
-    "summary": "Son of Ibrahim, left as an infant with his mother Hajar in the barren valley of Makkah. Allah provided the well of Zamzam for them. He helped his father build the Ka'bah and willingly submitted when his father was commanded to sacrifice him.",
-    "verses": [
+    "sections": [
       {
-        "ref": "2:125-129",
-        "chapter": 2,
-        "start": 125,
-        "end": 129,
-        "context": "Building the Ka'bah with Ibrahim",
-        "image_prompt": "Ancient stone foundation of the Ka'bah being laid in a barren valley between rocky hills, no people visible, painterly style"
+        "narrative": "Ismail was the firstborn son of Ibrahim, left as an infant with his mother Hajar in the barren, waterless valley of Makkah. When their water ran out, Hajar ran between the hills of Safa and Marwa seven times, desperately searching for water or help. Allah caused the well of Zamzam to spring forth beneath the infant's feet — a well that flows to this day.\n\nIsmail grew up in that valley and became a prophet. He was true to his promises and commanded his family to prayer and charity. Allah was pleased with him.",
+        "verses": [
+          {
+            "ref": "19:54-55",
+            "chapter": 19,
+            "start": 54,
+            "end": 55,
+            "context": "True to his promises, devoted to prayer"
+          }
+        ],
+        "image_prompt": "A spring of clear water bursting from barren desert sand between two rocky hills, life emerging from desolation, birds gathering, no people visible, painterly style"
       },
       {
-        "ref": "37:102-107",
-        "chapter": 37,
-        "start": 102,
-        "end": 107,
-        "context": "The sacrifice — both submit to Allah",
-        "image_prompt": "A mountaintop altar with a knife and a ram, golden light from above, peaceful resolution, no people visible, painterly style"
-      },
-      {
-        "ref": "19:54-55",
-        "chapter": 19,
-        "start": 54,
-        "end": 55,
-        "context": "Praise for Ismail's character",
-        "image_prompt": "A well of clear water (Zamzam) in a desert valley with birds gathering around it, life emerging from barrenness, no people visible, painterly style"
+        "narrative": "When his father Ibrahim came to him with the vision of sacrifice, Ismail did not hesitate. \"O my father, do as you are commanded. You will find me, if Allah wills, among the patient.\" Father and son both submitted completely to Allah's will. This act of total surrender became the foundation of the annual Eid al-Adha sacrifice, commemorated by Muslims around the world.",
+        "verses": [
+          {
+            "ref": "37:102-107",
+            "chapter": 37,
+            "start": 102,
+            "end": 107,
+            "context": "Willing submission to Allah's command"
+          }
+        ],
+        "image_prompt": "A mountaintop altar with a ram and a knife, golden light streaming down from parting clouds, atmosphere of divine mercy and relief, no people visible, painterly style"
       }
     ]
   },
@@ -139,15 +200,45 @@
     "name": "Yusuf",
     "arabic": "يوسف",
     "title": "Joseph — The Beautiful Story",
-    "summary": "Thrown into a well by his jealous brothers, sold into slavery in Egypt, falsely imprisoned, then rose to become a minister of Egypt through his ability to interpret dreams. He forgave his brothers and reunited with his father Yaqub.",
-    "verses": [
+    "sections": [
       {
-        "ref": "12:1-111",
-        "chapter": 12,
-        "start": 1,
-        "end": 111,
-        "context": "The entire Surah Yusuf — the most detailed story of any prophet in the Quran",
-        "image_prompt": "An ancient stone well in a desert landscape with a torn colorful garment draped over its edge, a caravan of camels approaching in the distance, dramatic sky, no people visible, painterly style"
+        "narrative": "Allah calls the story of Yusuf \"the best of stories.\" It begins with a dream: the young Yusuf told his father Yaqub that he saw eleven stars, the sun, and the moon all prostrating to him. His father recognised the significance — this boy would be chosen by Allah. But he warned Yusuf not to tell his brothers, for Shaytan is a clear enemy to man.\n\nYusuf's brothers, consumed by jealousy that their father loved him more, plotted to get rid of him. They convinced Yaqub to let them take Yusuf out to play, then threw him into the depths of a well. They returned to their father at night, weeping crocodile tears, with Yusuf's shirt stained in false blood, claiming a wolf had eaten him. But Yaqub knew. He said: \"Rather, your souls have enticed you to something. So patience is beautiful. And Allah is the one sought for help against that which you describe.\"",
+        "verses": [
+          {
+            "ref": "12:4-18",
+            "chapter": 12,
+            "start": 4,
+            "end": 18,
+            "context": "The dream, the jealousy, the well"
+          }
+        ],
+        "image_prompt": "A deep dark stone well in an empty desert landscape with a torn colorful garment left beside it, eleven stars visible in the daytime sky above, haunting and prophetic atmosphere, no people visible, painterly style"
+      },
+      {
+        "narrative": "A caravan passing by sent their water-drawer to the well, and he pulled up Yusuf instead. They sold him as a slave in Egypt, where the minister Al-Aziz purchased him. As Yusuf grew, the minister's wife tried to seduce him. She locked the doors and said: \"Come to me.\" He said: \"I seek refuge in Allah. He is my Lord who has made my stay good. Indeed, wrongdoers will not succeed.\" She pursued him, tearing his shirt from behind, and they found her husband at the door. She accused Yusuf, but a witness from her own household pointed out that his shirt was torn from behind, proving his innocence.\n\nDespite this, Yusuf was imprisoned to avoid scandal. In prison, he interpreted dreams for two fellow inmates. One would serve wine to the king, the other would be crucified. Both came to pass. Yusuf asked the one who was freed to mention his case to the king, but the man forgot — and Yusuf remained in prison for several more years.",
+        "verses": [
+          {
+            "ref": "12:19-42",
+            "chapter": 12,
+            "start": 19,
+            "end": 42,
+            "context": "Slavery, temptation, and prison"
+          }
+        ],
+        "image_prompt": "A dark stone prison cell with a small window letting in a beam of light, two clay cups on the floor, an atmosphere of patience and waiting, no people visible, painterly style"
+      },
+      {
+        "narrative": "Then the king of Egypt had a dream: seven fat cows eaten by seven lean ones, and seven green ears of grain and seven dry. No one could interpret it — until the freed prisoner remembered Yusuf. Yusuf interpreted the dream as seven years of plenty followed by seven years of famine, and advised the king to store grain during the good years.\n\nImpressed, the king summoned Yusuf and offered him a position. Yusuf said: \"Appoint me over the storehouses of the land. Indeed, I will be a knowing guardian.\" And so Allah established Yusuf in the land of Egypt with authority.\n\nWhen the famine struck, Yusuf's brothers came to Egypt seeking grain, not recognising him. Yusuf recognised them but did not reveal himself. Through a series of events, he eventually revealed his identity. They said: \"Are you indeed Yusuf?\" He said: \"I am Yusuf, and this is my brother. Allah has certainly been gracious to us.\"\n\nHe forgave them completely: \"No blame will there be upon you today. Allah will forgive you; and He is the most merciful of the merciful.\" He sent his shirt back to his father — and when it was placed over Yaqub's face, his sight was restored after years of weeping had left him blind. The family was reunited in Egypt, and his parents and brothers prostrated before him — fulfilling the dream he had seen as a child.",
+        "verses": [
+          {
+            "ref": "12:43-100",
+            "chapter": 12,
+            "start": 43,
+            "end": 100,
+            "context": "Rise to power, reunion with his family"
+          }
+        ],
+        "image_prompt": "A vast Egyptian granary filled with golden wheat stores, with a colorful shirt being carried by wind across the desert toward distant green fields, symbolising reunion, no people visible, painterly style"
       }
     ]
   },
@@ -155,39 +246,58 @@
     "name": "Musa",
     "arabic": "موسى",
     "title": "Moses — The Liberator",
-    "summary": "The most frequently mentioned prophet in the Quran. Born during Pharaoh's persecution of the Israelites, raised in Pharaoh's palace, called by Allah at the burning bush, confronted Pharaoh with miracles, led the Exodus, received the Torah on Mount Sinai, and guided his people through the wilderness.",
-    "verses": [
+    "sections": [
       {
-        "ref": "20:9-98",
-        "chapter": 20,
-        "start": 9,
-        "end": 98,
-        "context": "The burning bush, staff, Pharaoh, and the golden calf",
-        "image_prompt": "A scene depicting the burning bush, staff, pharaoh, and the golden calf, ancient Middle Eastern landscape, no people visible, painterly Islamic art style"
+        "narrative": "Musa is the most frequently mentioned prophet in the Quran. His story begins under the shadow of Pharaoh's tyranny. Pharaoh had enslaved the Children of Israel, killing their newborn sons and sparing their daughters. Into this darkness, Musa was born.\n\nAllah inspired his mother: \"Suckle him, but when you fear for him, cast him into the river and do not fear and do not grieve. Indeed, We will return him to you and will make him one of the messengers.\" She placed her baby in a basket on the Nile. The basket drifted to Pharaoh's palace, where his wife picked it up and said: \"He will be a comfort to me and to you. Do not kill him. Perhaps he will benefit us, or we will adopt him as a son.\" And so Musa was raised in the house of the very tyrant who sought to destroy his people.",
+        "verses": [
+          {
+            "ref": "28:3-14",
+            "chapter": 28,
+            "start": 3,
+            "end": 14,
+            "context": "Birth and rescue from the Nile"
+          }
+        ],
+        "image_prompt": "A small woven basket floating gently on the River Nile among reeds at dawn, an Egyptian palace visible in the golden background mist, no people visible, painterly style"
       },
       {
-        "ref": "26:10-68",
-        "chapter": 26,
-        "start": 10,
-        "end": 68,
-        "context": "Confronting Pharaoh and the parting of the sea",
-        "image_prompt": "A vast sea parted into two towering walls of water with a dry path between them, dramatic stormy sky above, no people visible, painterly style"
+        "narrative": "As a young man, Musa accidentally killed a man while defending an Israelite, and fled Egypt to the land of Madyan. There he found two women waiting to water their flock, held back by the crowd. He watered their flock for them, then sat in the shade and prayed: \"My Lord, indeed I am, for whatever good You would send down to me, in need.\"\n\nOne of the women returned, walking shyly, and said her father invited him. Her father — the prophet Shu'ayb according to many scholars — offered Musa work and one of his daughters in marriage. Musa spent years in Madyan, tending flocks in the wilderness.\n\nThen came the night that changed everything. Traveling with his family, Musa saw a fire on the side of Mount Tur. When he approached it, a voice called out: \"O Musa, indeed I am Allah, Lord of the worlds. Throw down your staff.\" When he threw it, it became a serpent, moving as if alive. Musa turned to flee. \"O Musa, approach and do not fear. Indeed, you are of the secure.\" Allah then told him to put his hand into his garment — it came out white and radiant. Two signs. Then the mission: \"Go to Pharaoh. Indeed, he has transgressed.\"",
+        "verses": [
+          {
+            "ref": "28:15-32",
+            "chapter": 28,
+            "start": 15,
+            "end": 32,
+            "context": "Flight to Madyan and the burning bush"
+          }
+        ],
+        "image_prompt": "A bush engulfed in brilliant divine fire that does not consume it, on the side of a sacred mountain at night, a wooden staff on the ground transforming into a serpent, no people visible, painterly style"
       },
       {
-        "ref": "28:3-43",
-        "chapter": 28,
-        "start": 3,
-        "end": 43,
-        "context": "Birth, upbringing, and calling",
-        "image_prompt": "A small basket floating gently on the River Nile among reeds, with an Egyptian palace visible in the background, golden morning light, no people visible, painterly style"
+        "narrative": "Musa asked Allah for help: \"My Lord, expand for me my breast, ease for me my task, and untie the knot from my tongue that they may understand my speech. And appoint for me a minister from my family — Harun, my brother.\" Allah granted all of it.\n\nMusa and Harun went to Pharaoh and delivered the message: worship Allah alone and free the Children of Israel. Pharaoh was defiant: \"Who is the Lord of the worlds?\" Musa showed him the signs — the staff became a serpent, his hand shone white. Pharaoh called it sorcery and summoned his magicians. But when the magicians saw Musa's staff swallow their tricks, they fell into prostration: \"We believe in the Lord of the worlds, the Lord of Musa and Harun.\"\n\nPharaoh was furious. He increased the persecution. Allah sent plague after plague upon Egypt — flood, locusts, lice, frogs, blood — but each time Pharaoh promised to relent, then broke his word.",
+        "verses": [
+          {
+            "ref": "7:103-136",
+            "chapter": 7,
+            "start": 103,
+            "end": 136,
+            "context": "Confronting Pharaoh and the plagues"
+          }
+        ],
+        "image_prompt": "Dark sky raining hail over an ancient Egyptian landscape with locusts swarming, the Nile turned blood-red, frogs covering the ground, supernatural devastation, no people visible, dramatic painterly style"
       },
       {
-        "ref": "7:103-162",
-        "chapter": 7,
-        "start": 103,
-        "end": 162,
-        "context": "The plagues and the Exodus",
-        "image_prompt": "Dark sky raining hail and fire over an ancient Egyptian landscape with locusts swarming, Nile turned blood-red, no people visible, dramatic painterly style"
+        "narrative": "Finally, Allah commanded Musa to lead the Children of Israel out of Egypt by night. Pharaoh pursued them with his army. When they reached the sea, the people cried out in despair — the sea before them, the army behind. Musa said: \"No! Indeed, with me is my Lord; He will guide me.\"\n\nAllah commanded: \"Strike the sea with your staff.\" The sea split apart, each side like a towering mountain, with a dry path between. The Children of Israel crossed. When Pharaoh and his army followed, the sea closed upon them. As he was drowning, Pharaoh cried out: \"I believe that there is no deity except that in whom the Children of Israel believe.\" But it was too late.\n\nAllah said: \"Now? And you had disobeyed before and were of the corrupters? So today We will save you in body that you may be to those who succeed you a sign.\" Pharaoh's body was preserved — a sign for all who would come after.",
+        "verses": [
+          {
+            "ref": "10:90-92",
+            "chapter": 10,
+            "start": 90,
+            "end": 92,
+            "context": "The parting of the sea and Pharaoh's end"
+          }
+        ],
+        "image_prompt": "A vast sea parted into two towering walls of crystalline water with a dry sandy path between them, dramatic stormy sky above, sunlight breaking through at the far end, no people visible, awe-inspiring painterly style"
       }
     ]
   },
@@ -195,31 +305,26 @@
     "name": "Dawud",
     "arabic": "داود",
     "title": "David — The King-Prophet",
-    "summary": "Given kingship and prophethood, Allah softened iron for him and taught him to make armor. He was given the Zabur (Psalms). The mountains and birds would glorify Allah with him.",
-    "verses": [
+    "sections": [
       {
-        "ref": "21:78-80",
-        "chapter": 21,
-        "start": 78,
-        "end": 80,
-        "context": "Given wisdom and the ability to work iron",
-        "image_prompt": "A forge with molten iron being shaped into chainmail armor, sparks flying, mountains visible through the workshop opening, no people visible, painterly style"
-      },
-      {
-        "ref": "34:10-11",
-        "chapter": 34,
-        "start": 10,
-        "end": 11,
-        "context": "Mountains and birds glorify with Dawud",
-        "image_prompt": "Mountains at sunrise with flocks of birds in formation, sound waves visually rippling through the air, golden sky, no people visible, painterly style"
-      },
-      {
-        "ref": "38:17-26",
-        "chapter": 38,
-        "start": 17,
-        "end": 26,
-        "context": "Dawud's patience and the test",
-        "image_prompt": "A throne room with scales of justice, light streaming through high windows, peaceful and contemplative atmosphere, no people visible, painterly style"
+        "narrative": "Dawud was given both kingship and prophethood — a rare combination. Allah gave him the Zabur (Psalms) and softened iron in his hands so he could shape it without fire, making coats of armor. The mountains and birds would join him in glorifying Allah, echoing his praise at sunrise and sunset.\n\nHe was known for his wisdom in judgement. Allah tested him and he sought forgiveness, falling into prostration. Allah forgave him and gave him nearness and a good return.",
+        "verses": [
+          {
+            "ref": "34:10-11",
+            "chapter": 34,
+            "start": 10,
+            "end": 11,
+            "context": "Mountains and birds glorify with Dawud"
+          },
+          {
+            "ref": "38:17-26",
+            "chapter": 38,
+            "start": 17,
+            "end": 26,
+            "context": "His patience and judgement"
+          }
+        ],
+        "image_prompt": "Mountains at sunrise with flocks of birds in formation singing, iron being shaped on an anvil with no fire, divine craftsmanship, golden sky, no people visible, painterly style"
       }
     ]
   },
@@ -227,31 +332,32 @@
     "name": "Sulayman",
     "arabic": "سليمان",
     "title": "Solomon — Lord of the Wind",
-    "summary": "Son of Dawud, given a kingdom unlike any other. He could command the wind, understood the speech of birds and ants, and had jinn working under his command. He was known for his wisdom and gratitude to Allah.",
-    "verses": [
+    "sections": [
       {
-        "ref": "27:15-44",
-        "chapter": 27,
-        "start": 15,
-        "end": 44,
-        "context": "The ant, the hoopoe bird, and the Queen of Sheba",
-        "image_prompt": "A hoopoe bird carrying a letter in its beak flying over an army of ants on a sunlit path, a distant palace on the horizon, no people visible, painterly style"
+        "narrative": "Sulayman inherited from his father Dawud — not wealth, but prophethood and wisdom. Allah gave him a kingdom unlike any before or after: he could command the wind, which would travel a month's journey in a morning and a month's journey in an evening. He understood the speech of birds and ants. Jinn worked under his command, building for him palaces, statues, basins like reservoirs, and cooking pots fixed in place.\n\nOnce, while marching with his armies of jinn, men, and birds, an ant cried out: \"O ants, enter your dwellings so that Sulayman and his soldiers do not crush you unknowingly.\" Sulayman smiled at her words and prayed: \"My Lord, enable me to be grateful for Your favour which You have bestowed upon me.\"",
+        "verses": [
+          {
+            "ref": "27:15-19",
+            "chapter": 27,
+            "start": 15,
+            "end": 19,
+            "context": "The wind, the birds, the ant"
+          }
+        ],
+        "image_prompt": "A vast army of tiny ants hurrying into their hill as a great wind sweeps across the land, a hoopoe bird perched on a branch above watching, magical atmosphere, no people visible, painterly style"
       },
       {
-        "ref": "34:12-14",
-        "chapter": 34,
-        "start": 12,
-        "end": 14,
-        "context": "Jinn working for Sulayman",
-        "image_prompt": "Massive stone blocks being lifted and placed to build a grand temple, mysterious swirling winds assisting, supernatural construction, no people visible, painterly style"
-      },
-      {
-        "ref": "38:30-40",
-        "chapter": 38,
-        "start": 30,
-        "end": 40,
-        "context": "The wind and the test of the throne",
-        "image_prompt": "A magnificent ornate throne in a vast hall with wind swirling through open arches, a glass floor reflecting clouds below, no people visible, painterly Islamic art style"
+        "narrative": "The hoopoe bird once came to Sulayman with extraordinary news: in the land of Sheba, a queen ruled a mighty people who worshipped the sun. Sulayman sent a letter inviting her to submit to Allah. The Queen of Sheba came to visit, and Sulayman had her throne brought to him in the blink of an eye by one who had knowledge of the Scripture. When she arrived and saw her own throne, she was amazed. Then she was asked to enter his palace — and seeing the glass floor, she thought it was a pool of water and uncovered her shins. Sulayman told her it was a palace paved with crystal. She declared: \"My Lord, indeed I have wronged myself, and I submit with Sulayman to Allah, Lord of the worlds.\"",
+        "verses": [
+          {
+            "ref": "27:20-44",
+            "chapter": 27,
+            "start": 20,
+            "end": 44,
+            "context": "The Queen of Sheba"
+          }
+        ],
+        "image_prompt": "A magnificent throne room with an ornate throne and a vast glass floor reflecting clouds and sky beneath it, a hoopoe bird carrying a sealed letter, grand and magical, no people visible, painterly Islamic art style"
       }
     ]
   },
@@ -259,31 +365,26 @@
     "name": "Yunus",
     "arabic": "يونس",
     "title": "Jonah — The One Who Called from Darkness",
-    "summary": "Left his people in frustration before receiving Allah's permission. Swallowed by a great whale, he called out to Allah from the depths of darkness. Allah forgave him and his people became believers.",
-    "verses": [
+    "sections": [
       {
-        "ref": "21:87-88",
-        "chapter": 21,
-        "start": 87,
-        "end": 88,
-        "context": "His prayer from the belly of the whale",
-        "image_prompt": "The dark interior of a great whale's belly with a faint beam of light filtering through, deep ocean visible outside, ethereal and claustrophobic, no people visible, painterly style"
-      },
-      {
-        "ref": "37:139-148",
-        "chapter": 37,
-        "start": 139,
-        "end": 148,
-        "context": "Cast into the sea and swallowed",
-        "image_prompt": "A great whale surfacing in stormy seas with its mouth open wide, dark churning waters, lightning in the background, no people visible, dramatic painterly style"
-      },
-      {
-        "ref": "68:48-50",
-        "chapter": 68,
-        "start": 48,
-        "end": 50,
-        "context": "Patience and forgiveness",
-        "image_prompt": "A barren shoreline where the sea meets land, a single green plant sprouting from the sand providing shade, calm after storm, no people visible, painterly style"
+        "narrative": "Yunus was sent to a people of a hundred thousand or more. He called them to Allah, but they rejected him. Frustrated, he left before Allah had given him permission — boarding a ship that was soon caught in a violent storm. The crew cast lots to lighten the load, and the lot fell on Yunus. He was thrown into the sea, where a great whale swallowed him whole.\n\nIn the layers of darkness — the darkness of the night, the darkness of the sea, and the darkness of the whale's belly — Yunus called out: \"There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.\"\n\nAllah heard his prayer. Had he not been of those who glorify Allah, he would have remained in the whale's belly until the Day of Resurrection. But Allah caused the whale to cast him onto the shore, ill and exposed. He caused a gourd plant to grow over him, giving him shade and nourishment as he recovered.\n\nAnd his people? They believed. All of them. Allah removed from them the punishment of disgrace in worldly life and gave them enjoyment for a time.",
+        "verses": [
+          {
+            "ref": "37:139-148",
+            "chapter": 37,
+            "start": 139,
+            "end": 148,
+            "context": "The whale, the prayer, the rescue"
+          },
+          {
+            "ref": "21:87-88",
+            "chapter": 21,
+            "start": 87,
+            "end": 88,
+            "context": "His prayer from the darkness"
+          }
+        ],
+        "image_prompt": "A great whale in deep dark ocean waters with a faint beam of divine light filtering down from far above the surface, mysterious and claustrophobic depths, no people visible, painterly style"
       }
     ]
   },
@@ -291,39 +392,52 @@
     "name": "Isa",
     "arabic": "عيسى",
     "title": "Jesus — The Miraculous Word",
-    "summary": "Born miraculously to Maryam (Mary) without a father, spoke from the cradle, healed the blind and lepers, and raised the dead by Allah's permission. He was not crucified but raised up to Allah. He will return before the Day of Judgement.",
-    "verses": [
+    "sections": [
       {
-        "ref": "3:42-60",
-        "chapter": 3,
-        "start": 42,
-        "end": 60,
-        "context": "The annunciation and birth of Isa",
-        "image_prompt": "A single palm tree heavy with ripe dates beside a gentle stream in a peaceful valley, soft divine light, serene atmosphere, no people visible, painterly style"
+        "narrative": "The story of Isa begins with his mother, Maryam — the most honoured woman in the Quran, with an entire surah named after her. She had devoted herself to worship in the temple, where the prophet Zakariya cared for her. Every time he entered her prayer chamber, he found provision already there. He asked: \"O Maryam, from where is this?\" She said: \"It is from Allah. Indeed, Allah provides for whom He wills without account.\"\n\nThen the angels brought her news: \"O Maryam, indeed Allah gives you good tidings of a word from Him, whose name will be the Messiah, Isa, the son of Maryam — distinguished in this world and the Hereafter and among those brought near to Allah.\" She said: \"My Lord, how will I have a child when no man has touched me?\" The angel said: \"Such is Allah; He creates what He wills.\"",
+        "verses": [
+          {
+            "ref": "3:42-49",
+            "chapter": 3,
+            "start": 42,
+            "end": 49,
+            "context": "The annunciation of Isa's birth"
+          }
+        ],
+        "image_prompt": "An ancient prayer niche (mihrab) in a stone temple with warm light streaming in and fresh provisions miraculously appearing on a shelf, sacred and peaceful atmosphere, no people visible, painterly style"
       },
       {
-        "ref": "5:110-120",
-        "chapter": 5,
-        "start": 110,
-        "end": 120,
-        "context": "Miracles and the table from heaven",
-        "image_prompt": "A table descending from the sky laden with food, surrounded by divine light, clouds parting above, no people visible, painterly style"
+        "narrative": "Maryam withdrew to a remote place. The pains of childbirth drove her to the trunk of a palm tree. In her anguish, she cried: \"Oh, I wish I had died before this and was in oblivion, forgotten.\" A voice called to her from below: \"Do not grieve; your Lord has provided beneath you a stream. And shake toward you the trunk of the palm tree; it will drop upon you ripe, fresh dates. So eat and drink and be content.\"\n\nShe brought the baby to her people, who were shocked. \"O Maryam, you have certainly done a thing unprecedented!\" She pointed to the infant. They said: \"How can we speak to one who is in the cradle, a child?\" Then Isa spoke — a newborn, from the cradle: \"Indeed, I am the servant of Allah. He has given me the Scripture and made me a prophet. And He has made me blessed wherever I am and has enjoined upon me prayer and charity as long as I remain alive.\"",
+        "verses": [
+          {
+            "ref": "19:22-33",
+            "chapter": 19,
+            "start": 22,
+            "end": 33,
+            "context": "The miraculous birth and speaking from the cradle"
+          }
+        ],
+        "image_prompt": "A single palm tree heavy with ripe golden dates beside a gentle flowing stream in a remote peaceful valley, soft divine light filtering through, miraculous and serene, no people visible, painterly style"
       },
       {
-        "ref": "19:16-36",
-        "chapter": 19,
-        "start": 16,
-        "end": 36,
-        "context": "Maryam and the birth — Isa speaks from the cradle",
-        "image_prompt": "A palm tree with dates falling beside a flowing stream in a remote valley, warm golden light, peaceful and miraculous atmosphere, no people visible, painterly style"
-      },
-      {
-        "ref": "4:157-159",
-        "chapter": 4,
-        "start": 157,
-        "end": 159,
-        "context": "He was not crucified — raised to Allah",
-        "image_prompt": "A beam of divine light ascending from earth into the heavens through parting clouds, radiant and transcendent, no people visible, painterly style"
+        "narrative": "Isa performed miracles by Allah's permission: he healed the blind and the leper, brought the dead back to life, and fashioned a bird from clay and breathed into it so it became alive. He told his people what they ate and what they stored in their houses. All of these were signs, yet many still rejected him.\n\nThe Quran is clear that Isa was not killed, nor was he crucified — though it was made to appear so. Rather, Allah raised him up to Himself. He will return before the Day of Judgement. He is honoured in this world and the next, a word from Allah and a spirit from Him — but he is not divine. He himself said: \"Indeed, Allah is my Lord and your Lord, so worship Him. That is the straight path.\"",
+        "verses": [
+          {
+            "ref": "4:157-159",
+            "chapter": 4,
+            "start": 157,
+            "end": 159,
+            "context": "He was not crucified — raised to Allah"
+          },
+          {
+            "ref": "5:110-116",
+            "chapter": 5,
+            "start": 110,
+            "end": 116,
+            "context": "His miracles and his declaration of servanthood"
+          }
+        ],
+        "image_prompt": "A beam of brilliant divine light ascending from earth into the heavens through parting golden clouds, radiant and transcendent, birds in flight around the light, no people visible, painterly style"
       }
     ]
   },
@@ -331,47 +445,52 @@
     "name": "Muhammad",
     "arabic": "محمد ﷺ",
     "title": "The Final Messenger",
-    "summary": "The seal of the prophets, sent as a mercy to all of mankind. Born in Makkah, received the first revelation in the Cave of Hira, endured persecution, migrated to Madinah, and established the final message of Islam. The Quran was revealed to him over 23 years.",
-    "verses": [
+    "sections": [
       {
-        "ref": "96:1-5",
-        "chapter": 96,
-        "start": 1,
-        "end": 5,
-        "context": "The first revelation — Read!",
-        "image_prompt": "The Cave of Hira on Mount Jabal al-Nour at dawn with golden light streaming through the entrance, rocky mountain landscape of Makkah, no people visible, painterly style"
+        "narrative": "Muhammad ﷺ was born in Makkah into the tribe of Quraysh, orphaned young — his father died before his birth, his mother when he was six, and his grandfather when he was eight. He was known as Al-Amin (the Trustworthy) and As-Sadiq (the Truthful) even before prophethood.\n\nAt the age of forty, while meditating in the Cave of Hira on the Mountain of Light, the angel Jibril appeared to him and said: \"Read!\" He replied: \"I cannot read.\" The angel squeezed him and said again: \"Read!\" This happened three times, and then Jibril revealed the first words of the Quran: \"Read in the name of your Lord who created. Created man from a clinging substance. Read, and your Lord is the most Generous — Who taught by the pen — taught man that which he knew not.\"",
+        "verses": [
+          {
+            "ref": "96:1-5",
+            "chapter": 96,
+            "start": 1,
+            "end": 5,
+            "context": "The first revelation"
+          }
+        ],
+        "image_prompt": "The Cave of Hira on Mount Jabal al-Nour at the moment of dawn with brilliant golden light streaming through its narrow entrance, rocky mountain landscape of Makkah below, sacred atmosphere, no people visible, painterly style"
       },
       {
-        "ref": "33:40",
-        "chapter": 33,
-        "start": 40,
-        "end": 40,
-        "context": "The seal of the prophets",
-        "image_prompt": "An ornate golden seal pressed into wax on an ancient scroll, surrounded by light, symbolizing finality and completion, no people visible, painterly style"
+        "narrative": "For thirteen years in Makkah, Muhammad ﷺ called his people to Islam. He and his followers endured persecution, boycott, and abuse. Some were tortured, some were killed. When the persecution became unbearable, they migrated to Madinah — the Hijrah — which marks the beginning of the Islamic calendar.\n\nIn Madinah, a community was established. The Quran continued to be revealed over twenty-three years total, providing guidance for every aspect of life. Muhammad ﷺ was sent not just to the Arabs but as a mercy to all of mankind.",
+        "verses": [
+          {
+            "ref": "21:107",
+            "chapter": 21,
+            "start": 107,
+            "end": 107,
+            "context": "A mercy to all the worlds"
+          },
+          {
+            "ref": "33:40",
+            "chapter": 33,
+            "start": 40,
+            "end": 40,
+            "context": "The seal of the prophets"
+          }
+        ],
+        "image_prompt": "A vast desert landscape with a caravan trail leading from a rocky city (Makkah) toward a green oasis city (Madinah) in the distance, the journey of migration, stars guiding the way, no people visible, painterly style"
       },
       {
-        "ref": "21:107",
-        "chapter": 21,
-        "start": 107,
-        "end": 107,
-        "context": "Sent as a mercy to the worlds",
-        "image_prompt": "A vast landscape showing desert, ocean, mountains, and green fields all under one harmonious sky with soft rain falling, mercy and blessing, no people visible, painterly style"
-      },
-      {
-        "ref": "48:29",
-        "chapter": 48,
-        "start": 29,
-        "end": 29,
-        "context": "Muhammad is the Messenger of Allah",
-        "image_prompt": "The green dome of Madinah at dusk with stars appearing, peaceful cityscape, warm lights, no people visible, painterly style"
-      },
-      {
-        "ref": "110:1-3",
-        "chapter": 110,
-        "start": 1,
-        "end": 3,
-        "context": "Victory and completion of the message",
-        "image_prompt": "The Ka'bah surrounded by light with the city of Makkah visible below, triumphant dawn breaking over the horizon, no people visible, painterly style"
+        "narrative": "After years of struggle, the Prophet ﷺ returned to Makkah in triumph. He entered the city with humility, his head bowed, and cleansed the Ka'bah of its 360 idols, reciting: \"Truth has come, and falsehood has departed. Indeed, falsehood is ever bound to depart.\" He forgave the people of Makkah who had persecuted him for years.\n\nThe last surah to be revealed was Surah An-Nasr: \"When the victory of Allah has come and the conquest, and you see the people entering into the religion of Allah in multitudes, then exalt Him with praise of your Lord and ask His forgiveness. Indeed, He is ever Accepting of repentance.\"",
+        "verses": [
+          {
+            "ref": "110:1-3",
+            "chapter": 110,
+            "start": 1,
+            "end": 3,
+            "context": "Victory and the completion of the message"
+          }
+        ],
+        "image_prompt": "The Ka'bah cleansed and radiant at dawn, shattered idols scattered on the ground around it, light breaking over the horizon of Makkah, victory and purification, no people visible, painterly Islamic art style"
       }
     ]
   },
@@ -379,23 +498,26 @@
     "name": "Ayyub",
     "arabic": "أيوب",
     "title": "Job — The Patient",
-    "summary": "Tested with the loss of his health, wealth, and family, Ayyub remained patient and devoted to Allah through years of suffering. Allah restored everything to him and more as a reward for his patience.",
-    "verses": [
+    "sections": [
       {
-        "ref": "21:83-84",
-        "chapter": 21,
-        "start": 83,
-        "end": 84,
-        "context": "His prayer and Allah's response",
-        "image_prompt": "A barren cracked landscape with a single spring of cool water beginning to flow from a rock, first signs of green growth, no people visible, painterly style"
-      },
-      {
-        "ref": "38:41-44",
-        "chapter": 38,
-        "start": 41,
-        "end": 44,
-        "context": "His patience rewarded",
-        "image_prompt": "A once-barren landscape now transformed into lush green fields with abundant water, flowers blooming, complete restoration, no people visible, painterly style"
+        "narrative": "Ayyub was a prophet blessed with wealth, health, and a large family. Then he was tested — he lost everything. His wealth vanished, his children died, and his body was struck with a terrible illness that lasted for years. People abandoned him. Through all of it, Ayyub remained patient, never complaining against Allah.\n\nFinally, he called out: \"Indeed, adversity has touched me, and You are the Most Merciful of the merciful.\" Allah responded immediately: \"Strike the ground with your foot — this is a cool wash and a drink.\" A spring gushed forth. Allah restored his health, returned his family to him, and gave him double of what he had lost. His story is the ultimate example of sabr — beautiful patience in the face of overwhelming loss.",
+        "verses": [
+          {
+            "ref": "21:83-84",
+            "chapter": 21,
+            "start": 83,
+            "end": 84,
+            "context": "His prayer and Allah's response"
+          },
+          {
+            "ref": "38:41-44",
+            "chapter": 38,
+            "start": 41,
+            "end": 44,
+            "context": "His patience rewarded"
+          }
+        ],
+        "image_prompt": "A barren cracked landscape with a spring of cool clear water suddenly bursting from rock, the first signs of green growth spreading outward, transformation from desolation to life, no people visible, painterly style"
       }
     ]
   },
@@ -403,39 +525,26 @@
     "name": "Hud",
     "arabic": "هود",
     "title": "Sent to the People of 'Ad",
-    "summary": "Sent to the powerful ancient people of 'Ad who built great monuments and were arrogant in the land. They rejected his message and were destroyed by a furious wind that lasted seven nights and eight days.",
-    "verses": [
+    "sections": [
       {
-        "ref": "7:65-72",
-        "chapter": 7,
-        "start": 65,
-        "end": 72,
-        "context": "Hud warns the people of 'Ad",
-        "image_prompt": "Towering ancient stone monuments and grand pillars in a prosperous desert city, impressive but foreboding, no people visible, painterly style"
-      },
-      {
-        "ref": "11:50-60",
-        "chapter": 11,
-        "start": 50,
-        "end": 60,
-        "context": "The rejection and destruction",
-        "image_prompt": "A massive wall of sand and wind approaching an ancient city, buildings beginning to crumble, ominous dark sky, no people visible, dramatic painterly style"
-      },
-      {
-        "ref": "26:123-140",
-        "chapter": 26,
-        "start": 123,
-        "end": 140,
-        "context": "Their monuments and arrogance",
-        "image_prompt": "Grand palatial ruins with fallen columns and ornate carvings half-buried in sand, remnants of a once-great civilization, no people visible, painterly style"
-      },
-      {
-        "ref": "69:6-8",
-        "chapter": 69,
-        "start": 6,
-        "end": 8,
-        "context": "The furious wind",
-        "image_prompt": "A violent sandstorm engulfing everything in its path, sand dunes being reshaped by furious winds, total devastation, no people visible, painterly style"
+        "narrative": "The people of 'Ad were powerful and prosperous, building great monuments and towers on every elevation. They thought they were invincible. Allah sent them the prophet Hud, who said: \"O my people, worship Allah; you have no deity other than Him. Will you not fear Him?\"\n\nThey mocked him: \"We are not going to leave our gods for your saying, and we are not believers in you.\" They challenged him to bring the punishment he threatened. So Allah sent upon them a furious wind for seven nights and eight days without stopping — it destroyed everything in its path. After the wind, nothing remained of the great people of 'Ad but their empty ruins.",
+        "verses": [
+          {
+            "ref": "7:65-72",
+            "chapter": 7,
+            "start": 65,
+            "end": 72,
+            "context": "Hud's mission and the destruction of 'Ad"
+          },
+          {
+            "ref": "69:6-8",
+            "chapter": 69,
+            "start": 6,
+            "end": 8,
+            "context": "The furious wind"
+          }
+        ],
+        "image_prompt": "Ancient towering stone monuments and grand pillars being engulfed by a massive wall of sand from a furious wind, buildings beginning to crumble and break, ominous dark sky, no people visible, dramatic painterly style"
       }
     ]
   },
@@ -443,39 +552,26 @@
     "name": "Salih",
     "arabic": "صالح",
     "title": "Sent to the People of Thamud",
-    "summary": "Sent to Thamud, who carved homes from mountains. Allah sent a she-camel as a miraculous sign. Despite warnings, they hamstrung the camel and were destroyed by a thunderous blast.",
-    "verses": [
+    "sections": [
       {
-        "ref": "7:73-79",
-        "chapter": 7,
-        "start": 73,
-        "end": 79,
-        "context": "The she-camel as a sign",
-        "image_prompt": "A lone she-camel drinking from a desert well beside ancient rock-cut dwellings carved into cliff faces, peaceful scene, no people visible, painterly style"
-      },
-      {
-        "ref": "11:61-68",
-        "chapter": 11,
-        "start": 61,
-        "end": 68,
-        "context": "Salih's warning and the destruction",
-        "image_prompt": "Rose-coloured cliff dwellings cracking and crumbling from a massive earthquake, dust rising, ground splitting, no people visible, dramatic painterly style"
-      },
-      {
-        "ref": "26:141-159",
-        "chapter": 26,
-        "start": 141,
-        "end": 159,
-        "context": "Carved dwellings and arrogance",
-        "image_prompt": "Magnificent rock-cut facades carved into rose-coloured sandstone cliffs in a narrow canyon, ancient and ornate, no people visible, painterly style"
-      },
-      {
-        "ref": "91:11-15",
-        "chapter": 91,
-        "start": 11,
-        "end": 15,
-        "context": "Thamud's denial",
-        "image_prompt": "A dead she-camel lying beside a dry well in front of crumbling cliff dwellings, desolation setting in, no people visible, painterly style"
+        "narrative": "The people of Thamud carved magnificent homes from the mountainside — rock-cut dwellings that can still be seen in the region of Al-Hijr in modern Saudi Arabia. They were skilled and powerful, but they rejected Allah. The prophet Salih was sent to them.\n\nAs a sign, Allah brought forth a she-camel from a rock. Salih told his people: \"This is the she-camel of Allah — a sign for you. So let her eat within Allah's earth and do not touch her with harm, or you will be taken by a painful punishment.\" He told them to share the water — one day for the camel, one day for them.\n\nBut they hamstrung the camel and killed it defiantly. Salih warned them: \"Enjoy yourselves in your homes for three days. That is a promise not to be denied.\" On the third day, a thunderous blast seized them. They lay fallen in their homes, as if they had never prospered there.",
+        "verses": [
+          {
+            "ref": "7:73-79",
+            "chapter": 7,
+            "start": 73,
+            "end": 79,
+            "context": "The she-camel and the destruction of Thamud"
+          },
+          {
+            "ref": "91:11-15",
+            "chapter": 91,
+            "start": 11,
+            "end": 15,
+            "context": "Their denial and the blast"
+          }
+        ],
+        "image_prompt": "Magnificent rock-cut facades carved into rose-coloured sandstone cliffs in a narrow canyon, with cracks spreading through the rock from an earthquake, dust rising, no people visible, dramatic painterly style"
       }
     ]
   },
@@ -483,31 +579,19 @@
     "name": "Lut",
     "arabic": "لوط",
     "title": "Lot — Righteous Among the Wicked",
-    "summary": "Nephew of Ibrahim, sent to the people of Sodom who engaged in unprecedented wickedness. Angels came to warn him to leave before the cities were overturned and destroyed by a rain of stones.",
-    "verses": [
+    "sections": [
       {
-        "ref": "7:80-84",
-        "chapter": 7,
-        "start": 80,
-        "end": 84,
-        "context": "The sin of his people and their destruction",
-        "image_prompt": "An ancient city being overturned, buildings flipping upside down, rain of stones falling from a dark sky, total destruction, no people visible, dramatic painterly style"
-      },
-      {
-        "ref": "11:77-83",
-        "chapter": 11,
-        "start": 77,
-        "end": 83,
-        "context": "The angels visit and the destruction",
-        "image_prompt": "A city at night with an eerie glow, the ground beginning to crack and tilt, buildings sliding, dawn breaking on the horizon, no people visible, painterly style"
-      },
-      {
-        "ref": "26:160-175",
-        "chapter": 26,
-        "start": 160,
-        "end": 175,
-        "context": "Lut's warning rejected",
-        "image_prompt": "A prosperous ancient city by the Dead Sea with ornate buildings, dark clouds gathering ominously overhead, no people visible, painterly style"
+        "narrative": "Lut was the nephew of Ibrahim. He was sent to the people of Sodom, who practiced a sin unprecedented among all of creation. Lut pleaded with them: \"Do you approach males among the worlds and leave what your Lord has created for you as mates? Rather, you are a transgressing people.\"\n\nThey threatened to expel him: \"If you do not desist, O Lut, you will surely be of those evicted.\" When angels came to Lut in the form of handsome young men to warn him, the people of the city rushed to his door with evil intent. Lut was distressed, saying: \"This is a difficult day.\" The angels told him: \"Do not fear. We are the messengers of your Lord; they will never reach you.\"\n\nLut was told to leave with his family during the night and not to look back. At dawn, the punishment came — Allah turned the cities upside down and rained upon them stones of baked clay, marked from your Lord. And they are not from the wrongdoers very far.",
+        "verses": [
+          {
+            "ref": "11:77-83",
+            "chapter": 11,
+            "start": 77,
+            "end": 83,
+            "context": "The angels' visit and the destruction of Sodom"
+          }
+        ],
+        "image_prompt": "An ancient city being physically overturned, buildings flipping and crumbling, stones raining from a dark angry sky, complete destruction near the Dead Sea, no people visible, apocalyptic painterly style"
       }
     ]
   },
@@ -515,31 +599,19 @@
     "name": "Shuayb",
     "arabic": "شعيب",
     "title": "Sent to the People of Madyan",
-    "summary": "Called his people to stop cheating in weights and measures and to worship Allah alone. Known for his eloquence. His people rejected him and were destroyed by an earthquake.",
-    "verses": [
+    "sections": [
       {
-        "ref": "7:85-93",
-        "chapter": 7,
-        "start": 85,
-        "end": 93,
-        "context": "Warning against fraud in trade",
-        "image_prompt": "An ancient marketplace with overturned scales, scattered goods, and broken measuring weights, signs of dishonesty, no people visible, painterly style"
-      },
-      {
-        "ref": "11:84-95",
-        "chapter": 11,
-        "start": 84,
-        "end": 95,
-        "context": "Shu'ayb's plea and the earthquake",
-        "image_prompt": "Ground cracking open beneath an ancient trading town, buildings collapsing into fissures, dust clouds rising, no people visible, dramatic painterly style"
-      },
-      {
-        "ref": "26:176-191",
-        "chapter": 26,
-        "start": 176,
-        "end": 191,
-        "context": "The people of the thicket",
-        "image_prompt": "A dense thicket of trees with a dark shadow of burning heat descending from a cloud above, oppressive atmosphere, no people visible, painterly style"
+        "narrative": "The people of Madyan were merchants who cheated in their measurements. They gave less when they sold and demanded more when they bought. The prophet Shu'ayb — known for his eloquence — was sent to them.\n\nHe said: \"O my people, worship Allah; you have no deity other than Him. And do not decrease from the measure and the scale. Indeed, I see you in prosperity, but I fear for you the punishment of an all-encompassing Day.\" They said he was just a man bewitched, and they denied him. An earthquake seized them, and they lay fallen in their homes — as if they had never prospered there.",
+        "verses": [
+          {
+            "ref": "11:84-95",
+            "chapter": 11,
+            "start": 84,
+            "end": 95,
+            "context": "Shu'ayb's plea against fraud and the earthquake"
+          }
+        ],
+        "image_prompt": "An ancient marketplace with overturned brass scales, scattered goods and broken measuring weights, ground cracked open from an earthquake beneath the market stalls, dust clouds rising, no people visible, dramatic painterly style"
       }
     ]
   },
@@ -547,23 +619,19 @@
     "name": "Idris",
     "arabic": "إدريس",
     "title": "Enoch — Raised to a High Station",
-    "summary": "Known for his truthfulness and patience. Allah raised him to a high station. He is mentioned briefly in the Quran as a righteous prophet.",
-    "verses": [
+    "sections": [
       {
-        "ref": "19:56-57",
-        "chapter": 19,
-        "start": 56,
-        "end": 57,
-        "context": "A man of truth and patience, raised high",
-        "image_prompt": "A brilliant star ascending through layers of luminous clouds into the heavens, celestial light and cosmic beauty, no people visible, painterly style"
-      },
-      {
-        "ref": "21:85-86",
-        "chapter": 21,
-        "start": 85,
-        "end": 86,
-        "context": "Among the patient and righteous",
-        "image_prompt": "A serene mountain peak above the clouds at sunrise, peaceful and elevated, closest to the heavens, no people visible, painterly style"
+        "narrative": "Idris is mentioned briefly in the Quran but with great honour. He was a man of truth and a prophet. Allah raised him to a high station — scholars interpret this as a physical raising to the heavens, or an elevation in rank and closeness to Allah. He is counted among the patient and the righteous.",
+        "verses": [
+          {
+            "ref": "19:56-57",
+            "chapter": 19,
+            "start": 56,
+            "end": 57,
+            "context": "A man of truth, raised to a high station"
+          }
+        ],
+        "image_prompt": "A brilliant celestial light ascending through layers of luminous golden clouds into the highest heavens, stars visible beyond, vast and transcendent, no people visible, painterly style"
       }
     ]
   },
@@ -571,23 +639,26 @@
     "name": "Ishaq",
     "arabic": "إسحاق",
     "title": "Isaac — The Promised Son",
-    "summary": "Son of Ibrahim and Sarah, given as glad tidings when his parents were old. Father of Yaqub. A righteous prophet through whom the line of Israelite prophets continued.",
-    "verses": [
+    "sections": [
       {
-        "ref": "11:71-73",
-        "chapter": 11,
-        "start": 71,
-        "end": 73,
-        "context": "The glad tidings of Ishaq's birth",
-        "image_prompt": "A tent in a desert oasis under a sky full of countless stars, warm firelight, atmosphere of joy and promise, no people visible, painterly style"
-      },
-      {
-        "ref": "37:112-113",
-        "chapter": 37,
-        "start": 112,
-        "end": 113,
-        "context": "Blessed with Ishaq after the sacrifice",
-        "image_prompt": "A green fertile valley emerging from desert, new life and blessing, flocks of sheep grazing, abundance, no people visible, painterly style"
+        "narrative": "When the angels visited Ibrahim on their way to destroy the people of Lut, they brought good news. Ibrahim's wife Sarah laughed in astonishment when they told her she would have a son — she was old and her husband was elderly. The angels said: \"Do you wonder at the decree of Allah? May the mercy of Allah and His blessings be upon you, people of the house.\"\n\nIshaq was born as promised. Through him, the line of Israelite prophets continued — his son was Yaqub, and from Yaqub came the twelve tribes of Israel. Allah blessed both Ishaq and his descendants, among whom were those who did good and those who clearly wronged themselves.",
+        "verses": [
+          {
+            "ref": "11:71-73",
+            "chapter": 11,
+            "start": 71,
+            "end": 73,
+            "context": "The glad tidings of Ishaq's birth"
+          },
+          {
+            "ref": "37:112-113",
+            "chapter": 37,
+            "start": 112,
+            "end": 113,
+            "context": "Blessed after the sacrifice"
+          }
+        ],
+        "image_prompt": "A tent encampment in a peaceful desert oasis at night under a sky full of countless brilliant stars, warm firelight glowing inside the tent, atmosphere of joy and divine promise, no people visible, painterly style"
       }
     ]
   },
@@ -595,31 +666,26 @@
     "name": "Yaqub",
     "arabic": "يعقوب",
     "title": "Jacob — The Grieving Father",
-    "summary": "Son of Ishaq, father of the twelve tribes of Israel including Yusuf. Endured years of grief after losing Yusuf, going blind from weeping, yet never lost faith in Allah's mercy. Reunited with Yusuf in Egypt.",
-    "verses": [
+    "sections": [
       {
-        "ref": "12:11-18",
-        "chapter": 12,
-        "start": 11,
-        "end": 18,
-        "context": "The brothers take Yusuf",
-        "image_prompt": "A deep dark well in an empty desert landscape, a torn colorful garment left beside it, tracks leading away, no people visible, painterly style"
-      },
-      {
-        "ref": "12:84-87",
-        "chapter": 12,
-        "start": 84,
-        "end": 87,
-        "context": "Grief and blindness — beautiful patience",
-        "image_prompt": "An empty tent interior with a prayer mat facing qibla, tear-stained fabric, dim light, atmosphere of deep sorrow and patience, no people visible, painterly style"
-      },
-      {
-        "ref": "12:93-100",
-        "chapter": 12,
-        "start": 93,
-        "end": 100,
-        "context": "Reunion and sight restored",
-        "image_prompt": "A colorful shirt being carried by wind across a vast desert toward green fields of Egypt, symbolising reunion and hope, bright light, no people visible, painterly style"
+        "narrative": "Yaqub's story is inseparable from his son Yusuf's. When his sons brought him Yusuf's shirt stained with false blood, claiming a wolf had eaten him, Yaqub knew they were lying. He said: \"Rather, your souls have enticed you to something. So patience is beautiful. And Allah is the one sought for help against that which you describe.\"\n\nYears passed. Yaqub never stopped grieving. His eyes turned white from sorrow — he wept until he went blind. His sons said: \"By Allah, you will not cease remembering Yusuf until you become fatally ill or become of those who perish.\" He replied: \"I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.\"\n\nWhen Yusuf finally sent his shirt back from Egypt with his brothers, Yaqub recognised the scent before it arrived. They placed it over his face, and his sight was restored. The family travelled to Egypt and were reunited. Yaqub fell into prostration, and the dream Yusuf had seen as a child — eleven stars, the sun, and the moon bowing — was fulfilled.",
+        "verses": [
+          {
+            "ref": "12:84-87",
+            "chapter": 12,
+            "start": 84,
+            "end": 87,
+            "context": "Grief, patience, and hope"
+          },
+          {
+            "ref": "12:93-100",
+            "chapter": 12,
+            "start": 93,
+            "end": 100,
+            "context": "Reunion and sight restored"
+          }
+        ],
+        "image_prompt": "A colorful embroidered shirt being carried by desert wind across a vast landscape toward distant green fields of Egypt, symbolising reunion and restored hope, golden light, no people visible, painterly style"
       }
     ]
   },
@@ -627,31 +693,26 @@
     "name": "Harun",
     "arabic": "هارون",
     "title": "Aaron — The Helper",
-    "summary": "Brother of Musa, given prophethood alongside him as his helper and spokesman. He was eloquent in speech. Left in charge of the Israelites while Musa was on Mount Sinai, he tried to prevent them from worshipping the golden calf.",
-    "verses": [
+    "sections": [
       {
-        "ref": "20:29-36",
-        "chapter": 20,
-        "start": 29,
-        "end": 36,
-        "context": "Musa asks for Harun as his helper",
-        "image_prompt": "Two staffs laid side by side on a rock on Mount Sinai, clouds gathering at the peak, partnership and brotherhood, no people visible, painterly style"
-      },
-      {
-        "ref": "20:90-94",
-        "chapter": 20,
-        "start": 90,
-        "end": 94,
-        "context": "Harun tries to stop the golden calf",
-        "image_prompt": "A golden calf idol on a pedestal with a fire burning beneath it, molten gold, an atmosphere of wrongdoing, no people visible, painterly style"
-      },
-      {
-        "ref": "7:150-151",
-        "chapter": 7,
-        "start": 150,
-        "end": 151,
-        "context": "Musa's anger and Harun's plea",
-        "image_prompt": "Broken stone tablets on the ground at the foot of a mountain, divine inscriptions visible on the fragments, dramatic scene, no people visible, painterly style"
+        "narrative": "Harun was Musa's older brother, given prophethood alongside him. When Musa prayed for a helper, he asked for Harun: \"And appoint for me a minister from my family — Harun, my brother. Increase through him my strength and let him share my task.\" Allah granted this request.\n\nWhen Musa went to Mount Sinai to receive the Torah, he left Harun in charge of the people. In his absence, a man named Samiri fashioned a golden calf from the people's jewellery, and it made a sound. The people began worshipping it. Harun warned them: \"O my people, you are only being tested by it, and indeed, your Lord is the Most Merciful, so follow me and obey my command.\" But they refused to stop until Musa returned.\n\nWhen Musa came back and saw them worshipping the calf, he was furious. He grabbed his brother by the beard. Harun cried: \"O son of my mother, do not seize me by my beard or by my head. Indeed, I feared that you would say, 'You caused division among the Children of Israel, and you did not observe my word.'\"",
+        "verses": [
+          {
+            "ref": "20:29-36",
+            "chapter": 20,
+            "start": 29,
+            "end": 36,
+            "context": "Appointed as Musa's helper"
+          },
+          {
+            "ref": "20:85-94",
+            "chapter": 20,
+            "start": 85,
+            "end": 94,
+            "context": "The golden calf and Harun's plea"
+          }
+        ],
+        "image_prompt": "A golden calf idol on a stone pedestal with molten gold dripping, a fire burning beneath it, broken stone tablets lying on the ground nearby, atmosphere of wrongdoing and anguish, no people visible, dramatic painterly style"
       }
     ]
   },
@@ -659,31 +720,19 @@
     "name": "Zakariya",
     "arabic": "زكريا",
     "title": "Zechariah — The Devoted Elder",
-    "summary": "A righteous priest who cared for Maryam. In his old age, he prayed for an heir. Allah granted him Yahya despite his advanced age and his wife's barrenness.",
-    "verses": [
+    "sections": [
       {
-        "ref": "3:37-41",
-        "chapter": 3,
-        "start": 37,
-        "end": 41,
-        "context": "Caring for Maryam and praying for a son",
-        "image_prompt": "An ancient prayer niche (mihrab) in a stone temple with warm candlelight and fresh provisions miraculously appearing, peaceful, no people visible, painterly style"
-      },
-      {
-        "ref": "19:1-11",
-        "chapter": 19,
-        "start": 1,
-        "end": 11,
-        "context": "The prayer and the glad tidings of Yahya",
-        "image_prompt": "An ancient temple interior at dawn with light streaming through a window onto a prayer niche, atmosphere of answered prayer, no people visible, painterly style"
-      },
-      {
-        "ref": "21:89-90",
-        "chapter": 21,
-        "start": 89,
-        "end": 90,
-        "context": "His prayer answered",
-        "image_prompt": "A barren tree in a temple courtyard suddenly sprouting green leaves and blossoms, miracle of new life in old age, no people visible, painterly style"
+        "narrative": "Zakariya was an elderly priest who cared for Maryam in the temple. Every time he visited her prayer chamber, he found fresh provisions — fruits out of season, food he had not brought. He asked: \"O Maryam, from where is this?\" She said: \"It is from Allah.\"\n\nSeeing this miracle kindled a longing in Zakariya's heart. Though he was old and his wife was barren, he prayed in secret: \"My Lord, indeed my bones have weakened, and my head has filled with white hair, and never have I been in my supplication to You, my Lord, unhappy. And indeed, I fear my relatives after me, and my wife has been barren, so give me from Yourself an heir.\"\n\nAllah answered: \"O Zakariya, indeed We give you good tidings of a boy whose name will be Yahya. We have not assigned to any before him that name.\" Zakariya was overcome: \"My Lord, how will I have a boy when my wife has been barren and I have reached extreme old age?\" Allah said: \"It is easy for Me — I created you before, when you were nothing.\"",
+        "verses": [
+          {
+            "ref": "19:1-11",
+            "chapter": 19,
+            "start": 1,
+            "end": 11,
+            "context": "His prayer answered with Yahya"
+          }
+        ],
+        "image_prompt": "An ancient prayer niche (mihrab) in a stone temple at dawn with warm golden light streaming through a high window, fresh fruits and provisions miraculously appearing, atmosphere of answered prayer, no people visible, painterly style"
       }
     ]
   },
@@ -691,23 +740,19 @@
     "name": "Yahya",
     "arabic": "يحيى",
     "title": "John — The First of His Name",
-    "summary": "Son of Zakariya, given a name no one had borne before. Granted wisdom as a child, he was compassionate, pure, and dutiful to his parents. He confirmed the word of Allah.",
-    "verses": [
+    "sections": [
       {
-        "ref": "19:12-15",
-        "chapter": 19,
-        "start": 12,
-        "end": 15,
-        "context": "Given wisdom, compassion, and purity",
-        "image_prompt": "A young sapling growing strong beside an ancient river in a wilderness of olive trees, pure morning light, innocence and wisdom, no people visible, painterly style"
-      },
-      {
-        "ref": "3:39",
-        "chapter": 3,
-        "start": 39,
-        "end": 39,
-        "context": "Confirming the word from Allah",
-        "image_prompt": "A scroll of scripture illuminated by divine light in a simple wilderness setting, river nearby, sacred atmosphere, no people visible, painterly style"
+        "narrative": "Yahya was given a name no one had borne before him — Allah Himself named him. He was given wisdom as a child and grew up with tenderness from Allah. He was devout, dutiful to his parents, and neither arrogant nor disobedient. He confirmed the word from Allah and was a leader, chaste, and a prophet from among the righteous.\n\nAllah's peace was upon him the day he was born, the day he died, and the day he will be raised alive.",
+        "verses": [
+          {
+            "ref": "19:12-15",
+            "chapter": 19,
+            "start": 12,
+            "end": 15,
+            "context": "Given wisdom, compassion, and purity"
+          }
+        ],
+        "image_prompt": "A young sturdy sapling growing beside an ancient river in a wilderness of olive trees, pure morning light filtering through, innocence and wisdom in the landscape, no people visible, painterly style"
       }
     ]
   },
@@ -715,23 +760,26 @@
     "name": "Dhul-Kifl",
     "arabic": "ذو الكفل",
     "title": "The One of the Portion",
-    "summary": "Mentioned among the righteous and patient. Scholars differ on his identity, but he is praised in the Quran alongside other prophets for his steadfastness.",
-    "verses": [
+    "sections": [
       {
-        "ref": "21:85-86",
-        "chapter": 21,
-        "start": 85,
-        "end": 86,
-        "context": "Among the patient",
-        "image_prompt": "A single sturdy tree standing firm on a windswept hilltop, roots deep in the ground, enduring a storm, golden light breaking through, no people visible, painterly style"
-      },
-      {
-        "ref": "38:48",
-        "chapter": 38,
-        "start": 48,
-        "end": 48,
-        "context": "Among the best of men",
-        "image_prompt": "A verdant landscape with a winding river under a rainbow after rain, peaceful and blessed, no people visible, painterly style"
+        "narrative": "Dhul-Kifl is mentioned twice in the Quran, both times alongside other prophets. His identity is debated among scholars — some say he was Ezekiel, others that he was a righteous man who was given a portion of responsibility and fulfilled it with patience and devotion. What is clear is that Allah counted him among the patient, among the righteous, and among the best of creation.",
+        "verses": [
+          {
+            "ref": "21:85-86",
+            "chapter": 21,
+            "start": 85,
+            "end": 86,
+            "context": "Among the patient and righteous"
+          },
+          {
+            "ref": "38:48",
+            "chapter": 38,
+            "start": 48,
+            "end": 48,
+            "context": "Among the best of men"
+          }
+        ],
+        "image_prompt": "A single sturdy ancient tree standing firm on a windswept hilltop with deep roots visible in the earth, enduring a storm while golden light breaks through clouds above, steadfastness and patience, no people visible, painterly style"
       }
     ]
   },
@@ -739,23 +787,19 @@
     "name": "Ilyas",
     "arabic": "إلياس",
     "title": "Elijah — Against Baal Worship",
-    "summary": "Sent to his people who worshipped an idol called Baal. He called them to worship Allah alone. Praised as one of the best of creation.",
-    "verses": [
+    "sections": [
       {
-        "ref": "37:123-132",
-        "chapter": 37,
-        "start": 123,
-        "end": 132,
-        "context": "Calling his people away from Baal worship",
-        "image_prompt": "A shattered stone idol of Baal fallen at the base of a hilltop altar, broken into pieces, light breaking through storm clouds above, no people visible, painterly style"
-      },
-      {
-        "ref": "6:85",
-        "chapter": 6,
-        "start": 85,
-        "end": 85,
-        "context": "Among the righteous",
-        "image_prompt": "A mountain altar cleansed by rain with wildflowers growing around it, clear sky after storm, renewal and truth, no people visible, painterly style"
+        "narrative": "Ilyas was sent to his people who had begun worshipping an idol called Baal. He confronted them directly: \"Will you not fear Allah? Do you call upon Baal and leave the best of creators — Allah, your Lord and the Lord of your first forefathers?\" They denied him. But Ilyas is praised: \"Indeed, he was of Our believing servants. And indeed, Ilyas was from among the messengers. Peace upon Ilyas.\"",
+        "verses": [
+          {
+            "ref": "37:123-132",
+            "chapter": 37,
+            "start": 123,
+            "end": 132,
+            "context": "Calling his people away from Baal"
+          }
+        ],
+        "image_prompt": "A shattered massive stone idol of Baal toppled and broken at the base of a hilltop altar, fragments scattered, storm clouds clearing to reveal blue sky and light, truth prevailing, no people visible, painterly style"
       }
     ]
   },
@@ -763,23 +807,26 @@
     "name": "Al-Yasa",
     "arabic": "اليسع",
     "title": "Elisha — The Chosen",
-    "summary": "Mentioned among the best of creation alongside other prophets. A righteous prophet who continued the mission after Ilyas.",
-    "verses": [
+    "sections": [
       {
-        "ref": "6:86",
-        "chapter": 6,
-        "start": 86,
-        "end": 86,
-        "context": "Favoured above the nations",
-        "image_prompt": "A peaceful river valley with lush green banks and gentle rolling hills under soft warm light, blessing and favour, no people visible, painterly style"
-      },
-      {
-        "ref": "38:48",
-        "chapter": 38,
-        "start": 48,
-        "end": 48,
-        "context": "Among the best of men",
-        "image_prompt": "A verdant landscape with a winding river under a rainbow after rain, peaceful and blessed, no people visible, painterly style"
+        "narrative": "Al-Yasa is mentioned alongside the greatest prophets in the Quran — with Ibrahim, Ishaq, Yaqub, Musa, and Harun. Allah says of him and others: \"All were favoured above the nations.\" He continued the mission of Ilyas, guiding his people to the worship of Allah alone. He is counted among the best of creation.",
+        "verses": [
+          {
+            "ref": "6:86",
+            "chapter": 6,
+            "start": 86,
+            "end": 86,
+            "context": "Favoured above the nations"
+          },
+          {
+            "ref": "38:48",
+            "chapter": 38,
+            "start": 48,
+            "end": 48,
+            "context": "Among the best of men"
+          }
+        ],
+        "image_prompt": "A peaceful winding river valley with lush green banks and gentle rolling hills under soft warm golden light, a rainbow after gentle rain, blessed and favoured landscape, no people visible, painterly style"
       }
     ]
   }
