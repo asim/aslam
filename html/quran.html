@@ -70,13 +70,26 @@
         <main class="app-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <span class="quran-ref" style="margin-bottom:0;">Surah {{index . "ChapterName"}} &mdash; {{index . "Chapter"}}:{{index . "Verse"}}</span>
-                <form method="POST" action="/notes/add" style="display:inline;">
-                    <input type="hidden" name="title" value="Quran {{index . "ChapterName"}} {{index . "Chapter"}}:{{index . "Verse"}}">
-                    <input type="hidden" name="content" value="/quran/{{index . "Chapter"}}/{{index . "Verse"}}
+                <div style="display:flex; gap:6px;">
+                    <form method="POST" action="/notes/add" style="display:inline;">
+                        <input type="hidden" name="title" value="Quran {{index . "ChapterName"}} {{index . "Chapter"}}:{{index . "Verse"}}">
+                        <input type="hidden" name="content" value="/quran/{{index . "Chapter"}}/{{index . "Verse"}}
 
 {{index . "Text"}}">
-                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
-                </form>
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                    </form>
+                    <form method="POST" action="/chat/new" style="display:inline;">
+                        <input type="hidden" name="title" value="Quran {{index . "ChapterName"}} {{index . "Chapter"}}:{{index . "Verse"}}">
+                        <input type="hidden" name="context" value="Quran — Surah {{index . "ChapterName"}} — {{index . "Chapter"}}:{{index . "Verse"}} (/quran/{{index . "Chapter"}}/{{index . "Verse"}}){{if index . "Arabic"}}
+
+Arabic: {{index . "Arabic"}}{{end}}
+
+Translation: {{index . "Text"}}{{if index . "Commentary"}}
+
+Commentary: {{index . "Commentary"}}{{end}}">
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                    </form>
+                </div>
             </div>
             {{if index . "Arabic"}}
             <div class="quran-arabic">{{index . "Arabic"}}</div>

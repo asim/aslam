@@ -37,6 +37,7 @@ AI works in the background to help find, organise, and connect information acros
 - **Chats** — ask questions, AI searches authentic sources with query reformulation
 - **Notes** — save reflections, bookmarks from any content page
 - **Save anything** — every content page has a Save button that creates a note with a link back
+- **Chat about anything** — every content page also has a Chat button that opens a new conversation pre-loaded with what you're reading, so you can ask questions without copying text
 - **Public/private** — content is private by default, share with a toggle
 - **PWA** — installable on mobile/desktop
 - **User accounts** — email/password or Google OAuth, admin/user roles

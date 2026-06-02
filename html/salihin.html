@@ -54,13 +54,26 @@
         <main class="app-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <span class="riyad-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
-                <form method="POST" action="/notes/add" style="display:inline;">
-                    <input type="hidden" name="title" value="Riyad us-Salihin - {{index . "Book"}} - Hadith {{index . "Number"}}">
-                    <input type="hidden" name="content" value="/salihin/{{index . "Number"}}
+                <div style="display:flex; gap:6px;">
+                    <form method="POST" action="/notes/add" style="display:inline;">
+                        <input type="hidden" name="title" value="Riyad us-Salihin - {{index . "Book"}} - Hadith {{index . "Number"}}">
+                        <input type="hidden" name="content" value="/salihin/{{index . "Number"}}
 
 {{truncate (index . "Text") 200}}">
-                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
-                </form>
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                    </form>
+                    <form method="POST" action="/chat/new" style="display:inline;">
+                        <input type="hidden" name="title" value="Riyad us-Salihin - {{index . "Book"}} - Hadith {{index . "Number"}}">
+                        <input type="hidden" name="context" value="Riyad us-Salihin — {{index . "Book"}} — Hadith {{index . "Number"}} (/salihin/{{index . "Number"}})
+{{if index . "Narrator"}}
+{{index . "Narrator"}}{{end}}
+
+{{index . "Text"}}{{if index . "Arabic"}}
+
+Arabic: {{index . "Arabic"}}{{end}}">
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                    </form>
+                </div>
             </div>
             <h2>{{index . "Book"}} — Hadith {{index . "Number"}}</h2>
             {{if index . "Narrator"}}

@@ -151,6 +151,11 @@
                             <input type="hidden" name="content" value="{{index .DailyContent "Verse"}}">
                             <button type="submit" class="daily-btn">Save</button>
                         </form>
+                        <form method="POST" action="/chat/new" style="display:inline;">
+                            <input type="hidden" name="title" value="Quran Verse">
+                            <input type="hidden" name="context" value="Quran verse: {{index .DailyContent "Verse"}}">
+                            <button type="submit" class="daily-btn">Chat</button>
+                        </form>
                     </div>
                 </div>
                 {{end}}
@@ -166,6 +171,11 @@
                             <input type="hidden" name="content" value="{{index .DailyContent "Hadith"}}">
                             <button type="submit" class="daily-btn">Save</button>
                         </form>
+                        <form method="POST" action="/chat/new" style="display:inline;">
+                            <input type="hidden" name="title" value="Hadith">
+                            <input type="hidden" name="context" value="Hadith: {{index .DailyContent "Hadith"}}">
+                            <button type="submit" class="daily-btn">Chat</button>
+                        </form>
                     </div>
                 </div>
                 {{end}}
@@ -180,6 +190,11 @@
                             <input type="hidden" name="title" value="Name of Allah">
                             <input type="hidden" name="content" value="{{index .DailyContent "NameOfAllah"}}">
                             <button type="submit" class="daily-btn">Save</button>
+                        </form>
+                        <form method="POST" action="/chat/new" style="display:inline;">
+                            <input type="hidden" name="title" value="Name of Allah">
+                            <input type="hidden" name="context" value="Name of Allah: {{index .DailyContent "NameOfAllah"}}">
+                            <button type="submit" class="daily-btn">Chat</button>
                         </form>
                     </div>
                 </div>
