@@ -893,7 +893,7 @@ func GetMessages(convID int64) ([]Message, error) {
 		SELECT id, conversation_id, role, content, created_at
 		FROM messages
 		WHERE conversation_id = ?
-		ORDER BY created_at ASC
+		ORDER BY created_at ASC, id ASC
 	`, convID)
 	if err != nil {
 		return nil, err
@@ -914,7 +914,7 @@ func GetMessagesAfter(convID, afterID int64) ([]Message, error) {
 		SELECT id, conversation_id, role, content, created_at
 		FROM messages
 		WHERE conversation_id = ? AND id > ?
-		ORDER BY created_at ASC
+		ORDER BY created_at ASC, id ASC
 	`, convID, afterID)
 	if err != nil {
 		return nil, err

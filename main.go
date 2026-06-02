@@ -1987,7 +1987,10 @@ func handleNewChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pageContext != "" {
-		db.AddMessage(id, "context", pageContext)
+		// Stored as a "system" message: it passes the role CHECK constraint
+		// (unlike "context") and buildAPIMessages folds it into the system
+		// prompt, so the conversation still opens with a real user turn.
+		db.AddMessage(id, "system", pageContext)
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", id), http.StatusSeeOther)
@@ -2497,16 +2500,26 @@ type ToolUsage struct {
 // and any text to append to the system prompt.
 func buildAPIMessages(messages []db.Message) ([]map[string]interface{}, string) {
 	var apiMessages []map[string]interface{}
-	var leadingContext []string
+	var pageContext []string
 	seenUser := false
 	for _, m := range messages {
+		// "system" messages carry the page/seed context a chat was opened
+		// with (e.g. the verse or hadith the user clicked "Chat" on). They are
+		// folded into the system prompt regardless of position, so the message
+		// list always begins with a real user turn and never ends on a stray
+		// assistant turn.
 		if m.Role == "system" {
+			if strings.TrimSpace(m.Content) != "" {
+				pageContext = append(pageContext, m.Content)
+			}
 			continue
 		}
-		// Page context loaded before the conversation starts goes into the
-		// system prompt rather than the message list.
+		// Legacy: older databases allowed the "context" role for page context
+		// stored before the first user turn. Fold those in the same way.
 		if !seenUser && m.Role == "context" {
-			leadingContext = append(leadingContext, m.Content)
+			if strings.TrimSpace(m.Content) != "" {
+				pageContext = append(pageContext, m.Content)
+			}
 			continue
 		}
 		if m.Role == "user" {
@@ -2523,8 +2536,8 @@ func buildAPIMessages(messages []db.Message) ([]map[string]interface{}, string) 
 	}
 
 	var contextPrompt string
-	if len(leadingContext) > 0 {
-		contextPrompt = "\n\nThe user opened this chat while reading the following content and is likely asking about it. Use it as the primary context for their questions:\n\n" + strings.Join(leadingContext, "\n\n")
+	if len(pageContext) > 0 {
+		contextPrompt = "\n\nThe user opened this chat while reading the following content and is likely asking about it. Use it as the primary context for their questions:\n\n" + strings.Join(pageContext, "\n\n")
 	}
 	return apiMessages, contextPrompt
 }
