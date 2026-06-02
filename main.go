@@ -1968,13 +1968,39 @@ func handleNewChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := getUserID(r)
-	id, err := db.CreateConversation("New conversation", userID)
+
+	// Optional page context: the "Chat" button on content pages posts a title
+	// and the content being read, so the conversation opens pre-loaded with
+	// whatever the user was looking at as context.
+	title := strings.TrimSpace(r.FormValue("title"))
+	pageContext := strings.TrimSpace(r.FormValue("context"))
+
+	convTitle := "New conversation"
+	if title != "" {
+		convTitle = truncateRunes(title, 50)
+	}
+
+	id, err := db.CreateConversation(convTitle, userID)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
+	if pageContext != "" {
+		db.AddMessage(id, "context", pageContext)
+	}
+
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", id), http.StatusSeeOther)
+}
+
+// truncateRunes shortens a string to at most n runes, appending an ellipsis if
+// it was cut. Rune-safe so multi-byte titles (e.g. Arabic) aren't split.
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "..."
 }
 
 func handleSendMessage(w http.ResponseWriter, r *http.Request) {
@@ -2462,6 +2488,47 @@ type ToolUsage struct {
 	Output string
 }
 
+// buildAPIMessages converts stored conversation messages into the message
+// list sent to the Anthropic API. "context" and "tool" messages are replayed
+// as assistant turns so the model can reference them. Any context messages
+// that appear before the first user message (e.g. the page content a chat was
+// opened from) are folded into the system prompt instead, since the API
+// requires the first message to use the user role. It returns the API messages
+// and any text to append to the system prompt.
+func buildAPIMessages(messages []db.Message) ([]map[string]interface{}, string) {
+	var apiMessages []map[string]interface{}
+	var leadingContext []string
+	seenUser := false
+	for _, m := range messages {
+		if m.Role == "system" {
+			continue
+		}
+		// Page context loaded before the conversation starts goes into the
+		// system prompt rather than the message list.
+		if !seenUser && m.Role == "context" {
+			leadingContext = append(leadingContext, m.Content)
+			continue
+		}
+		if m.Role == "user" {
+			seenUser = true
+		}
+		role := m.Role
+		if role == "context" || role == "tool" {
+			role = "assistant"
+		}
+		apiMessages = append(apiMessages, map[string]interface{}{
+			"role":    role,
+			"content": m.Content,
+		})
+	}
+
+	var contextPrompt string
+	if len(leadingContext) > 0 {
+		contextPrompt = "\n\nThe user opened this chat while reading the following content and is likely asking about it. Use it as the primary context for their questions:\n\n" + strings.Join(leadingContext, "\n\n")
+	}
+	return apiMessages, contextPrompt
+}
+
 func generateResponse(messages []db.Message, convID int64) (string, []ToolUsage, error) {
 	return generateResponseWithProgress(messages, convID, nil)
 }
@@ -2483,20 +2550,8 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 	}
 
 	// Build messages for API
-	var apiMessages []map[string]interface{}
-	for _, m := range messages {
-		if m.Role == "system" {
-			continue
-		}
-		role := m.Role
-		if role == "context" || role == "tool" {
-			role = "assistant"
-		}
-		apiMessages = append(apiMessages, map[string]interface{}{
-			"role":    role,
-			"content": m.Content,
-		})
-	}
+	apiMessages, contextPrompt := buildAPIMessages(messages)
+	fullSystemPrompt += contextPrompt
 
 	// Tool loop - keep calling until we get a final response
 	for i := 0; i < 10; i++ { // Max 10 tool calls
@@ -2591,20 +2646,8 @@ func generateResponseStreaming(messages []db.Message, convID int64, onText func(
 		}
 	}
 
-	var apiMessages []map[string]interface{}
-	for _, m := range messages {
-		if m.Role == "system" {
-			continue
-		}
-		role := m.Role
-		if role == "context" || role == "tool" {
-			role = "assistant"
-		}
-		apiMessages = append(apiMessages, map[string]interface{}{
-			"role":    role,
-			"content": m.Content,
-		})
-	}
+	apiMessages, contextPrompt := buildAPIMessages(messages)
+	fullSystemPrompt += contextPrompt
 
 	for i := 0; i < 10; i++ {
 		result, textSoFar, err := callAnthropicStream(apiMessages, fullSystemPrompt, onText)

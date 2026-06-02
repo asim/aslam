@@ -54,13 +54,24 @@
         <main class="app-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <span class="qa-category" style="margin-bottom:0;">{{index . "Category"}}</span>
-                <form method="POST" action="/notes/add" style="display:inline;">
-                    <input type="hidden" name="title" value="{{index . "Question"}}">
-                    <input type="hidden" name="content" value="/islamqa/{{index . "Slug"}}
+                <div style="display:flex; gap:6px;">
+                    <form method="POST" action="/notes/add" style="display:inline;">
+                        <input type="hidden" name="title" value="{{index . "Question"}}">
+                        <input type="hidden" name="content" value="/islamqa/{{index . "Slug"}}
 
 {{truncate (index . "Answer") 200}}">
-                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
-                </form>
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                    </form>
+                    <form method="POST" action="/chat/new" style="display:inline;">
+                        <input type="hidden" name="title" value="{{index . "Question"}}">
+                        <input type="hidden" name="context" value="IslamQA — {{index . "Category"}} (/islamqa/{{index . "Slug"}})
+
+Question: {{index . "Question"}}
+
+Answer: {{index . "Answer"}}">
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                    </form>
+                </div>
             </div>
 
             <div class="qa-section-label">Question</div>

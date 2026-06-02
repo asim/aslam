@@ -87,13 +87,23 @@
         <main class="app-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 {{if index . "Type"}}<span class="aw-type-tag">{{index . "Type"}}</span>{{else}}<span></span>{{end}}
-                <form method="POST" action="/notes/add" style="display:inline;">
-                    <input type="hidden" name="title" value="{{index . "Arabic"}} ({{index . "Transliteration"}}) — {{index . "English"}}">
-                    <input type="hidden" name="content" value="/arabic/{{index . "ID"}}
+                <div style="display:flex; gap:6px;">
+                    <form method="POST" action="/notes/add" style="display:inline;">
+                        <input type="hidden" name="title" value="{{index . "Arabic"}} ({{index . "Transliteration"}}) — {{index . "English"}}">
+                        <input type="hidden" name="content" value="/arabic/{{index . "ID"}}
 
 {{index . "Arabic"}} — {{index . "English"}} (appears {{index . "Frequency"}} times in the Quran)">
-                    <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
-                </form>
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                    </form>
+                    <form method="POST" action="/chat/new" style="display:inline;">
+                        <input type="hidden" name="title" value="Arabic word — {{index . "Transliteration"}}">
+                        <input type="hidden" name="context" value="Quranic Arabic vocabulary (/arabic/{{index . "ID"}})
+
+{{index . "Arabic"}} ({{index . "Transliteration"}}) — {{index . "English"}}
+Appears {{index . "Frequency"}} times in the Quran.">
+                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                    </form>
+                </div>
             </div>
 
             <div class="aw-main-arabic">{{index . "Arabic"}}</div>
