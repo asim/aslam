@@ -13,6 +13,34 @@
         .app-header { position: sticky; top: 0; flex: 0 0 50px; width: 100%; max-width: none; margin: 0; }
         .app-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
         .app-footer { position: sticky; bottom: 0; flex: 0 0 auto; background: #fff; }
+        .context-card {
+            border: 1px solid #e5e5e5;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .context-card > summary {
+            cursor: pointer;
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            list-style: none;
+            user-select: none;
+        }
+        .context-card > summary::-webkit-details-marker { display: none; }
+        .context-card > summary::before { content: '📖 '; }
+        .context-card[open] > summary { margin-bottom: 8px; }
+        .context-body {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+            color: #444;
+            max-height: 240px;
+            overflow-y: auto;
+        }
         .typing { opacity: 0.6; }
         .typing .message-content::after {
             content: '...';
@@ -84,7 +112,12 @@
 
             {{if .Messages}}
             {{range .Messages}}
-            {{if or (eq .Role "tool") (eq .Role "context") (eq .Role "system")}}{{else}}
+            {{if eq .Role "system"}}
+            <details class="context-card" open>
+                <summary>Context</summary>
+                <div class="context-body">{{.Content}}</div>
+            </details>
+            {{else if or (eq .Role "tool") (eq .Role "context")}}{{else}}
             <div class="message {{.Role}}">
                 <div class="message-role">{{if eq .Role "user"}}{{$.UserName}}{{else}}Assistant{{end}} <span class="time" data-time="{{.CreatedAt.Unix}}">{{formatTime .CreatedAt}}</span></div>
                 <div class="message-content{{if eq .Role "assistant"}} markdown{{end}}">{{.Content}}</div>
