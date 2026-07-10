@@ -1,10 +1,10 @@
 # Aslam
 
-An Islamic knowledge base for Muslims.
+An AI assistant for Muslims.
 
 ## What is this?
 
-Aslam is a **knowledge base for seeking Islamic knowledge**. It connects you to authentic sources — Quran, Hadith, scholarly Q&A, classical works, daily adhkar, and Quranic Arabic vocabulary. Save notes, share reflections, and build a searchable library of everything you learn.
+Aslam is a **AI assistant for seeking Islamic knowledge**. It connects you to authentic sources — Quran, Hadith, scholarly Q&A, classical works, daily adhkar, and Quranic Arabic vocabulary. Save notes, share reflections, and build a searchable library of everything you learn. Ask the AI questions grounded in true facts and data.
 
 AI works in the background to help find, organise, and connect information across sources — but the sources themselves are authentic, cited, and browsable.
 
