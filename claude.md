@@ -91,7 +91,7 @@ ADMIN_EMAILS=email1@example.com,email2@example.com
 
 Optional:
 ```
-ANTHROPIC_MODEL=claude-sonnet-4-6  # Default model (override as needed)
+ANTHROPIC_MODEL=claude-sonnet-5  # Default model (override as needed)
 PORT=8000                                  # Server port
 API_KEY=...                               # For CLI/API access
 DEV_TOKEN=...                             # Dev bypass token
