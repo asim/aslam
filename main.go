@@ -84,7 +84,7 @@ func main() {
 	anthropicKey = os.Getenv("ANTHROPIC_API_KEY")
 	anthropicModel = os.Getenv("ANTHROPIC_MODEL")
 	if anthropicModel == "" {
-		anthropicModel = "claude-sonnet-4-6"
+		anthropicModel = "claude-sonnet-5"
 	}
 
 	// OAuth config
