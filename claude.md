@@ -98,7 +98,38 @@ DEV_TOKEN=...                             # Dev bypass token
 BRAVE_API_KEY=...                         # For web search
 GMAIL_USER=...                            # Assistant's email
 GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
+EMAIL_AUTHSERV_ID=mx.google.com           # authserv-id of the receiving server
+EMAIL_ALLOW_UNVERIFIED=false              # Skip sender authentication (unsafe)
+ALLOW_PASSWORD_SIGNUP=false               # Re-open email/password registration
 ```
+
+### Registration
+
+New accounts come through Google OAuth. Self-service email/password
+registration is closed by default (`ALLOW_PASSWORD_SIGNUP`): the form has no
+email verification, CAPTCHA or rate limit, so bots could mint accounts against
+addresses they do not own. Because `db.IsUser` doubles as the allowlist for the
+email channel, each such account also became an authorised sender to the
+assistant.
+
+Existing password accounts can still log in — only registration is closed. If
+`GOOGLE_CLIENT_ID` is unset there would be no way to register at all, so
+password signup stays open in that case.
+
+### Inbound email security
+
+The email channel only answers senders on the allowlist (`db.IsUser`), but a
+`From` header is trivially forged. Before a message reaches the agent, the
+`Authentication-Results` header added by the receiving server must show a DMARC
+pass, or an SPF/DKIM pass aligned with the `From` domain (`tools/authresults.go`).
+
+Only the *first* such header is trusted — headers are prepended by each hop, so
+the first is the one our own server added — and it must carry `EMAIL_AUTHSERV_ID`,
+otherwise a sender could supply a forged one of their own.
+
+`EMAIL_ALLOW_UNVERIFIED=true` disables the check. It exists for receiving servers
+that add no `Authentication-Results` header; it leaves the allowlist trusting a
+forgeable header, so avoid it.
 
 ## Authentication
 

@@ -36,15 +36,28 @@ func startEmailWorker() {
 	}()
 }
 
+// emailBatchLimit caps how many messages one poll will pull into memory.
+// Anything beyond it stays unread and is picked up on the next cycle.
+const emailBatchLimit = 50
+
 func checkInbox() {
 	// Check if disabled via admin
 	if db.GetSetting("gmail_enabled") == "false" {
 		return
 	}
-	
+
 	log.Println("Email worker: checking inbox")
-	
-	emails, err := tools.FetchEmails(20, false) // Fetch recent emails (not just unread - we track by Message-ID)
+
+	// One session for the whole poll: fetching and flagging over a single
+	// connection instead of reconnecting per message.
+	session, err := tools.Connect()
+	if err != nil {
+		log.Printf("Email worker: failed to connect: %v", err)
+		return
+	}
+	defer session.Close()
+
+	emails, err := session.FetchUnread(emailBatchLimit)
 	if err != nil {
 		log.Printf("Email worker: failed to fetch emails: %v", err)
 		return
@@ -57,31 +70,55 @@ func checkInbox() {
 
 	log.Printf("Email worker: found %d unread emails", len(emails))
 
+	// Collect the messages we finished with — whether queued or deliberately
+	// dropped — and flag them in one round-trip. Anything left unflagged (a
+	// transient failure) stays unread and is retried next cycle; anything
+	// dropped must be flagged or it would clog the unread window forever.
+	var handled []uint32
 	for _, email := range emails {
-		processEmail(email)
+		if processEmail(email) {
+			handled = append(handled, email.UID)
+		}
+	}
+
+	if err := session.MarkRead(handled...); err != nil {
+		log.Printf("Email worker: failed to mark %d emails as read: %v", len(handled), err)
 	}
 }
 
-func processEmail(email tools.Email) {
+// processEmail handles one message. It reports whether the message is finished
+// with — either queued for a reply or intentionally dropped — so the caller can
+// flag it as read. A false return means a transient failure worth retrying, so
+// the message is left unread.
+func processEmail(email tools.Email) bool {
 	// Extract sender email address
 	senderEmail := extractEmail(email.From)
-	
+
 	// Skip emails from ourselves (outbound)
 	if strings.EqualFold(senderEmail, os.Getenv("GMAIL_USER")) {
-		return
+		return true
 	}
-	
+
 	// Check if sender is allowed
 	if !db.IsUser(strings.ToLower(senderEmail)) {
 		log.Printf("Email worker: ignoring email from unauthorized sender: %s", senderEmail)
-		return
+		return true
+	}
+
+	// The allowlist above trusts the From header, which is trivially forged.
+	// Require the receiving server to have authenticated the sending domain
+	// before letting a message reach the agent and its tools.
+	if !allowUnverifiedSenders() {
+		if ok, reason := tools.VerifyAuthResults(email.AuthResults, senderEmail); !ok {
+			log.Printf("Email worker: rejecting unauthenticated email claiming to be from %s: %s", senderEmail, reason)
+			return true
+		}
 	}
 
 	// Check if we've already processed this email
 	if email.MessageID != "" && db.EmailExists(email.MessageID) {
 		log.Printf("Email worker: email already logged: %s", email.MessageID)
-		tools.MarkAsRead(email.UID)
-		return
+		return true
 	}
 
 	log.Printf("Email worker: queueing email from %s: %s", senderEmail, email.Subject)
@@ -102,21 +139,21 @@ func processEmail(email tools.Email) {
 	)
 	if err != nil {
 		log.Printf("Email worker: failed to log email: %v", err)
-		return
+		return false
 	}
 
 	// Find or create conversation for this thread
 	convID, err := getOrCreateConversation(threadID, email.Subject, senderEmail)
 	if err != nil {
 		log.Printf("Email worker: failed to get/create conversation: %v", err)
-		return
+		return false
 	}
 
 	// Add the email as a user message (just the content, context is in the conversation)
 	userMessage := email.Body
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		log.Printf("Email worker: failed to add message: %v", err)
-		return
+		return false
 	}
 
 	// Create pending task for processing
@@ -131,13 +168,18 @@ func processEmail(email tools.Email) {
 	_, err = db.CreatePendingTask("email", convID, email.MessageID, string(metadata))
 	if err != nil {
 		log.Printf("Email worker: failed to create pending task: %v", err)
-		return
+		return false
 	}
 
-	// Mark original as read (we've queued it for processing)
-	tools.MarkAsRead(email.UID)
-
 	log.Printf("Email worker: queued email from %s for processing", senderEmail)
+	return true
+}
+
+// allowUnverifiedSenders disables sender authentication. Off by default: it
+// leaves the allowlist trusting a forgeable From header, so it is only for
+// receiving servers that do not add an Authentication-Results header.
+func allowUnverifiedSenders() bool {
+	return strings.EqualFold(os.Getenv("EMAIL_ALLOW_UNVERIFIED"), "true")
 }
 
 func extractEmail(from string) string {

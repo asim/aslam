@@ -1545,6 +1545,34 @@ func handlePrivacy(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, r, "privacy.html", nil)
 }
 
+// passwordSignupEnabled reports whether self-service email/password
+// registration is open.
+//
+// It is closed by default. The form has no email verification, CAPTCHA or rate
+// limit, so anyone can script it to mint accounts against addresses they do not
+// own — and because db.IsUser doubles as the allowlist for the email channel,
+// each one becomes an authorised sender to the assistant. Google OAuth is the
+// supported way in: it proves the address and is costly to abuse in bulk.
+//
+// Existing password accounts can still log in; only registration is closed.
+// If Google OAuth is not configured there would be no way to register at all,
+// so it stays open in that case.
+func passwordSignupEnabled() bool {
+	if googleClientID == "" {
+		return true
+	}
+	return strings.EqualFold(os.Getenv("ALLOW_PASSWORD_SIGNUP"), "true")
+}
+
+// signupPageData is the template data for signup.html.
+func signupPageData(errMsg string) map[string]interface{} {
+	return map[string]interface{}{
+		"Error":          errMsg,
+		"GoogleEnabled":  googleClientID != "",
+		"PasswordSignup": passwordSignupEnabled(),
+	}
+}
+
 func handleSignup(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		handleSignupPost(w, r)
@@ -1552,60 +1580,48 @@ func handleSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET: show signup page
-	errMsg := r.URL.Query().Get("error")
-	tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-		"Error":         errMsg,
-		"GoogleEnabled": googleClientID != "",
-	})
+	tmpl.ExecuteTemplate(w, "signup.html", signupPageData(r.URL.Query().Get("error")))
 }
 
 func handleSignupPost(w http.ResponseWriter, r *http.Request) {
+	if !passwordSignupEnabled() {
+		log.Printf("Rejected password signup attempt for %s (registration is Google-only)",
+			strings.TrimSpace(strings.ToLower(r.FormValue("email"))))
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Please sign up with Google."))
+		return
+	}
+
 	name := strings.TrimSpace(r.FormValue("name"))
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	password := r.FormValue("password")
 
 	// Validation
 	if email == "" || !strings.Contains(email, "@") || !strings.Contains(email[strings.Index(email, "@"):], ".") {
-		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "Please enter a valid email address",
-			"GoogleEnabled": googleClientID != "",
-		})
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Please enter a valid email address"))
 		return
 	}
 	if len(password) < 8 {
-		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "Password must be at least 8 characters",
-			"GoogleEnabled": googleClientID != "",
-		})
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Password must be at least 8 characters"))
 		return
 	}
 
 	// Check if email is already taken
 	if db.IsUser(email) {
-		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "An account with this email already exists",
-			"GoogleEnabled": googleClientID != "",
-		})
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
 		return
 	}
 
 	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
-		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "Something went wrong. Please try again.",
-			"GoogleEnabled": googleClientID != "",
-		})
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Something went wrong. Please try again."))
 		return
 	}
 
 	// Create user
 	if err := db.CreateUserWithPassword(email, name, string(hash), "user"); err != nil {
 		log.Printf("Failed to create user %s: %v", email, err)
-		tmpl.ExecuteTemplate(w, "signup.html", map[string]interface{}{
-			"Error":         "Could not create account. Please try again.",
-			"GoogleEnabled": googleClientID != "",
-		})
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Could not create account. Please try again."))
 		return
 	}
 
