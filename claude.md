@@ -100,7 +100,21 @@ GMAIL_USER=...                            # Assistant's email
 GMAIL_APP_PASSWORD=...                    # App password for IMAP/SMTP
 EMAIL_AUTHSERV_ID=mx.google.com           # authserv-id of the receiving server
 EMAIL_ALLOW_UNVERIFIED=false              # Skip sender authentication (unsafe)
+ALLOW_PASSWORD_SIGNUP=false               # Re-open email/password registration
 ```
+
+### Registration
+
+New accounts come through Google OAuth. Self-service email/password
+registration is closed by default (`ALLOW_PASSWORD_SIGNUP`): the form has no
+email verification, CAPTCHA or rate limit, so bots could mint accounts against
+addresses they do not own. Because `db.IsUser` doubles as the allowlist for the
+email channel, each such account also became an authorised sender to the
+assistant.
+
+Existing password accounts can still log in — only registration is closed. If
+`GOOGLE_CLIENT_ID` is unset there would be no way to register at all, so
+password signup stays open in that case.
 
 ### Inbound email security
 
