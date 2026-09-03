@@ -287,13 +287,6 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN api_key TEXT`)
 	DB.Exec(`ALTER TABLE accounts ADD COLUMN url TEXT`)
 
-	// Add password_hash column to users (migration for existing DBs)
-	DB.Exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`)
-	DB.Exec(`ALTER TABLE users ADD COLUMN picture TEXT`)
-	DB.Exec(`ALTER TABLE users ADD COLUMN latitude REAL DEFAULT 0`)
-	DB.Exec(`ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0`)
-	DB.Exec(`ALTER TABLE users ADD COLUMN timezone TEXT DEFAULT ''`)
-
 	DB.Exec(`ALTER TABLE hadith ADD COLUMN book_number INTEGER`)
 
 	// Clean up any broken tool/JSON messages from prior implementation
@@ -314,6 +307,23 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+
+	// Columns added to users after the table's original definition. These must
+	// run *after* the CREATE above: on a fresh database the table does not yet
+	// exist when Migrate starts, so running them earlier silently no-ops and
+	// leaves a users table without them.
+	DB.Exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN picture TEXT`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN latitude REAL DEFAULT 0`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN timezone TEXT DEFAULT ''`)
+
+	// Email verification. Defaults to verified so existing accounts — Google
+	// users, and anyone who signed up before this existed — are not locked out
+	// by the migration. Only new password signups start unverified.
+	DB.Exec(`ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 1`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN verify_token TEXT`)
+	DB.Exec(`ALTER TABLE users ADD COLUMN verify_sent_at DATETIME`)
 
 	// Migrate data from legacy admins table if it exists
 	DB.Exec(`INSERT OR IGNORE INTO users SELECT * FROM admins`)
@@ -1751,10 +1761,74 @@ func IsAdmin(email string) bool {
 	return err == nil
 }
 
+// IsUser reports whether an email belongs to a verified account. This is an
+// authorisation check: it gates access to the app and doubles as the allowlist
+// for the email channel, so an unverified signup must not pass it. Use
+// UserExists to test mere presence (e.g. "is this address taken").
 func IsUser(email string) bool {
+	var id int64
+	err := DB.QueryRow(`SELECT id FROM users WHERE email = ? AND verified = 1`, email).Scan(&id)
+	return err == nil
+}
+
+// UserExists reports whether any account holds this email, verified or not.
+func UserExists(email string) bool {
 	var id int64
 	err := DB.QueryRow(`SELECT id FROM users WHERE email = ?`, email).Scan(&id)
 	return err == nil
+}
+
+// IsVerified reports whether an existing account has confirmed its address.
+func IsVerified(email string) bool {
+	var verified int
+	err := DB.QueryRow(`SELECT verified FROM users WHERE email = ?`, email).Scan(&verified)
+	return err == nil && verified == 1
+}
+
+// CreateUnverifiedUser creates a password account that cannot be used until the
+// address is confirmed via token.
+func CreateUnverifiedUser(email, name, passwordHash, role, token string) error {
+	_, err := DB.Exec(`INSERT INTO users (email, name, password_hash, role, added_by, verified, verify_token, verify_sent_at)
+		VALUES (?, ?, ?, ?, 'signup', 0, ?, CURRENT_TIMESTAMP)`,
+		email, name, passwordHash, role, token)
+	return err
+}
+
+// VerifyUserByToken marks the account holding this token as verified and
+// consumes the token. It returns the account's email.
+func VerifyUserByToken(token string) (string, error) {
+	if strings.TrimSpace(token) == "" {
+		return "", fmt.Errorf("empty token")
+	}
+	var email, name string
+	err := DB.QueryRow(`SELECT email, COALESCE(name, '') FROM users WHERE verify_token = ?`, token).Scan(&email, &name)
+	if err != nil {
+		return "", fmt.Errorf("invalid or already used token")
+	}
+	if _, err := DB.Exec(`UPDATE users SET verified = 1, verify_token = NULL WHERE verify_token = ?`, token); err != nil {
+		return "", err
+	}
+	return email, nil
+}
+
+// SetVerifyToken issues a fresh token for an unverified account and records
+// when it was sent. It refuses if a token was sent within minInterval, so the
+// signup and resend paths cannot be used to flood someone's inbox.
+func SetVerifyToken(email, token string, minInterval time.Duration) error {
+	var sentAt sql.NullTime
+	var verified int
+	err := DB.QueryRow(`SELECT verified, verify_sent_at FROM users WHERE email = ?`, email).Scan(&verified, &sentAt)
+	if err != nil {
+		return fmt.Errorf("no such account")
+	}
+	if verified == 1 {
+		return fmt.Errorf("already verified")
+	}
+	if sentAt.Valid && time.Since(sentAt.Time) < minInterval {
+		return fmt.Errorf("a verification email was sent recently; please wait before requesting another")
+	}
+	_, err = DB.Exec(`UPDATE users SET verify_token = ?, verify_sent_at = CURRENT_TIMESTAMP WHERE email = ?`, token, email)
+	return err
 }
 
 func UserCount() int {

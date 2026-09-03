@@ -191,6 +191,7 @@ func main() {
 	// Auth routes (no auth required)
 	http.HandleFunc("/auth/login", handleAuthLogin)
 	http.HandleFunc("/auth/signup", handleSignup)
+	http.HandleFunc("/auth/verify", handleVerify)
 	http.HandleFunc("/privacy", handlePrivacy)
 	http.HandleFunc("/auth/callback", handleOAuthCallback)
 	http.HandleFunc("/auth/logout", handleLogout)
@@ -1523,6 +1524,16 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Correct password, but the address was never confirmed. Checked after the
+	// password so this does not reveal which addresses are registered.
+	if !db.IsVerified(email) {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":         "Please confirm your email address first — check your inbox for the link we sent.",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
 	// Create session
 	token := createSession(email, user.Name)
 	http.SetCookie(w, &http.Cookie{
@@ -1557,11 +1568,25 @@ func handlePrivacy(w http.ResponseWriter, r *http.Request) {
 // Existing password accounts can still log in; only registration is closed.
 // If Google OAuth is not configured there would be no way to register at all,
 // so it stays open in that case.
+//
+// Otherwise it is gated on being able to send a confirmation email: with
+// verification in place an account is useless until its address is proven, so
+// registration is open when SMTP is configured. Without SMTP there is no way to
+// prove an address, so it stays shut rather than reopening the original hole.
+// ALLOW_PASSWORD_SIGNUP=false forces it off regardless.
 func passwordSignupEnabled() bool {
 	if googleClientID == "" {
 		return true
 	}
-	return strings.EqualFold(os.Getenv("ALLOW_PASSWORD_SIGNUP"), "true")
+	if v := os.Getenv("ALLOW_PASSWORD_SIGNUP"); v != "" {
+		return strings.EqualFold(v, "true")
+	}
+	return canSendEmail()
+}
+
+// canSendEmail reports whether outbound mail is configured.
+func canSendEmail() bool {
+	return os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != ""
 }
 
 // signupPageData is the template data for signup.html.
@@ -1571,6 +1596,58 @@ func signupPageData(errMsg string) map[string]interface{} {
 		"GoogleEnabled":  googleClientID != "",
 		"PasswordSignup": passwordSignupEnabled(),
 	}
+}
+
+// verifyTokenTTL is how long a verification link stays useful, and
+// verifyResendInterval is the minimum gap between verification emails to one
+// address — without it, signup and resend become a way to flood an inbox.
+const verifyResendInterval = 2 * time.Minute
+
+// newVerifyToken returns a crypto-random, URL-safe token.
+func newVerifyToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// sendVerificationEmail mails a confirmation link to a newly registered address.
+func sendVerificationEmail(email, name, token string) error {
+	link := fmt.Sprintf("%s/auth/verify?token=%s", baseURL(), url.QueryEscape(token))
+	greeting := "Assalamu alaikum"
+	if name != "" {
+		greeting = "Assalamu alaikum " + name
+	}
+	body := fmt.Sprintf(`%s,
+
+Confirm your email address to finish setting up your Aslam account:
+
+%s
+
+If you didn't sign up for Aslam, you can ignore this email — the account
+stays inactive and no one can use it.
+
+— Aslam
+`, greeting, link)
+
+	_, err := tools.SendEmail(email, "Confirm your email for Aslam", body)
+	return err
+}
+
+// baseURL is the public origin used to build links in outbound email.
+func baseURL() string {
+	if v := strings.TrimRight(strings.TrimSpace(os.Getenv("BASE_URL")), "/"); v != "" {
+		return v
+	}
+	// Derived from the OAuth redirect so links match the deployment without
+	// extra configuration.
+	if googleRedirectURI != "" {
+		if u, err := url.Parse(googleRedirectURI); err == nil && u.Scheme != "" && u.Host != "" {
+			return u.Scheme + "://" + u.Host
+		}
+	}
+	return "https://aslam.org"
 }
 
 func handleSignup(w http.ResponseWriter, r *http.Request) {
@@ -1605,9 +1682,30 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if email is already taken
-	if db.IsUser(email) {
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
+	token, err := newVerifyToken()
+	if err != nil {
+		log.Printf("Failed to generate verification token: %v", err)
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Something went wrong. Please try again."))
+		return
+	}
+
+	// An address that already has an account. If it was never confirmed, treat
+	// this as asking for the link again rather than leaking whether the address
+	// is registered — but rate limited, so this cannot flood an inbox.
+	if db.UserExists(email) {
+		if db.IsVerified(email) {
+			tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
+			return
+		}
+		if err := db.SetVerifyToken(email, token, verifyResendInterval); err != nil {
+			log.Printf("Not resending verification to %s: %v", email, err)
+			renderVerifySent(w, email)
+			return
+		}
+		if err := sendVerificationEmail(email, name, token); err != nil {
+			log.Printf("Failed to resend verification to %s: %v", email, err)
+		}
+		renderVerifySent(w, email)
 		return
 	}
 
@@ -1618,14 +1716,44 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create user
-	if err := db.CreateUserWithPassword(email, name, string(hash), "user"); err != nil {
+	// Create the account unverified. It cannot log in, and IsUser excludes it,
+	// so it is not yet an authorised sender for the email channel either.
+	if err := db.CreateUnverifiedUser(email, name, string(hash), "user", token); err != nil {
 		log.Printf("Failed to create user %s: %v", email, err)
 		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Could not create account. Please try again."))
 		return
 	}
 
-	// Create session
+	if err := sendVerificationEmail(email, name, token); err != nil {
+		log.Printf("Failed to send verification email to %s: %v", email, err)
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("We couldn't send the confirmation email. Please try again shortly."))
+		return
+	}
+
+	log.Printf("New user signed up (pending verification): %s (%s)", name, email)
+	renderVerifySent(w, email)
+}
+
+func renderVerifySent(w http.ResponseWriter, email string) {
+	tmpl.ExecuteTemplate(w, "verify_sent.html", map[string]interface{}{"Email": email})
+}
+
+// handleVerify consumes a verification link and signs the account in.
+func handleVerify(w http.ResponseWriter, r *http.Request) {
+	email, err := db.VerifyUserByToken(r.URL.Query().Get("token"))
+	if err != nil {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"Error":         "That confirmation link is invalid or has already been used. Try logging in, or sign up again.",
+			"GoogleEnabled": googleClientID != "",
+		})
+		return
+	}
+
+	name := ""
+	if u, err := db.GetUserByEmail(email); err == nil {
+		name = u.Name
+	}
+
 	token := createSession(email, name)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
@@ -1639,7 +1767,7 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
 	})
 
-	log.Printf("New user signed up: %s (%s)", name, email)
+	log.Printf("Email verified, user activated: %s (%s)", name, email)
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
