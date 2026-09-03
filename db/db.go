@@ -1717,11 +1717,12 @@ type User struct {
 	Latitude     float64
 	Longitude    float64
 	Timezone     string
+	Verified     bool
 	CreatedAt    time.Time
 }
 
 func GetUsers() ([]User, error) {
-	rows, err := DB.Query(`SELECT id, email, name, role, added_by, password_hash, picture, created_at FROM users ORDER BY created_at`)
+	rows, err := DB.Query(`SELECT id, email, name, role, added_by, password_hash, picture, COALESCE(verified, 1), created_at FROM users ORDER BY created_at`)
 	if err != nil {
 		return nil, err
 	}
@@ -1731,7 +1732,8 @@ func GetUsers() ([]User, error) {
 	for rows.Next() {
 		var u User
 		var name, addedBy, passwordHash, picture sql.NullString
-		err := rows.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &u.CreatedAt)
+		var verified int
+		err := rows.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &verified, &u.CreatedAt)
 		if err != nil {
 			continue
 		}
@@ -1739,6 +1741,7 @@ func GetUsers() ([]User, error) {
 		u.AddedBy = addedBy.String
 		u.PasswordHash = passwordHash.String
 		u.Picture = picture.String
+		u.Verified = verified == 1
 		users = append(users, u)
 	}
 	return users, nil
@@ -1841,7 +1844,8 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*User, error) {
 	var u User
 	var name, addedBy, passwordHash, picture, tz sql.NullString
 	var lat, lng sql.NullFloat64
-	err := row.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &lat, &lng, &tz, &u.CreatedAt)
+	var verified int
+	err := row.Scan(&u.ID, &u.Email, &name, &u.Role, &addedBy, &passwordHash, &picture, &lat, &lng, &tz, &verified, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -1852,15 +1856,16 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*User, error) {
 	u.Latitude = lat.Float64
 	u.Longitude = lng.Float64
 	u.Timezone = tz.String
+	u.Verified = verified == 1
 	return &u, nil
 }
 
 func GetUserByEmail(email string) (*User, error) {
-	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, created_at FROM users WHERE email = ?`, email))
+	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE email = ?`, email))
 }
 
 func GetUserByID(id int64) (*User, error) {
-	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, created_at FROM users WHERE id = ?`, id))
+	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE id = ?`, id))
 }
 
 func SetUserPassword(id int64, hash string) error {

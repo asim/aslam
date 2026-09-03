@@ -264,6 +264,7 @@
                             <span class="item-title">{{.Email}}</span>
                             {{if .Name}}<span class="muted"> ({{.Name}})</span>{{end}}
                             <span class="muted"> [{{.Role}}]</span>
+                            {{if not .Verified}}<span style="font-size:11px; padding:1px 7px; margin-left:6px; border-radius:4px; background:#fdf0d5; color:#8a5a00; white-space:nowrap;">Unverified</span>{{end}}
                         </div>
                         {{if ne .Email $.CurrentUser}}
                         <form class="inline" method="POST" action="/admin/remove-user" onsubmit="return confirm('Remove this user?');">
