@@ -87,6 +87,7 @@
         <main class="app-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 {{if index . "Type"}}<span class="aw-type-tag">{{index . "Type"}}</span>{{else}}<span></span>{{end}}
+                {{if .LoggedIn}}
                 <div style="display:flex; gap:6px;">
                     <form method="POST" action="/notes/add" style="display:inline;">
                         <input type="hidden" name="title" value="{{index . "Arabic"}} ({{index . "Transliteration"}}) — {{index . "English"}}">
@@ -104,6 +105,9 @@ Appears {{index . "Frequency"}} times in the Quran.">
                         <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
                     </form>
                 </div>
+                {{else}}
+                <a href="/auth/login" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none; white-space:nowrap;">Sign in to save</a>
+                {{end}}
             </div>
 
             <div class="aw-main-arabic">{{index . "Arabic"}}</div>

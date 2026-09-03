@@ -996,10 +996,23 @@ func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]inte
 // This is the backbone of the knowledge base: anything the user has ever asked
 // the assistant, anything the assistant remembered, and anything stored in
 // notes can be found with a single query.
-func SearchAll(query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
+// SearchAll searches every source plus the caller's own content.
+//
+// includeUserContent must be false for anonymous visitors. It drops the entries
+// table entirely — entries have no owner column, so there is nothing to scope
+// them by — and forces the chat and note searches to a user id that matches no
+// row, leaving only material explicitly marked public.
+func SearchAll(query string, userID int64, isAdmin bool, includeUserContent bool) ([]map[string]interface{}, error) {
 	query = sanitiseFTS(query)
 	if query == "" {
 		return nil, nil
+	}
+
+	if !includeUserContent {
+		// No real row has this id, so "user_id = ? OR public = 1" collapses to
+		// public-only rather than relying on 0 not colliding with an orphan.
+		userID = -1
+		isAdmin = false
 	}
 
 	var results []map[string]interface{}
@@ -1019,8 +1032,9 @@ func SearchAll(query string, userID int64, isAdmin bool) ([]map[string]interface
 		}
 	}
 
-	// Entries (notes, remembered facts, fetched URLs)
-	if entries, err := SearchEntries(query); err == nil {
+	// Entries (remembered facts, fetched URLs). Unowned and unscoped, so they
+	// are only ever shown to signed-in users.
+	if entries, err := SearchEntries(query); err == nil && includeUserContent {
 		for _, e := range entries {
 			createdAt, _ := e["CreatedAt"].(time.Time)
 			typ, _ := e["Type"].(string)
