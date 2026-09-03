@@ -1,5 +1,5 @@
 {{define "header"}}
-<header class="app-header">
+<header class="app-header{{if not .LoggedIn}} app-header-public{{end}}">
     <h1><a href="{{if .LoggedIn}}/home{{else}}/{{end}}" style="text-decoration:none;color:inherit">Aslam</a></h1>
     {{if .LoggedIn}}
     <nav class="nav-desktop">
@@ -25,8 +25,13 @@
     <nav class="nav-desktop">
         <a href="/quran">quran</a>
         <a href="/hadith">hadith</a>
+        <a href="/names">names</a>
         <a href="/salihin">salihin</a>
         <a href="/islamqa">islamqa</a>
+        <a href="/ghazali">ghazali</a>
+        <a href="/adhkar">adhkar</a>
+        <a href="/stories">stories</a>
+        <a href="/arabic">arabic</a>
         <a href="/search">search</a>
         <a href="/auth/login">log in</a>
     </nav>

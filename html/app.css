@@ -77,6 +77,15 @@ a:hover { opacity: 0.7; }
     .nav-toggle { display: block; }
 }
 
+/* The logged out nav lists every source, so it needs more room than the
+   signed-in one. Hand over to the menu earlier rather than letting the row
+   overflow the header. */
+@media (max-width: 900px) {
+    .app-header-public .nav-desktop { display: none; }
+    .app-header-public .nav-toggle { display: block; }
+}
+.nav-desktop a:first-child { margin-left: 0; }
+
 .app-content {
     padding: 16px;
 }

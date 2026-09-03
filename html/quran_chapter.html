@@ -41,6 +41,11 @@
                 </a>
                 {{end}}
             </div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if .PrevChapter}}<a href="/quran/{{.PrevChapter}}">&larr; Previous Surah</a>{{else}}<span></span>{{end}}
+                <a href="/quran">All Chapters</a>
+                {{if .NextChapter}}<a href="/quran/{{.NextChapter}}">Next Surah &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
         </main>
     </div>
 </body>

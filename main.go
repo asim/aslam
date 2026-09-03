@@ -220,7 +220,7 @@ func main() {
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
-	http.HandleFunc("/api/search", requireAuth(handleAPISearch))
+	http.HandleFunc("/api/search", optionalAuth(handleAPISearch))
 	http.HandleFunc("/search", optionalAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
@@ -1211,10 +1211,19 @@ func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
 			name = n
 		}
 	}
+	prevCh, nextCh := 0, 0
+	if chapter > 1 {
+		prevCh = chapter - 1
+	}
+	if chapter < 114 {
+		nextCh = chapter + 1
+	}
 	renderTemplate(w, r, "quran_chapter.html", map[string]interface{}{
 		"Chapter":     chapter,
 		"ChapterName": name,
 		"Verses":      verses,
+		"PrevChapter": prevCh,
+		"NextChapter": nextCh,
 	})
 }
 
@@ -1245,10 +1254,13 @@ func handleHadithRouter(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		prevBook, nextBook := db.GetHadithBookPrevNext(bookNum)
 		renderTemplate(w, r, "hadith_book.html", map[string]interface{}{
 			"BookNumber": bookNum,
 			"BookName":   bookName,
 			"Items":      items,
+			"PrevBook":   prevBook,
+			"NextBook":   nextBook,
 		})
 		return
 	}
@@ -1308,6 +1320,9 @@ func handleHadithView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	prev, next := db.GetHadithPrevNext(id)
+	item["PrevNumber"] = prev
+	item["NextNumber"] = next
 	renderTemplate(w, r, "hadith.html", item)
 }
 
@@ -1323,6 +1338,9 @@ func handleNameView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	prev, next := db.GetNamePrevNext(id)
+	item["PrevNumber"] = prev
+	item["NextNumber"] = next
 	renderTemplate(w, r, "name.html", item)
 }
 
@@ -2423,7 +2441,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 
 	// Unified search across chats, entries, and notes.
 	userID := getUserID(r)
-	results, err := db.SearchAll(query, userID, isAdminReq(r), true)
+	results, err := db.SearchAll(query, userID, isAdminReq(r), isLoggedIn(r))
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return

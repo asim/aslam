@@ -108,6 +108,11 @@
             {{if index . "Summary"}}
             <div class="name-summary">{{paragraphs (index . "Summary")}}</div>
             {{end}}
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevNumber"}}<a href="/names/{{index . "PrevNumber"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/names">All Names</a>
+                {{if index . "NextNumber"}}<a href="/names/{{index . "NextNumber"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
             <div class="name-source">
                 <a href="https://reminder.dev/names/{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
             </div>

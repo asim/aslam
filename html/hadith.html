@@ -87,6 +87,11 @@ Arabic: {{index . "Arabic"}}{{end}}">
             {{if index . "Arabic"}}
             <div class="hadith-arabic">{{index . "Arabic"}}</div>
             {{end}}
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if index . "PrevNumber"}}<a href="/hadith/{{index . "PrevNumber"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
+                <a href="/hadith">All Books</a>
+                {{if index . "NextNumber"}}<a href="/hadith/{{index . "NextNumber"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
             <div class="hadith-source">
                 <a href="https://reminder.dev/hadith/{{index . "BookNumber"}}#{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
             </div>
