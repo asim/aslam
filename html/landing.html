@@ -72,7 +72,12 @@
             border-radius: 8px;
             padding: 14px;
             text-align: center;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.15s, background 0.15s;
         }
+        a.source-card:hover { border-color: #ccc; background: #fafafa; }
         .source-card .count { font-size: 20px; font-weight: 600; }
         .source-card .label { font-size: 12px; color: #888; margin-top: 2px; }
         .features {
@@ -120,49 +125,54 @@
             scholarly answers, classical works, and daily adhkar. Save what matters,
             share what helps, and learn Arabic along the way.
         </p>
+        <p class="description" style="margin-top:-24px; font-size:14px; color:#888;">
+            Everything below is free to read &mdash; no account needed.
+            Sign up to save notes and ask questions.
+        </p>
         <div class="buttons">
-            <a href="/auth/signup" class="btn-primary">Sign Up</a>
+            <a href="/quran" class="btn-primary">Start Reading</a>
+            <a href="/auth/signup" class="btn-secondary">Sign Up</a>
             <a href="/auth/login" class="btn-secondary">Log In</a>
         </div>
         <a href="#" id="install-btn" style="display:none; position:fixed; top:12px; right:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Install App</a>
 
         <div class="sources">
-            <div class="source-card">
+            <a class="source-card" href="/quran">
                 <div class="count">6,348</div>
                 <div class="label">Quran Verses</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/hadith">
                 <div class="count">7,265</div>
                 <div class="label">Hadith</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/names">
                 <div class="count">99</div>
                 <div class="label">Names of Allah</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/islamqa">
                 <div class="count">4,200+</div>
                 <div class="label">IslamQA</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/ghazali">
                 <div class="count">1,437</div>
                 <div class="label">Ghazali</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/salihin">
                 <div class="count">1,896</div>
                 <div class="label">Riyad us-Salihin</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/adhkar">
                 <div class="count">97</div>
                 <div class="label">Adhkar</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/arabic">
                 <div class="count">21,000+</div>
                 <div class="label">Arabic Words</div>
-            </div>
-            <div class="source-card">
+            </a>
+            <a class="source-card" href="/stories">
                 <div class="count">25</div>
                 <div class="label">Stories of the Prophets</div>
-            </div>
+            </a>
         </div>
 
         <div class="features">

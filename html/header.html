@@ -1,6 +1,7 @@
 {{define "header"}}
 <header class="app-header">
-    <h1><a href="/home" style="text-decoration:none;color:inherit">Aslam</a></h1>
+    <h1><a href="{{if .LoggedIn}}/home{{else}}/{{end}}" style="text-decoration:none;color:inherit">Aslam</a></h1>
+    {{if .LoggedIn}}
     <nav class="nav-desktop">
         <a href="/home">home</a>
         <a href="/chat">chats</a>
@@ -20,5 +21,30 @@
         {{if .IsAdmin}}<a href="/admin">admin</a>{{end}}
         <a href="/auth/logout">logout</a>
     </nav>
+    {{else}}
+    <nav class="nav-desktop">
+        <a href="/quran">quran</a>
+        <a href="/hadith">hadith</a>
+        <a href="/salihin">salihin</a>
+        <a href="/islamqa">islamqa</a>
+        <a href="/search">search</a>
+        <a href="/auth/login">log in</a>
+    </nav>
+    <button class="nav-toggle" aria-label="Menu">&#9776;</button>
+    <nav class="nav-mobile">
+        <a href="/quran">quran</a>
+        <a href="/hadith">hadith</a>
+        <a href="/names">names</a>
+        <a href="/salihin">salihin</a>
+        <a href="/islamqa">islamqa</a>
+        <a href="/ghazali">ghazali</a>
+        <a href="/adhkar">adhkar</a>
+        <a href="/stories">stories</a>
+        <a href="/arabic">arabic</a>
+        <a href="/search">search</a>
+        <a href="/auth/login">log in</a>
+        <a href="/auth/signup">sign up</a>
+    </nav>
+    {{end}}
 </header>
 {{end}}

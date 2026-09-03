@@ -221,28 +221,28 @@ func main() {
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
 	http.HandleFunc("/api/search", requireAuth(handleAPISearch))
-	http.HandleFunc("/search", requireAuth(handleSearch))
+	http.HandleFunc("/search", optionalAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
-	http.HandleFunc("/islamqa", requireAuth(handleIslamQAIndex))
-	http.HandleFunc("/islamqa/", requireAuth(handleIslamQAView))
-	http.HandleFunc("/ghazali", requireAuth(handleGhazaliIndex))
-	http.HandleFunc("/ghazali/", requireAuth(handleGhazaliView))
-	http.HandleFunc("/adhkar", requireAuth(handleAdhkarIndex))
-	http.HandleFunc("/adhkar/", requireAuth(handleAdhkarView))
-	http.HandleFunc("/salihin", requireAuth(handleRiyadIndex))
-	http.HandleFunc("/salihin/", requireAuth(handleRiyadView))
-	http.HandleFunc("/arabic", requireAuth(handleArabicIndex))
-	http.HandleFunc("/arabic/", requireAuth(handleArabicView))
-	http.HandleFunc("/stories", requireAuth(handleStoriesIndex))
-	http.HandleFunc("/stories/", requireAuth(handleStoriesView))
+	http.HandleFunc("/islamqa", optionalAuth(handleIslamQAIndex))
+	http.HandleFunc("/islamqa/", optionalAuth(handleIslamQAView))
+	http.HandleFunc("/ghazali", optionalAuth(handleGhazaliIndex))
+	http.HandleFunc("/ghazali/", optionalAuth(handleGhazaliView))
+	http.HandleFunc("/adhkar", optionalAuth(handleAdhkarIndex))
+	http.HandleFunc("/adhkar/", optionalAuth(handleAdhkarView))
+	http.HandleFunc("/salihin", optionalAuth(handleRiyadIndex))
+	http.HandleFunc("/salihin/", optionalAuth(handleRiyadView))
+	http.HandleFunc("/arabic", optionalAuth(handleArabicIndex))
+	http.HandleFunc("/arabic/", optionalAuth(handleArabicView))
+	http.HandleFunc("/stories", optionalAuth(handleStoriesIndex))
+	http.HandleFunc("/stories/", optionalAuth(handleStoriesView))
 	http.HandleFunc("/api/arabic/search", requireAuth(handleArabicSearch))
-	http.HandleFunc("/quran", requireAuth(handleQuranIndex))
-	http.HandleFunc("/quran/", requireAuth(handleQuranRouter))
-	http.HandleFunc("/hadith", requireAuth(handleHadithIndex))
-	http.HandleFunc("/hadith/", requireAuth(handleHadithRouter))
-	http.HandleFunc("/names", requireAuth(handleNamesIndex))
-	http.HandleFunc("/names/", requireAuth(handleNameView))
+	http.HandleFunc("/quran", optionalAuth(handleQuranIndex))
+	http.HandleFunc("/quran/", optionalAuth(handleQuranRouter))
+	http.HandleFunc("/hadith", optionalAuth(handleHadithIndex))
+	http.HandleFunc("/hadith/", optionalAuth(handleHadithRouter))
+	http.HandleFunc("/names", optionalAuth(handleNamesIndex))
+	http.HandleFunc("/names/", optionalAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
@@ -334,7 +334,7 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 }
 
 func (s *dbStorage) SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
-	return db.SearchAll(query, userID, false)
+	return db.SearchAll(query, userID, false, true)
 }
 
 // noteStorage implements tools.NoteStorage interface
@@ -407,6 +407,11 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, name string, data ma
 	session := getSession(r)
 	if session != nil {
 		data["IsAdmin"] = db.IsAdmin(session.Email)
+	}
+	// Templates branch on this to hide account-only affordances (Save, Chat,
+	// the nav) from anonymous visitors on public content pages.
+	if _, set := data["LoggedIn"]; !set {
+		data["LoggedIn"] = isLoggedIn(r)
 	}
 	tmpl.ExecuteTemplate(w, name, data)
 }
@@ -1354,6 +1359,28 @@ func loadEnv() {
 }
 
 // Auth middleware and handlers
+
+// optionalAuth wraps handlers that are readable without an account. It keeps
+// the www redirect that requireAuth performs, but never forces a login: the
+// handler renders for signed-in and anonymous visitors alike. Use it for source
+// content (Quran, Hadith, IslamQA…), which is public knowledge and worth having
+// shareable and indexable. Anything holding user data, or that spends API
+// credits, stays behind requireAuth.
+func optionalAuth(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Host == "www.aslam.org" {
+			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
+			return
+		}
+		handler(w, r)
+	}
+}
+
+// isLoggedIn reports whether the request carries a session for a valid user.
+func isLoggedIn(r *http.Request) bool {
+	session := getSession(r)
+	return session != nil && db.IsUser(session.Email)
+}
 
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -2396,7 +2423,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 
 	// Unified search across chats, entries, and notes.
 	userID := getUserID(r)
-	results, err := db.SearchAll(query, userID, isAdminReq(r))
+	results, err := db.SearchAll(query, userID, isAdminReq(r), true)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -2418,7 +2445,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	var results []map[string]interface{}
 	if query != "" {
 		userID := getUserID(r)
-		results, _ = db.SearchAll(query, userID, isAdminReq(r))
+		results, _ = db.SearchAll(query, userID, isAdminReq(r), isLoggedIn(r))
 	}
 
 	renderTemplate(w, r, "search.html", map[string]interface{}{
