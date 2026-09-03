@@ -57,6 +57,52 @@
             transition: opacity 0.15s;
         }
         .landing .buttons a:hover { opacity: 0.85; }
+        /* Return visitors get a log in where they expect it, keeping the hero
+           to a single primary action. */
+        .corner-login {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            font-size: 14px;
+            color: #555;
+            text-decoration: none;
+            padding: 6px 10px;
+            z-index: 100;
+        }
+        .corner-login:hover { color: #000; text-decoration: underline; }
+        /* iOS cannot trigger an install prompt from script, so Safari users get
+           instructions for the Share sheet instead of a button that does
+           nothing. */
+        .ios-install {
+            display: none;
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            z-index: 100;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.45;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+        .ios-install svg { flex: 0 0 auto; vertical-align: -3px; }
+        .ios-install .ios-text { flex: 1; }
+        .ios-install button {
+            flex: 0 0 auto;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0 4px;
+            cursor: pointer;
+        }
+        .ios-install button:hover { color: #fff; }
         .btn-primary { background: #000; color: #fff !important; }
         .btn-secondary { background: #fff; color: #1a1a1a !important; border: 1px solid #ddd; }
         .sources {
@@ -117,6 +163,7 @@
     </style>
 </head>
 <body>
+    <a href="/auth/login" class="corner-login">Log in</a>
     <div class="landing">
         <h1>Aslam</h1>
         <p class="tagline">An Islamic knowledge base for Muslims</p>
@@ -132,9 +179,8 @@
         <div class="buttons">
             <a href="/quran" class="btn-primary">Start Reading</a>
             <a href="/auth/signup" class="btn-secondary">Sign Up</a>
-            <a href="/auth/login" class="btn-secondary">Log In</a>
         </div>
-        <a href="#" id="install-btn" style="display:none; position:fixed; top:12px; right:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Install App</a>
+        <a href="#" id="install-btn" style="display:none; position:fixed; top:12px; left:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Install App</a>
 
         <div class="sources">
             <a class="source-card" href="/quran">
@@ -193,24 +239,66 @@
         <p class="footer">Powered by <a href="https://reminder.dev" target="_blank" style="color:#999;">Reminder.dev</a></p>
         <p class="footer"><a href="/privacy" style="color:#999;">Privacy Policy</a></p>
     </div>
+
+    <div class="ios-install" id="ios-install">
+        <span class="ios-text">
+            Install Aslam: tap
+            <svg width="13" height="16" viewBox="0 0 20 26" fill="none" aria-label="Share" role="img">
+                <path d="M10 1.5v14" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M5.5 6L10 1.5 14.5 6" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.5 10.5h-2v13h15v-13h-2" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            then &ldquo;Add to Home Screen&rdquo;
+        </span>
+        <button type="button" id="ios-install-close" aria-label="Dismiss">&times;</button>
+    </div>
 <script>
+// Already running as an installed app — nothing to offer.
+var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+
+// iPadOS 13+ reports itself as a Mac, so touch points are the giveaway.
+var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+function stored(key) {
+    // Private browsing can throw on access, not just return null.
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+function store(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+}
+
+// Chromium: a real install prompt we can trigger.
 var deferredPrompt;
-var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-if (isMobile) {
+if (!standalone) {
     window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    var btn = document.getElementById('install-btn');
-    btn.style.display = 'block';
-    btn.onclick = function(ev) {
-        ev.preventDefault();
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function() {
-            deferredPrompt = null;
-            btn.style.display = 'none';
-        });
-    };
-});
+        e.preventDefault();
+        deferredPrompt = e;
+        var btn = document.getElementById('install-btn');
+        btn.style.display = 'block';
+        btn.onclick = function(ev) {
+            ev.preventDefault();
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                btn.style.display = 'none';
+            });
+        };
+    });
+}
+
+// iOS never fires beforeinstallprompt — Safari installs only via the Share
+// sheet — so point at that rather than showing a button that cannot work.
+if (isIOS && !standalone && stored('aslam_ios_install_dismissed') !== '1') {
+    var bar = document.getElementById('ios-install');
+    if (bar) {
+        bar.style.display = 'flex';
+        document.getElementById('ios-install-close').onclick = function() {
+            bar.style.display = 'none';
+            store('aslam_ios_install_dismissed', '1');
+        };
+    }
 }
 </script>
 </body>
