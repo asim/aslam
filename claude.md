@@ -105,16 +105,28 @@ ALLOW_PASSWORD_SIGNUP=false               # Re-open email/password registration
 
 ### Registration
 
-New accounts come through Google OAuth. Self-service email/password
-registration is closed by default (`ALLOW_PASSWORD_SIGNUP`): the form has no
-email verification, CAPTCHA or rate limit, so bots could mint accounts against
-addresses they do not own. Because `db.IsUser` doubles as the allowlist for the
-email channel, each such account also became an authorised sender to the
-assistant.
+Accounts come through Google OAuth, or email/password with address
+verification.
 
-Existing password accounts can still log in — only registration is closed. If
-`GOOGLE_CLIENT_ID` is unset there would be no way to register at all, so
-password signup stays open in that case.
+A password signup creates the account **unverified** and mails a one-time link
+to the address. Until it is clicked the account cannot log in, and `db.IsUser`
+excludes it — which matters because `IsUser` doubles as the allowlist for the
+email channel, so an unconfirmed address is never an authorised sender. This is
+what stops the bulk signups: an account is useless until someone proves they
+control the mailbox.
+
+`db.IsUser` = verified account (authorisation). `db.UserExists` = any account,
+used for "is this address taken". Do not confuse them.
+
+Verification emails are rate limited per address (`verifyResendInterval`), so
+signup and resend cannot be used to flood someone's inbox. Signing up again with
+an unconfirmed address re-sends the link rather than erroring, which also avoids
+revealing whether an address is registered.
+
+Password signup is enabled when outbound email is configured, since without SMTP
+there is no way to prove an address. `ALLOW_PASSWORD_SIGNUP` forces it on or off;
+if `GOOGLE_CLIENT_ID` is unset it stays open regardless, so a fresh install
+cannot lock itself out.
 
 ### Inbound email security
 

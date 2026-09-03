@@ -1,0 +1,69 @@
+{{define "verify_sent.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm your email - Aslam</title>
+    {{template "style"}}
+    <style>
+        .auth-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 20px;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+        .auth-card h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .auth-card p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .auth-card .addr {
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .auth-card .hint {
+            font-size: 13px;
+            color: #888;
+            margin-top: 20px;
+        }
+        .auth-footer {
+            margin-top: 28px;
+            font-size: 13px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <h1>Check your email</h1>
+            <p>
+                We've sent a confirmation link to
+                <span class="addr">{{.Email}}</span>.
+            </p>
+            <p>Click it to activate your account. The link signs you in.</p>
+            <p class="hint">
+                Nothing arrived? Check your spam folder. You can request a new
+                link by signing up again with the same address.
+            </p>
+            <div class="auth-footer">
+                <a href="/auth/login">Back to log in</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+{{end}}
