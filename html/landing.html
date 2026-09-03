@@ -57,33 +57,28 @@
             transition: opacity 0.15s;
         }
         .landing .buttons a:hover { opacity: 0.85; }
-        /* Return visitors get a log in where they expect it, keeping the hero
-           to a single primary action. */
-        .corner-login {
+        /* Secondary actions sit together top right, where utility links are
+           looked for; top left reads as the brand slot. Log in is last so its
+           position does not shift when the install link appears. */
+        .corner-actions {
             position: absolute;
             top: 18px;
             right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            z-index: 100;
+        }
+        .corner-actions a {
             font-size: 14px;
             color: #555;
             text-decoration: none;
             padding: 6px 10px;
-            z-index: 100;
+            white-space: nowrap;
         }
-        .corner-login:hover { color: #000; text-decoration: underline; }
-        /* Mirrors the log in link. Kept as quiet text so it does not compete
-           with the primary action, which is also black. */
-        .corner-install {
-            display: none;
-            position: absolute;
-            top: 18px;
-            left: 20px;
-            font-size: 14px;
-            color: #555;
-            text-decoration: none;
-            padding: 6px 10px;
-            z-index: 100;
-        }
-        .corner-install:hover { color: #000; text-decoration: underline; }
+        .corner-actions a:hover { color: #000; text-decoration: underline; }
+        /* Revealed by script only where the browser can actually install. */
+        .corner-install { display: none; }
         /* iOS cannot trigger an install prompt from script, so Safari users get
            instructions for the Share sheet instead of a button that does
            nothing. */
@@ -178,8 +173,10 @@
     </style>
 </head>
 <body>
-    <a href="#" id="install-btn" class="corner-install">Install app</a>
-    <a href="/auth/login" class="corner-login">Log in</a>
+    <div class="corner-actions">
+        <a href="#" id="install-btn" class="corner-install">Install app</a>
+        <a href="/auth/login" class="corner-login">Log in</a>
+    </div>
     <div class="landing">
         <h1>Aslam</h1>
         <p class="tagline">An Islamic knowledge base for Muslims</p>
