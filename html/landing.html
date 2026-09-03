@@ -70,6 +70,20 @@
             z-index: 100;
         }
         .corner-login:hover { color: #000; text-decoration: underline; }
+        /* Mirrors the log in link. Kept as quiet text so it does not compete
+           with the primary action, which is also black. */
+        .corner-install {
+            display: none;
+            position: absolute;
+            top: 18px;
+            left: 20px;
+            font-size: 14px;
+            color: #555;
+            text-decoration: none;
+            padding: 6px 10px;
+            z-index: 100;
+        }
+        .corner-install:hover { color: #000; text-decoration: underline; }
         /* iOS cannot trigger an install prompt from script, so Safari users get
            instructions for the Share sheet instead of a button that does
            nothing. */
@@ -82,13 +96,14 @@
             z-index: 100;
             align-items: center;
             gap: 10px;
-            padding: 12px 14px;
-            background: #1a1a1a;
-            color: #fff;
+            padding: 10px 12px;
+            background: #fff;
+            color: #555;
+            border: 1px solid #e5e5e5;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 12.5px;
             line-height: 1.45;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         .ios-install svg { flex: 0 0 auto; vertical-align: -3px; }
         .ios-install .ios-text { flex: 1; }
@@ -96,13 +111,13 @@
             flex: 0 0 auto;
             background: none;
             border: none;
-            color: #999;
-            font-size: 20px;
+            color: #bbb;
+            font-size: 18px;
             line-height: 1;
             padding: 0 4px;
             cursor: pointer;
         }
-        .ios-install button:hover { color: #fff; }
+        .ios-install button:hover { color: #555; }
         .btn-primary { background: #000; color: #fff !important; }
         .btn-secondary { background: #fff; color: #1a1a1a !important; border: 1px solid #ddd; }
         .sources {
@@ -163,6 +178,7 @@
     </style>
 </head>
 <body>
+    <a href="#" id="install-btn" class="corner-install">Install app</a>
     <a href="/auth/login" class="corner-login">Log in</a>
     <div class="landing">
         <h1>Aslam</h1>
@@ -180,7 +196,6 @@
             <a href="/quran" class="btn-primary">Start Reading</a>
             <a href="/auth/signup" class="btn-secondary">Sign Up</a>
         </div>
-        <a href="#" id="install-btn" style="display:none; position:fixed; top:12px; left:16px; padding:8px 16px; background:#000; color:#fff; border-radius:8px; text-decoration:none; font-size:13px; font-weight:500; z-index:100;">Install App</a>
 
         <div class="sources">
             <a class="source-card" href="/quran">
@@ -244,9 +259,9 @@
         <span class="ios-text">
             Install Aslam: tap
             <svg width="13" height="16" viewBox="0 0 20 26" fill="none" aria-label="Share" role="img">
-                <path d="M10 1.5v14" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round"/>
-                <path d="M5.5 6L10 1.5 14.5 6" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M4.5 10.5h-2v13h15v-13h-2" stroke="#7ab8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10 1.5v14" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/>
+                <path d="M5.5 6L10 1.5 14.5 6" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.5 10.5h-2v13h15v-13h-2" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             then &ldquo;Add to Home Screen&rdquo;
         </span>
