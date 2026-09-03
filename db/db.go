@@ -3100,6 +3100,32 @@ func GetRiyadPrevNext(number int64) (prevNumber, nextNumber int64) {
 	return
 }
 
+// GetHadithPrevNext returns the surrounding hadith numbers, 0 where there is
+// none. Numbers are not guaranteed contiguous, so the neighbours are looked up
+// rather than assumed to be number±1.
+func GetHadithPrevNext(number int64) (prevNumber, nextNumber int64) {
+	DB.QueryRow(`SELECT number FROM hadith WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRow(`SELECT number FROM hadith WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
+	return
+}
+
+// GetNamePrevNext returns the surrounding Names of Allah numbers, 0 where there
+// is none.
+func GetNamePrevNext(number int64) (prevNumber, nextNumber int64) {
+	DB.QueryRow(`SELECT number FROM names WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRow(`SELECT number FROM names WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
+	return
+}
+
+// GetHadithBookPrevNext returns the surrounding Bukhari book numbers.
+func GetHadithBookPrevNext(bookNumber int64) (prevNumber, nextNumber int64) {
+	DB.QueryRow(`SELECT book_number FROM hadith WHERE book_number < ? AND book_number IS NOT NULL
+		ORDER BY book_number DESC LIMIT 1`, bookNumber).Scan(&prevNumber)
+	DB.QueryRow(`SELECT book_number FROM hadith WHERE book_number > ? AND book_number IS NOT NULL
+		ORDER BY book_number ASC LIMIT 1`, bookNumber).Scan(&nextNumber)
+	return
+}
+
 func GetRiyadBooks() ([]map[string]interface{}, error) {
 	rows, err := DB.Query(`SELECT book, COUNT(*) as count FROM salihin GROUP BY book ORDER BY MIN(id)`)
 	if err != nil {

@@ -41,6 +41,11 @@
                 </a>
                 {{end}}
             </div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                {{if .PrevBook}}<a href="/hadith/book/{{.PrevBook}}">&larr; Previous Book</a>{{else}}<span></span>{{end}}
+                <a href="/hadith">All Books</a>
+                {{if .NextBook}}<a href="/hadith/book/{{.NextBook}}">Next Book &rarr;</a>{{else}}<span></span>{{end}}
+            </div>
         </main>
     </div>
 </body>
