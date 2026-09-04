@@ -129,6 +129,16 @@
                         <div class="stat-detail">{{.EmailStats.Pending}} pending, {{.EmailStats.Failed}} failed</div>
                     </div>
                 </div>
+
+                <div class="warning-box" style="background: #f8fafc; border-color: #cbd5e1;">
+                    <strong>Inbox worker</strong><br>
+                    Configured: {{if .EmailWorker.Configured}}yes{{else}}no{{end}} ·
+                    Enabled: {{if .EmailWorker.Enabled}}yes{{else}}no{{end}} ·
+                    Started: {{if .EmailWorker.Started}}yes{{else}}no{{end}}<br>
+                    Last poll: {{if .EmailWorker.LastPoll}}{{.EmailWorker.LastPoll}}{{else}}not yet{{end}}<br>
+                    Result: {{if .EmailWorker.LastResult}}{{.EmailWorker.LastResult}}{{else}}waiting for first poll{{end}}
+                    {{if .EmailWorker.LastError}}<br><span class="error">Error: {{.EmailWorker.LastError}}</span>{{end}}
+                </div>
                 
                 <details>
                     <summary style="cursor: pointer; margin-bottom: 8px;">Recent Emails ({{len .RecentEmails}})</summary>

@@ -6,13 +6,53 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"aslam/db"
 	"aslam/tools"
 )
 
+type emailWorkerStatus struct {
+	Configured bool
+	Enabled    bool
+	Started    bool
+	LastPoll   string
+	LastResult string
+	LastError  string
+}
+
+var (
+	emailStatusMu sync.RWMutex
+	emailStatus   emailWorkerStatus
+)
+
+func updateEmailStatus(update func(*emailWorkerStatus)) {
+	emailStatusMu.Lock()
+	defer emailStatusMu.Unlock()
+	update(&emailStatus)
+}
+
+func getEmailWorkerStatus() emailWorkerStatus {
+	emailStatusMu.RLock()
+	status := emailStatus
+	emailStatusMu.RUnlock()
+	status.Configured = os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != ""
+	status.Enabled = db.GetSetting("gmail_enabled") != "false"
+	return status
+}
+
 func startEmailWorker() {
+	configured := os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != ""
+	updateEmailStatus(func(s *emailWorkerStatus) {
+		s.Configured = configured
+		s.Enabled = db.GetSetting("gmail_enabled") != "false"
+		s.Started = configured
+		if !configured {
+			s.LastResult = "Worker not started: Gmail credentials are missing"
+		}
+	})
+
 	// Check if email is configured
 	if os.Getenv("GMAIL_USER") == "" || os.Getenv("GMAIL_APP_PASSWORD") == "" {
 		log.Println("Email worker: GMAIL credentials not configured, skipping")
@@ -41,8 +81,17 @@ func startEmailWorker() {
 const emailBatchLimit = 50
 
 func checkInbox() {
+	now := time.Now().UTC().Format("2006-01-02 15:04:05 UTC")
+	updateEmailStatus(func(s *emailWorkerStatus) {
+		s.LastPoll = now
+		s.Enabled = db.GetSetting("gmail_enabled") != "false"
+	})
+
 	// Check if disabled via admin
 	if db.GetSetting("gmail_enabled") == "false" {
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastResult = "Poll skipped: Gmail integration is disabled"
+		})
 		return
 	}
 
@@ -53,6 +102,10 @@ func checkInbox() {
 	session, err := tools.Connect()
 	if err != nil {
 		log.Printf("Email worker: failed to connect: %v", err)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastError = "Connect failed: " + err.Error()
+			s.LastResult = "Inbox poll failed"
+		})
 		return
 	}
 	defer session.Close()
@@ -60,8 +113,17 @@ func checkInbox() {
 	emails, err := session.FetchUnread(emailBatchLimit)
 	if err != nil {
 		log.Printf("Email worker: failed to fetch emails: %v", err)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastError = "Fetch failed: " + err.Error()
+			s.LastResult = "Inbox poll failed"
+		})
 		return
 	}
+
+	updateEmailStatus(func(s *emailWorkerStatus) {
+		s.LastError = ""
+		s.LastResult = fmt.Sprintf("Connected successfully; fetched %d unread email(s) in this batch", len(emails))
+	})
 
 	if len(emails) == 0 {
 		log.Println("Email worker: no emails")
@@ -83,6 +145,10 @@ func checkInbox() {
 
 	if err := session.MarkRead(handled...); err != nil {
 		log.Printf("Email worker: failed to mark %d emails as read: %v", len(handled), err)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastError = fmt.Sprintf("Mark read failed for %d email(s): %v", len(handled), err)
+			s.LastResult = "Messages were handled but could not be marked as read"
+		})
 	}
 }
 
@@ -102,6 +168,9 @@ func processEmail(email tools.Email) bool {
 	// Check if sender is allowed
 	if !db.IsUser(strings.ToLower(senderEmail)) {
 		log.Printf("Email worker: ignoring email from unauthorized sender: %s", senderEmail)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastResult = "Ignored email from unauthorised sender: " + senderEmail
+		})
 		return true
 	}
 
@@ -111,6 +180,9 @@ func processEmail(email tools.Email) bool {
 	if !allowUnverifiedSenders() {
 		if ok, reason := tools.VerifyAuthResults(email.AuthResults, senderEmail); !ok {
 			log.Printf("Email worker: rejecting unauthenticated email claiming to be from %s: %s", senderEmail, reason)
+			updateEmailStatus(func(s *emailWorkerStatus) {
+				s.LastResult = fmt.Sprintf("Rejected email from %s: %s", senderEmail, reason)
+			})
 			return true
 		}
 	}
@@ -172,6 +244,9 @@ func processEmail(email tools.Email) bool {
 	}
 
 	log.Printf("Email worker: queued email from %s for processing", senderEmail)
+	updateEmailStatus(func(s *emailWorkerStatus) {
+		s.LastResult = fmt.Sprintf("Queued email from %s: %s", senderEmail, email.Subject)
+	})
 	return true
 }
 
