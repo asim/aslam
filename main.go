@@ -3213,6 +3213,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		"Datasets":     datasets,
 		"TaskStats":    taskStats,
 		"EmailStats":   emailStats,
+		"EmailWorker":  getEmailWorkerStatus(),
 		"RecentEmails": recentEmails,
 		"RecentTasks":  recentTasks,
 		"CurrentUser":  session.Email,
