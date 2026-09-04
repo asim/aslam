@@ -122,7 +122,7 @@ func checkInbox() {
 
 	updateEmailStatus(func(s *emailWorkerStatus) {
 		s.LastError = ""
-		s.LastResult = fmt.Sprintf("Connected successfully; found %d unread email(s)", len(emails))
+		s.LastResult = fmt.Sprintf("Connected successfully; fetched %d unread email(s) in this batch", len(emails))
 	})
 
 	if len(emails) == 0 {
@@ -145,6 +145,10 @@ func checkInbox() {
 
 	if err := session.MarkRead(handled...); err != nil {
 		log.Printf("Email worker: failed to mark %d emails as read: %v", len(handled), err)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastError = fmt.Sprintf("Mark read failed for %d email(s): %v", len(handled), err)
+			s.LastResult = "Messages were handled but could not be marked as read"
+		})
 	}
 }
 
