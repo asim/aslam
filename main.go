@@ -2939,7 +2939,9 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 	var fullText strings.Builder
 	var contentBlocks []contentBlock
 	var currentToolInput strings.Builder
-	var currentToolID, currentToolName string
+	var currentThinking strings.Builder
+	var currentSignature strings.Builder
+	var currentToolID, currentToolName, currentBlockType, currentRedactedData string
 	stopReason := ""
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -2961,11 +2963,16 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 				ID    string `json:"id"`
 				Name  string `json:"name"`
 				Text  string `json:"text"`
+				Thinking string `json:"thinking"`
+				Signature string `json:"signature"`
+				Data string `json:"data"`
 				Input json.RawMessage `json:"input"`
 			} `json:"content_block"`
 			Delta struct {
 				Type        string `json:"type"`
 				Text        string `json:"text"`
+				Thinking    string `json:"thinking"`
+				Signature   string `json:"signature"`
 				PartialJSON string `json:"partial_json"`
 				StopReason  string `json:"stop_reason"`
 			} `json:"delta"`
@@ -2979,10 +2986,19 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 
 		switch event.Type {
 		case "content_block_start":
-			if event.ContentBlock.Type == "tool_use" {
+			currentBlockType = event.ContentBlock.Type
+			switch currentBlockType {
+			case "tool_use":
 				currentToolID = event.ContentBlock.ID
 				currentToolName = event.ContentBlock.Name
 				currentToolInput.Reset()
+			case "thinking":
+				currentThinking.Reset()
+				currentSignature.Reset()
+				currentThinking.WriteString(event.ContentBlock.Thinking)
+				currentSignature.WriteString(event.ContentBlock.Signature)
+			case "redacted_thinking":
+				currentRedactedData = event.ContentBlock.Data
 			}
 		case "content_block_delta":
 			if event.Delta.Type == "text_delta" && event.Delta.Text != "" {
@@ -2992,9 +3008,14 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 				}
 			} else if event.Delta.Type == "input_json_delta" {
 				currentToolInput.WriteString(event.Delta.PartialJSON)
+			} else if event.Delta.Type == "thinking_delta" {
+				currentThinking.WriteString(event.Delta.Thinking)
+			} else if event.Delta.Type == "signature_delta" {
+				currentSignature.WriteString(event.Delta.Signature)
 			}
 		case "content_block_stop":
-			if currentToolName != "" {
+			switch currentBlockType {
+			case "tool_use":
 				var input map[string]interface{}
 				json.Unmarshal([]byte(currentToolInput.String()), &input)
 				contentBlocks = append(contentBlocks, contentBlock{
@@ -3004,12 +3025,26 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 					Input: input,
 				})
 				currentToolName = ""
-			} else if fullText.Len() > 0 {
+			case "thinking":
 				contentBlocks = append(contentBlocks, contentBlock{
-					Type: "text",
-					Text: fullText.String(),
+					Type:      "thinking",
+					Thinking:  currentThinking.String(),
+					Signature: currentSignature.String(),
 				})
+			case "redacted_thinking":
+				contentBlocks = append(contentBlocks, contentBlock{
+					Type: "redacted_thinking",
+					Data: currentRedactedData,
+				})
+			case "text":
+				if fullText.Len() > 0 {
+					contentBlocks = append(contentBlocks, contentBlock{
+						Type: "text",
+						Text: fullText.String(),
+					})
+				}
 			}
+			currentBlockType = ""
 		case "message_delta":
 			if event.Delta.StopReason != "" {
 				stopReason = event.Delta.StopReason
@@ -3029,11 +3064,14 @@ type anthropicResponse struct {
 }
 
 type contentBlock struct {
-	Type  string                 `json:"type"`
-	Text  string                 `json:"text,omitempty"`
-	ID    string                 `json:"id,omitempty"`
-	Name  string                 `json:"name,omitempty"`
-	Input map[string]interface{} `json:"input,omitempty"`
+	Type      string                 `json:"type"`
+	Text      string                 `json:"text,omitempty"`
+	Thinking  string                 `json:"thinking,omitempty"`
+	Signature string                 `json:"signature,omitempty"`
+	Data      string                 `json:"data,omitempty"`
+	ID        string                 `json:"id,omitempty"`
+	Name      string                 `json:"name,omitempty"`
+	Input     map[string]interface{} `json:"input,omitempty"`
 }
 
 func callAnthropic(apiMessages []map[string]interface{}, sysPrompt string) (*anthropicResponse, error) {
