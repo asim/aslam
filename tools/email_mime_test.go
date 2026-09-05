@@ -10,7 +10,10 @@ import (
 )
 
 func TestBuildEmailMessageRendersMarkdownAlternatives(t *testing.T) {
-	source := "# Heading\n\nA **bold** answer with [a link](https://example.com).\n\n- first\n- second\n\n<script>alert('x')</script>"
+	source := "# Heading\n\nA **bold** answer with [a link](https://example.com).\n\n" +
+		"[logs](https://host/search?q=*error*)\n\nhttps://verify.example/token\n\n" +
+		"Inline: `def __init__(self, **kwargs):`\n\n```python\ndef __init__(self, **kwargs):\n    pass\n```\n\n" +
+		"- first\n- second\n\n<script>alert('x')</script>"
 	message, err := buildEmailMessage(
 		"assistant@aslam.org",
 		"user@example.com",
@@ -58,11 +61,14 @@ func TestBuildEmailMessageRendersMarkdownAlternatives(t *testing.T) {
 	}
 
 	plain := parts["text/plain"]
-	if strings.Contains(plain, "**") || strings.Contains(plain, "# Heading") {
-		t.Errorf("plain part still contains Markdown markers: %q", plain)
+	if strings.Contains(plain, "**bold**") || strings.Contains(plain, "# Heading") {
+		t.Errorf("plain part still contains formatting markers: %q", plain)
 	}
 	if !strings.Contains(plain, "Heading") || !strings.Contains(plain, "a link (https://example.com)") {
 		t.Errorf("plain part lost readable content: %q", plain)
+	}
+	if strings.Count(plain, "def __init__(self, **kwargs):") != 2 {
+		t.Errorf("plain part altered code tokens: %q", plain)
 	}
 
 	html := parts["text/html"]
@@ -70,6 +76,10 @@ func TestBuildEmailMessageRendersMarkdownAlternatives(t *testing.T) {
 		"<h1>Heading</h1>",
 		"<strong>bold</strong>",
 		"<a href=\"https://example.com\">a link</a>",
+		"<a href=\"https://host/search?q=*error*\">logs</a>",
+		"<a href=\"https://verify.example/token\">https://verify.example/token</a>",
+		"<code>def __init__(self, **kwargs):</code>",
+		"<pre><code>def __init__(self, **kwargs):",
 		"<ul><li>first</li><li>second</li></ul>",
 		"&lt;script&gt;",
 	} {
