@@ -1646,7 +1646,10 @@ func signupPageData(errMsg string) map[string]interface{} {
 // verifyTokenTTL is how long a verification link stays useful, and
 // verifyResendInterval is the minimum gap between verification emails to one
 // address — without it, signup and resend become a way to flood an inbox.
-const verifyResendInterval = 2 * time.Minute
+const (
+	verifyResendInterval = 2 * time.Minute
+	pendingSignupTTL     = 24 * time.Hour
+)
 
 // newVerifyToken returns a crypto-random, URL-safe token.
 func newVerifyToken() (string, error) {
@@ -1734,23 +1737,10 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An address that already has an account. If it was never confirmed, treat
-	// this as asking for the link again rather than leaking whether the address
-	// is registered — but rate limited, so this cannot flood an inbox.
+	// Real accounts are never overwritten by a registration attempt. Pending
+	// submissions live separately and are handled below.
 	if db.UserExists(email) {
-		if db.IsVerified(email) {
-			tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
-			return
-		}
-		if err := db.SetVerifyToken(email, token, verifyResendInterval); err != nil {
-			log.Printf("Not resending verification to %s: %v", email, err)
-			renderVerifySent(w, email)
-			return
-		}
-		if err := sendVerificationEmail(email, name, token); err != nil {
-			log.Printf("Failed to resend verification to %s: %v", email, err)
-		}
-		renderVerifySent(w, email)
+		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
 		return
 	}
 
@@ -1761,15 +1751,16 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create the account unverified. It cannot log in, and IsUser excludes it,
-	// so it is not yet an authorised sender for the email channel either.
-	if err := db.CreateUnverifiedUser(email, name, string(hash), "user", token); err != nil {
-		log.Printf("Failed to create user %s: %v", email, err)
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Could not create account. Please try again."))
+	// Keep the submission outside the users table until the address is proven.
+	// Repeated attempts for the same address are rate-limited in the database.
+	if err := db.SavePendingSignup(email, name, string(hash), token, verifyResendInterval, pendingSignupTTL); err != nil {
+		log.Printf("Not creating or refreshing pending signup for %s: %v", email, err)
+		renderVerifySent(w, email)
 		return
 	}
 
 	if err := sendVerificationEmail(email, name, token); err != nil {
+		db.DeletePendingSignup(email)
 		log.Printf("Failed to send verification email to %s: %v", email, err)
 		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("We couldn't send the confirmation email. Please try again shortly."))
 		return
