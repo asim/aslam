@@ -359,34 +359,65 @@ var (
 	markdownHeadingRE = regexp.MustCompile(`^(#{1,6})[ \t]+(.+)$`)
 	markdownBulletRE  = regexp.MustCompile(`^[ \t]*[-+*][ \t]+(.+)$`)
 	markdownNumberRE  = regexp.MustCompile(`^[ \t]*[0-9]+\.[ \t]+(.+)$`)
-	markdownLinkRE    = regexp.MustCompile(`\[([^]]+)]\(([^)]+)\)`)
-	markdownCodeRE    = regexp.MustCompile("\\x60([^\\x60]+)\\x60")
+	markdownLinkRE    = regexp.MustCompile(`^\[([^]]+)]\(([^)]+)\)$`)
+	markdownTokenRE   = regexp.MustCompile(`\x60[^\x60]*\x60|\[[^]]+]\([^)]+\)|https?://[^\s<>()]+`)
 	markdownBoldRE    = regexp.MustCompile(`\*\*([^*]+)\*\*`)
 	markdownItalicRE  = regexp.MustCompile(`\*([^*]+)\*`)
 )
 
 func markdownToPlainText(markdown string) string {
 	lines := strings.Split(strings.ReplaceAll(markdown, "\r\n", "\n"), "\n")
-	for i, line := range lines {
+	inCodeBlock := false
+	var out []string
+	for _, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			out = append(out, line)
+			continue
+		}
 		if match := markdownHeadingRE.FindStringSubmatch(line); match != nil {
 			line = match[2]
 		} else if match := markdownBulletRE.FindStringSubmatch(line); match != nil {
 			line = "• " + match[1]
 		}
-		line = markdownLinkRE.ReplaceAllString(line, "$1 ($2)")
-		line = markdownCodeRE.ReplaceAllString(line, "$1")
-		line = strings.ReplaceAll(line, "**", "")
-		line = strings.ReplaceAll(line, "__", "")
-		line = markdownItalicRE.ReplaceAllString(line, "$1")
-		lines[i] = line
+		out = append(out, renderPlainInline(line))
 	}
-	return strings.TrimSpace(strings.Join(lines, "\n"))
+	return strings.TrimSpace(strings.Join(out, "\n"))
+}
+
+func renderPlainInline(value string) string {
+	var out strings.Builder
+	last := 0
+	for _, location := range markdownTokenRE.FindAllStringIndex(value, -1) {
+		out.WriteString(stripMarkdownEmphasis(value[last:location[0]]))
+		token := value[location[0]:location[1]]
+		if strings.HasPrefix(token, "`") {
+			out.WriteString(strings.TrimSuffix(strings.TrimPrefix(token, "`"), "`"))
+		} else if match := markdownLinkRE.FindStringSubmatch(token); match != nil {
+			fmt.Fprintf(&out, "%s (%s)", stripMarkdownEmphasis(match[1]), match[2])
+		} else {
+			out.WriteString(token)
+		}
+		last = location[1]
+	}
+	out.WriteString(stripMarkdownEmphasis(value[last:]))
+	return out.String()
+}
+
+func stripMarkdownEmphasis(value string) string {
+	value = markdownBoldRE.ReplaceAllString(value, "$1")
+	value = markdownItalicRE.ReplaceAllString(value, "$1")
+	return value
 }
 
 func markdownToHTML(markdown string) string {
 	lines := strings.Split(strings.ReplaceAll(markdown, "\r\n", "\n"), "\n")
 	var out strings.Builder
 	list := ""
+	inCodeBlock := false
 
 	closeList := func() {
 		if list != "" {
@@ -396,6 +427,21 @@ func markdownToHTML(markdown string) string {
 	}
 
 	for _, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			closeList()
+			if inCodeBlock {
+				out.WriteString("</code></pre>")
+			} else {
+				out.WriteString("<pre><code>")
+			}
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			out.WriteString(html.EscapeString(line))
+			out.WriteByte('\n')
+			continue
+		}
 		if strings.TrimSpace(line) == "" {
 			closeList()
 			continue
@@ -432,24 +478,51 @@ func markdownToHTML(markdown string) string {
 		}
 	}
 	closeList()
+	if inCodeBlock {
+		out.WriteString("</code></pre>")
+	}
 	return out.String()
 }
 
 func renderMarkdownInline(value string) string {
-	escaped := html.EscapeString(value)
-	escaped = markdownLinkRE.ReplaceAllStringFunc(escaped, func(match string) string {
-		parts := markdownLinkRE.FindStringSubmatch(match)
-		target := html.UnescapeString(parts[2])
-		lower := strings.ToLower(strings.TrimSpace(target))
-		if !strings.HasPrefix(lower, "https://") && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "mailto:") {
-			return parts[1]
+	var out strings.Builder
+	last := 0
+	for _, location := range markdownTokenRE.FindAllStringIndex(value, -1) {
+		out.WriteString(renderMarkdownText(value[last:location[0]]))
+		token := value[location[0]:location[1]]
+		if strings.HasPrefix(token, "`") {
+			code := strings.TrimSuffix(strings.TrimPrefix(token, "`"), "`")
+			fmt.Fprintf(&out, "<code>%s</code>", html.EscapeString(code))
+		} else if match := markdownLinkRE.FindStringSubmatch(token); match != nil {
+			target := strings.TrimSpace(match[2])
+			if safeEmailURL(target) {
+				fmt.Fprintf(&out, "<a href=\"%s\">%s</a>", html.EscapeString(target), renderMarkdownText(match[1]))
+			} else {
+				out.WriteString(renderMarkdownText(match[1]))
+			}
+		} else if safeEmailURL(token) {
+			fmt.Fprintf(&out, "<a href=\"%s\">%s</a>", html.EscapeString(token), html.EscapeString(token))
+		} else {
+			out.WriteString(html.EscapeString(token))
 		}
-		return fmt.Sprintf("<a href=\"%s\">%s</a>", html.EscapeString(target), parts[1])
-	})
-	escaped = markdownCodeRE.ReplaceAllString(escaped, "<code>$1</code>")
+		last = location[1]
+	}
+	out.WriteString(renderMarkdownText(value[last:]))
+	return out.String()
+}
+
+func renderMarkdownText(value string) string {
+	escaped := html.EscapeString(value)
 	escaped = markdownBoldRE.ReplaceAllString(escaped, "<strong>$1</strong>")
 	escaped = markdownItalicRE.ReplaceAllString(escaped, "<em>$1</em>")
 	return escaped
+}
+
+func safeEmailURL(target string) bool {
+	lower := strings.ToLower(strings.TrimSpace(target))
+	return strings.HasPrefix(lower, "https://") ||
+		strings.HasPrefix(lower, "http://") ||
+		strings.HasPrefix(lower, "mailto:")
 }
 
 func randomString(n int) string {
