@@ -1,11 +1,17 @@
 package tools
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
+	"html"
 	"io"
+	"mime/multipart"
+	"mime/quotedprintable"
 	"net/smtp"
+	"net/textproto"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -267,52 +273,183 @@ func parseMessage(r imap.Literal) (body, authResults string) {
 
 
 
-// SendEmail sends an email via Gmail SMTP
+// SendEmail sends an email via Gmail SMTP.
 func SendEmail(to, subject, body string) (string, error) {
 	return SendEmailThreaded(to, subject, body, "", "")
 }
 
-// SendEmailThreaded sends an email with threading headers
-// SendEmailThreaded sends an email and returns the Message-ID
+// SendEmailThreaded sends a multipart plain-text and HTML email and returns its
+// Message-ID. Claude replies use Markdown, so both alternatives are derived
+// from the same source.
 func SendEmailThreaded(to, subject, body, inReplyTo, references string) (string, error) {
 	user, password, err := getEmailConfig()
 	if err != nil {
 		return "", err
 	}
 
-	// Generate Message-ID
 	msgID := fmt.Sprintf("<%d.%s@aslam.org>", time.Now().UnixNano(), randomString(8))
-
-	// Build headers
-	var headers strings.Builder
-	headers.WriteString(fmt.Sprintf("From: Aslam <%s>\r\n", user))
-	headers.WriteString(fmt.Sprintf("To: %s\r\n", to))
-	headers.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
-	headers.WriteString(fmt.Sprintf("Message-ID: %s\r\n", msgID))
-	
-	if inReplyTo != "" {
-		headers.WriteString(fmt.Sprintf("In-Reply-To: %s\r\n", inReplyTo))
-	}
-	if references != "" {
-		headers.WriteString(fmt.Sprintf("References: %s\r\n", references))
-	} else if inReplyTo != "" {
-		headers.WriteString(fmt.Sprintf("References: %s\r\n", inReplyTo))
-	}
-	
-	headers.WriteString("MIME-Version: 1.0\r\n")
-	headers.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
-	headers.WriteString("\r\n")
-
-	msg := headers.String() + body
-
-	// Connect to Gmail SMTP
-	auth := smtp.PlainAuth("", user, password, "smtp.gmail.com")
-	err = smtp.SendMail("smtp.gmail.com:587", auth, user, []string{to}, []byte(msg))
+	msg, err := buildEmailMessage(user, to, subject, body, msgID, inReplyTo, references)
 	if err != nil {
+		return "", err
+	}
+
+	auth := smtp.PlainAuth("", user, password, "smtp.gmail.com")
+	if err := smtp.SendMail("smtp.gmail.com:587", auth, user, []string{to}, msg); err != nil {
 		return "", fmt.Errorf("failed to send: %w", err)
 	}
-
 	return msgID, nil
+}
+
+func buildEmailMessage(from, to, subject, markdown, msgID, inReplyTo, references string) ([]byte, error) {
+	var message bytes.Buffer
+	writer := multipart.NewWriter(&message)
+
+	fmt.Fprintf(&message, "From: Aslam <%s>\r\n", cleanMailHeader(from))
+	fmt.Fprintf(&message, "To: %s\r\n", cleanMailHeader(to))
+	fmt.Fprintf(&message, "Subject: %s\r\n", cleanMailHeader(subject))
+	fmt.Fprintf(&message, "Message-ID: %s\r\n", cleanMailHeader(msgID))
+	if inReplyTo != "" {
+		fmt.Fprintf(&message, "In-Reply-To: %s\r\n", cleanMailHeader(inReplyTo))
+	}
+	if references != "" {
+		fmt.Fprintf(&message, "References: %s\r\n", cleanMailHeader(references))
+	} else if inReplyTo != "" {
+		fmt.Fprintf(&message, "References: %s\r\n", cleanMailHeader(inReplyTo))
+	}
+	message.WriteString("MIME-Version: 1.0\r\n")
+	fmt.Fprintf(&message, "Content-Type: multipart/alternative; boundary=%q\r\n\r\n", writer.Boundary())
+
+	if err := writeEmailPart(writer, "text/plain; charset=utf-8", markdownToPlainText(markdown)); err != nil {
+		return nil, err
+	}
+	htmlBody := "<!doctype html><html><body style=\"font-family:Arial,sans-serif;line-height:1.5;color:#111\">" +
+		markdownToHTML(markdown) + "</body></html>"
+	if err := writeEmailPart(writer, "text/html; charset=utf-8", htmlBody); err != nil {
+		return nil, err
+	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("close MIME message: %w", err)
+	}
+	return message.Bytes(), nil
+}
+
+func writeEmailPart(writer *multipart.Writer, contentType, content string) error {
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Type", contentType)
+	header.Set("Content-Transfer-Encoding", "quoted-printable")
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		return fmt.Errorf("create MIME part: %w", err)
+	}
+	encoded := quotedprintable.NewWriter(part)
+	if _, err := encoded.Write([]byte(content)); err != nil {
+		return fmt.Errorf("write MIME part: %w", err)
+	}
+	if err := encoded.Close(); err != nil {
+		return fmt.Errorf("close MIME part: %w", err)
+	}
+	return nil
+}
+
+func cleanMailHeader(value string) string {
+	return strings.NewReplacer("\r", " ", "\n", " ").Replace(value)
+}
+
+var (
+	markdownHeadingRE = regexp.MustCompile(`^(#{1,6})[ \t]+(.+)$`)
+	markdownBulletRE  = regexp.MustCompile(`^[ \t]*[-+*][ \t]+(.+)$`)
+	markdownNumberRE  = regexp.MustCompile(`^[ \t]*[0-9]+\.[ \t]+(.+)$`)
+	markdownLinkRE    = regexp.MustCompile(`\[([^]]+)]\(([^)]+)\)`)
+	markdownCodeRE    = regexp.MustCompile("\\x60([^\\x60]+)\\x60")
+	markdownBoldRE    = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	markdownItalicRE  = regexp.MustCompile(`\*([^*]+)\*`)
+)
+
+func markdownToPlainText(markdown string) string {
+	lines := strings.Split(strings.ReplaceAll(markdown, "\r\n", "\n"), "\n")
+	for i, line := range lines {
+		if match := markdownHeadingRE.FindStringSubmatch(line); match != nil {
+			line = match[2]
+		} else if match := markdownBulletRE.FindStringSubmatch(line); match != nil {
+			line = "• " + match[1]
+		}
+		line = markdownLinkRE.ReplaceAllString(line, "$1 ($2)")
+		line = markdownCodeRE.ReplaceAllString(line, "$1")
+		line = strings.ReplaceAll(line, "**", "")
+		line = strings.ReplaceAll(line, "__", "")
+		line = markdownItalicRE.ReplaceAllString(line, "$1")
+		lines[i] = line
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func markdownToHTML(markdown string) string {
+	lines := strings.Split(strings.ReplaceAll(markdown, "\r\n", "\n"), "\n")
+	var out strings.Builder
+	list := ""
+
+	closeList := func() {
+		if list != "" {
+			fmt.Fprintf(&out, "</%s>", list)
+			list = ""
+		}
+	}
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			closeList()
+			continue
+		}
+		if match := markdownHeadingRE.FindStringSubmatch(line); match != nil {
+			closeList()
+			level := len(match[1])
+			fmt.Fprintf(&out, "<h%d>%s</h%d>", level, renderMarkdownInline(match[2]), level)
+			continue
+		}
+		if match := markdownBulletRE.FindStringSubmatch(line); match != nil {
+			if list != "ul" {
+				closeList()
+				out.WriteString("<ul>")
+				list = "ul"
+			}
+			fmt.Fprintf(&out, "<li>%s</li>", renderMarkdownInline(match[1]))
+			continue
+		}
+		if match := markdownNumberRE.FindStringSubmatch(line); match != nil {
+			if list != "ol" {
+				closeList()
+				out.WriteString("<ol>")
+				list = "ol"
+			}
+			fmt.Fprintf(&out, "<li>%s</li>", renderMarkdownInline(match[1]))
+			continue
+		}
+		closeList()
+		if strings.HasPrefix(strings.TrimSpace(line), "> ") {
+			fmt.Fprintf(&out, "<blockquote>%s</blockquote>", renderMarkdownInline(strings.TrimSpace(line)[2:]))
+		} else {
+			fmt.Fprintf(&out, "<p>%s</p>", renderMarkdownInline(line))
+		}
+	}
+	closeList()
+	return out.String()
+}
+
+func renderMarkdownInline(value string) string {
+	escaped := html.EscapeString(value)
+	escaped = markdownLinkRE.ReplaceAllStringFunc(escaped, func(match string) string {
+		parts := markdownLinkRE.FindStringSubmatch(match)
+		target := html.UnescapeString(parts[2])
+		lower := strings.ToLower(strings.TrimSpace(target))
+		if !strings.HasPrefix(lower, "https://") && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "mailto:") {
+			return parts[1]
+		}
+		return fmt.Sprintf("<a href=\"%s\">%s</a>", html.EscapeString(target), parts[1])
+	})
+	escaped = markdownCodeRE.ReplaceAllString(escaped, "<code>$1</code>")
+	escaped = markdownBoldRE.ReplaceAllString(escaped, "<strong>$1</strong>")
+	escaped = markdownItalicRE.ReplaceAllString(escaped, "<em>$1</em>")
+	return escaped
 }
 
 func randomString(n int) string {
