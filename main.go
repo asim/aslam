@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"errors"
 	"bufio"
 	"bytes"
 	"crypto/rand"
@@ -1754,8 +1755,13 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 	// Keep the submission outside the users table until the address is proven.
 	// Repeated attempts for the same address are rate-limited in the database.
 	if err := db.SavePendingSignup(email, name, string(hash), token, verifyResendInterval, pendingSignupTTL); err != nil {
-		log.Printf("Not creating or refreshing pending signup for %s: %v", email, err)
-		renderVerifySent(w, email)
+		if errors.Is(err, db.ErrVerificationRecentlySent) {
+			log.Printf("Not resending verification to %s: %v", email, err)
+			renderVerifySent(w, email)
+		} else {
+			log.Printf("Failed to save pending signup for %s: %v", email, err)
+			tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Could not create account. Please try again."))
+		}
 		return
 	}
 
