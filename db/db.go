@@ -2,6 +2,7 @@ package db
 
 import (
 	"crypto/rand"
+	"errors"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
@@ -1830,27 +1831,38 @@ func IsVerified(email string) bool {
 	return err == nil && verified == 1
 }
 
-// SavePendingSignup stores a registration outside the users table. It refreshes
-// expired submissions but rate-limits repeated mail to the same address.
+var ErrVerificationRecentlySent = errors.New("verification email sent recently")
+
+// SavePendingSignup atomically creates or refreshes a registration. The
+// conflict UPDATE is conditional, so simultaneous requests cannot all pass the
+// resend window and replace one another's token.
 func SavePendingSignup(email, name, passwordHash, token string, minInterval, ttl time.Duration) error {
 	if _, err := DB.Exec(`DELETE FROM pending_signups WHERE expires_at <= CURRENT_TIMESTAMP`); err != nil {
 		return err
 	}
-	var sentAt time.Time
-	err := DB.QueryRow(`SELECT verify_sent_at FROM pending_signups WHERE email = ?`, email).Scan(&sentAt)
-	if err == nil && time.Since(sentAt) < minInterval {
-		return fmt.Errorf("a verification email was sent recently; please wait before requesting another")
-	}
-	if err != nil && err != sql.ErrNoRows {
+	now := time.Now().UTC()
+	result, err := DB.Exec(`INSERT INTO pending_signups
+			(email, name, password_hash, verify_token, verify_sent_at, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(email) DO UPDATE SET
+			name = excluded.name,
+			password_hash = excluded.password_hash,
+			verify_token = excluded.verify_token,
+			verify_sent_at = excluded.verify_sent_at,
+			expires_at = excluded.expires_at
+		WHERE pending_signups.verify_sent_at <= ?`,
+		email, name, passwordHash, token, now, now.Add(ttl), now.Add(-minInterval))
+	if err != nil {
 		return err
 	}
-	expiresAt := time.Now().UTC().Add(ttl)
-	_, err = DB.Exec(`INSERT INTO pending_signups (email, name, password_hash, verify_token, verify_sent_at, expires_at)
-		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-		ON CONFLICT(email) DO UPDATE SET name = excluded.name, password_hash = excluded.password_hash,
-			verify_token = excluded.verify_token, verify_sent_at = CURRENT_TIMESTAMP, expires_at = excluded.expires_at`,
-		email, name, passwordHash, token, expiresAt)
-	return err
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed == 0 {
+		return ErrVerificationRecentlySent
+	}
+	return nil
 }
 
 // VerifyUserByToken creates the real account only after its mailbox has been
