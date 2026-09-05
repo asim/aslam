@@ -10,7 +10,7 @@ func TestContentBlockPreservesThinkingFields(t *testing.T) {
 		"content": [
 			{
 				"type": "thinking",
-				"thinking": "reasoning text",
+				"thinking": "",
 				"signature": "signed-value"
 			},
 			{
@@ -42,8 +42,12 @@ func TestContentBlockPreservesThinkingFields(t *testing.T) {
 		t.Fatalf("unmarshal encoded content: %v", err)
 	}
 
-	if got := blocks[0]["thinking"]; got != "reasoning text" {
-		t.Errorf("thinking = %v, want reasoning text", got)
+	got, ok := blocks[0]["thinking"]
+	if !ok {
+		t.Fatal("empty thinking field was omitted")
+	}
+	if got != "" {
+		t.Errorf("thinking = %v, want empty string", got)
 	}
 	if got := blocks[0]["signature"]; got != "signed-value" {
 		t.Errorf("signature = %v, want signed-value", got)

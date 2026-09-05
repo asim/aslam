@@ -3026,15 +3026,18 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 				})
 				currentToolName = ""
 			case "thinking":
+				thinking := currentThinking.String()
+				signature := currentSignature.String()
 				contentBlocks = append(contentBlocks, contentBlock{
 					Type:      "thinking",
-					Thinking:  currentThinking.String(),
-					Signature: currentSignature.String(),
+					Thinking:  &thinking,
+					Signature: &signature,
 				})
 			case "redacted_thinking":
+				data := currentRedactedData
 				contentBlocks = append(contentBlocks, contentBlock{
 					Type: "redacted_thinking",
-					Data: currentRedactedData,
+					Data: &data,
 				})
 			case "text":
 				if fullText.Len() > 0 {
@@ -3066,9 +3069,9 @@ type anthropicResponse struct {
 type contentBlock struct {
 	Type      string                 `json:"type"`
 	Text      string                 `json:"text,omitempty"`
-	Thinking  string                 `json:"thinking,omitempty"`
-	Signature string                 `json:"signature,omitempty"`
-	Data      string                 `json:"data,omitempty"`
+	Thinking  *string                `json:"thinking,omitempty"`
+	Signature *string                `json:"signature,omitempty"`
+	Data      *string                `json:"data,omitempty"`
 	ID        string                 `json:"id,omitempty"`
 	Name      string                 `json:"name,omitempty"`
 	Input     map[string]interface{} `json:"input,omitempty"`
