@@ -2,6 +2,7 @@ package db
 
 import (
 	"crypto/rand"
+	"errors"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
@@ -324,6 +325,34 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 1`)
 	DB.Exec(`ALTER TABLE users ADD COLUMN verify_token TEXT`)
 	DB.Exec(`ALTER TABLE users ADD COLUMN verify_sent_at DATETIME`)
+
+	// Pending password registrations are kept out of users until the address is
+	// proven. This keeps bot submissions out of the account list.
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS pending_signups (
+			email TEXT PRIMARY KEY,
+			name TEXT,
+			password_hash TEXT NOT NULL,
+			verify_token TEXT UNIQUE NOT NULL,
+			verify_sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at DATETIME NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_signups_token ON pending_signups(verify_token)`)
+	DB.Exec(`DELETE FROM pending_signups WHERE expires_at <= CURRENT_TIMESTAMP`)
+
+	// Preserve still-valid links issued by the previous implementation, then
+	// remove every unverified signup from the real users table.
+	DB.Exec(`INSERT OR IGNORE INTO pending_signups (email, name, password_hash, verify_token, verify_sent_at, expires_at)
+		SELECT email, COALESCE(name, ''), password_hash, verify_token,
+			COALESCE(verify_sent_at, created_at), datetime(COALESCE(verify_sent_at, created_at), '+24 hours')
+		FROM users
+		WHERE verified = 0 AND added_by = 'signup' AND password_hash IS NOT NULL
+			AND verify_token IS NOT NULL AND datetime(COALESCE(verify_sent_at, created_at), '+24 hours') > CURRENT_TIMESTAMP`)
+	DB.Exec(`DELETE FROM users WHERE verified = 0 AND added_by = 'signup'`)
 
 	// Migrate data from legacy admins table if it exists
 	DB.Exec(`INSERT OR IGNORE INTO users SELECT * FROM admins`)
@@ -1802,25 +1831,78 @@ func IsVerified(email string) bool {
 	return err == nil && verified == 1
 }
 
-// CreateUnverifiedUser creates a password account that cannot be used until the
-// address is confirmed via token.
-func CreateUnverifiedUser(email, name, passwordHash, role, token string) error {
-	_, err := DB.Exec(`INSERT INTO users (email, name, password_hash, role, added_by, verified, verify_token, verify_sent_at)
-		VALUES (?, ?, ?, ?, 'signup', 0, ?, CURRENT_TIMESTAMP)`,
-		email, name, passwordHash, role, token)
-	return err
+var ErrVerificationRecentlySent = errors.New("verification email sent recently")
+
+// SavePendingSignup atomically creates or refreshes a registration. The
+// conflict UPDATE is conditional, so simultaneous requests cannot all pass the
+// resend window and replace one another's token.
+func SavePendingSignup(email, name, passwordHash, token string, minInterval, ttl time.Duration) error {
+	if _, err := DB.Exec(`DELETE FROM pending_signups WHERE expires_at <= CURRENT_TIMESTAMP`); err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	result, err := DB.Exec(`INSERT INTO pending_signups
+			(email, name, password_hash, verify_token, verify_sent_at, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(email) DO UPDATE SET
+			name = excluded.name,
+			password_hash = excluded.password_hash,
+			verify_token = excluded.verify_token,
+			verify_sent_at = excluded.verify_sent_at,
+			expires_at = excluded.expires_at
+		WHERE pending_signups.verify_sent_at <= ?`,
+		email, name, passwordHash, token, now, now.Add(ttl), now.Add(-minInterval))
+	if err != nil {
+		return err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed == 0 {
+		return ErrVerificationRecentlySent
+	}
+	return nil
 }
 
-// VerifyUserByToken marks the account holding this token as verified and
-// consumes the token. It returns the account's email.
+// VerifyUserByToken creates the real account only after its mailbox has been
+// proven. The legacy users-table path keeps already-issued links working.
 func VerifyUserByToken(token string) (string, error) {
 	if strings.TrimSpace(token) == "" {
 		return "", fmt.Errorf("empty token")
 	}
-	var email, name string
-	err := DB.QueryRow(`SELECT email, COALESCE(name, '') FROM users WHERE verify_token = ?`, token).Scan(&email, &name)
+
+	tx, err := DB.Begin()
 	if err != nil {
-		return "", fmt.Errorf("invalid or already used token")
+		return "", err
+	}
+	var email, name, passwordHash string
+	err = tx.QueryRow(`SELECT email, COALESCE(name, ''), password_hash FROM pending_signups
+		WHERE verify_token = ? AND expires_at > CURRENT_TIMESTAMP`, token).Scan(&email, &name, &passwordHash)
+	if err == nil {
+		if _, err = tx.Exec(`INSERT INTO users (email, name, password_hash, role, added_by, verified)
+			VALUES (?, ?, ?, 'user', 'signup', 1)`, email, name, passwordHash); err != nil {
+			tx.Rollback()
+			return "", err
+		}
+		if _, err = tx.Exec(`DELETE FROM pending_signups WHERE email = ?`, email); err != nil {
+			tx.Rollback()
+			return "", err
+		}
+		if err = tx.Commit(); err != nil {
+			return "", err
+		}
+		return email, nil
+	}
+	tx.Rollback()
+	if err != sql.ErrNoRows {
+		return "", err
+	}
+
+	// Compatibility for verification links created before pending_signups.
+	err = DB.QueryRow(`SELECT email FROM users WHERE verify_token = ?`, token).Scan(&email)
+	if err != nil {
+		return "", fmt.Errorf("invalid, expired, or already used token")
 	}
 	if _, err := DB.Exec(`UPDATE users SET verified = 1, verify_token = NULL WHERE verify_token = ?`, token); err != nil {
 		return "", err
@@ -1828,23 +1910,8 @@ func VerifyUserByToken(token string) (string, error) {
 	return email, nil
 }
 
-// SetVerifyToken issues a fresh token for an unverified account and records
-// when it was sent. It refuses if a token was sent within minInterval, so the
-// signup and resend paths cannot be used to flood someone's inbox.
-func SetVerifyToken(email, token string, minInterval time.Duration) error {
-	var sentAt sql.NullTime
-	var verified int
-	err := DB.QueryRow(`SELECT verified, verify_sent_at FROM users WHERE email = ?`, email).Scan(&verified, &sentAt)
-	if err != nil {
-		return fmt.Errorf("no such account")
-	}
-	if verified == 1 {
-		return fmt.Errorf("already verified")
-	}
-	if sentAt.Valid && time.Since(sentAt.Time) < minInterval {
-		return fmt.Errorf("a verification email was sent recently; please wait before requesting another")
-	}
-	_, err = DB.Exec(`UPDATE users SET verify_token = ?, verify_sent_at = CURRENT_TIMESTAMP WHERE email = ?`, token, email)
+func DeletePendingSignup(email string) error {
+	_, err := DB.Exec(`DELETE FROM pending_signups WHERE email = ?`, email)
 	return err
 }
 
