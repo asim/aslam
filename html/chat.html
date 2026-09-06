@@ -8,10 +8,15 @@
     {{template "style"}}
     <style>
         html { height: 100dvh; }
-        body { height: 100dvh; overflow-y: auto; }
+        body { height: 100dvh; overflow: hidden; }
         .app { display: flex; flex-direction: column; height: 100dvh; padding-top: 0; }
         .app-header { position: sticky; top: 0; flex: 0 0 50px; width: 100%; max-width: none; margin: 0; }
-        .app-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        .app-content { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        .chat-toolbar { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid #ddd; background: #fff; }
+        .chat-toolbar-inner { display: flex; align-items: center; gap: 12px; }
+        #chat-title { flex: 1; min-width: 0; margin: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .chat-controls { display: flex; flex: 0 0 auto; gap: 6px; }
+        .chat-controls button { height: 28px; line-height: 16px; }
         .app-footer { position: sticky; bottom: 0; flex: 0 0 auto; background: #fff; }
         .context-card {
             border: 1px solid #e5e5e5;
@@ -42,8 +47,9 @@
             overflow-y: auto;
         }
         .typing { opacity: 0.6; }
-        .message-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-        .message-actions button { font: inherit; font-size: 12px; padding: 6px 10px; min-height: 36px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; cursor: pointer; }
+        .message-actions { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .message-actions button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 28px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #666; cursor: pointer; }
+        .message-actions button svg { width: 16px; height: 16px; }
         .message-actions button:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
         .message-actions button:disabled { opacity: 0.6; cursor: wait; }
         .message-action-status { font-size: 12px; color: #555; }
@@ -83,10 +89,11 @@
     <div class="app">
         {{template "header" .}}
         
-        <main class="app-content" id="messages">
-            <h2 id="chat-title">{{.Conversation.Title}}</h2>
+        <div class="chat-toolbar">
+          <div class="chat-toolbar-inner">
+            <h2 id="chat-title" title="{{.Conversation.Title}}">{{.Conversation.Title}}</h2>
             {{if .IsOwner}}
-            <div style="margin: -8px 0 12px 0; display:flex; gap:6px;">
+            <div class="chat-controls">
                 <button onclick="togglePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Conversation.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Conversation.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
                     {{if .Conversation.Public}}Public{{else}}Private{{end}}
                 </button>
@@ -114,7 +121,9 @@
             }
             </script>
             {{end}}
-
+          </div>
+        </div>
+        <main class="app-content" id="messages">
             {{if .Messages}}
             {{range .Messages}}
             {{if eq .Role "system"}}
@@ -197,6 +206,7 @@
         }
 
         function addMessageActions(message) {
+            if (!message.classList.contains('assistant')) return;
             if (message.querySelector('.message-actions')) return;
             const content = message.querySelector('.message-content');
             if (!content || !content.textContent.trim()) return;
@@ -208,11 +218,24 @@
             for (const action of ['Copy', 'Share']) {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.textContent = action;
-                button.setAttribute('aria-label', action + ' message text');
+                const label = action === 'Copy' ? 'Copy answer' : 'Share question and answer';
+                button.title = label;
+                button.setAttribute('aria-label', label);
+                button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    (action === 'Copy'
+                        ? '<rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v13h16V7a2 2 0 0 0-2-2h-2"/>'
+                        : '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/>') + '</svg>';
                 button.addEventListener('click', async () => {
                     // Read only the rendered message, excluding labels and controls.
-                    const text = content.innerText.trim();
+                    let text = content.innerText.trim();
+                    if (action === 'Share') {
+                        let question = message.previousElementSibling;
+                        while (question && !question.classList.contains('user')) {
+                            question = question.previousElementSibling;
+                        }
+                        const questionText = question?.querySelector('.message-content')?.innerText.trim();
+                        if (questionText) text = 'Question: ' + questionText + '\n\nAnswer: ' + text;
+                    }
                     status.textContent = '';
                     button.disabled = true;
                     try {
@@ -282,6 +305,7 @@
             const titleEl = document.getElementById('chat-title');
             if (titleEl.textContent === 'New conversation') {
                 titleEl.textContent = short;
+                titleEl.title = title;
             }
             document.title = short + ' - Aslam';
         }
