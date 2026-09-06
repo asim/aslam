@@ -42,6 +42,11 @@
             overflow-y: auto;
         }
         .typing { opacity: 0.6; }
+        .message-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .message-actions button { font: inherit; font-size: 12px; padding: 6px 10px; min-height: 36px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; cursor: pointer; }
+        .message-actions button:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
+        .message-actions button:disabled { opacity: 0.6; cursor: wait; }
+        .message-action-status { font-size: 12px; color: #555; }
         .typing .message-content::after {
             content: '...';
             animation: dots 1.5s infinite;
@@ -169,6 +174,72 @@
         updateTimeAgo();
         setInterval(updateTimeAgo, 60000);
 
+        async function copyMessageText(text) {
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+            } catch (_) { /* Try the fallback if clipboard access is denied. */ }
+            const active = document.activeElement;
+            const field = document.createElement('textarea');
+            field.value = text;
+            field.setAttribute('readonly', '');
+            field.style.cssText = 'position:fixed;left:-9999px;top:0;';
+            document.body.appendChild(field);
+            try {
+                field.select();
+                if (!document.execCommand('copy')) throw new Error('Clipboard unavailable');
+            } finally {
+                field.remove();
+                if (active) active.focus({preventScroll: true});
+            }
+        }
+
+        function addMessageActions(message) {
+            if (message.querySelector('.message-actions')) return;
+            const content = message.querySelector('.message-content');
+            if (!content || !content.textContent.trim()) return;
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            const status = document.createElement('span');
+            status.className = 'message-action-status';
+            status.setAttribute('role', 'status');
+            for (const action of ['Copy', 'Share']) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = action;
+                button.setAttribute('aria-label', action + ' message text');
+                button.addEventListener('click', async () => {
+                    // Read only the rendered message, excluding labels and controls.
+                    const text = content.innerText.trim();
+                    status.textContent = '';
+                    button.disabled = true;
+                    try {
+                        if (action === 'Share' && typeof navigator.share === 'function') {
+                            try {
+                                await navigator.share({text});
+                                status.textContent = 'Shared';
+                                return;
+                            } catch (err) {
+                                if (err.name === 'AbortError') return;
+                                // Sharing can be unsupported or blocked on this device.
+                            }
+                        }
+                        await copyMessageText(text);
+                        status.textContent = action === 'Share' ? 'Text copied — paste it to share' : 'Copied';
+                    } catch (_) {
+                        status.textContent = 'Could not copy. Select the message text to copy it.';
+                    } finally {
+                        button.disabled = false;
+                    }
+                });
+                actions.appendChild(button);
+            }
+            actions.appendChild(status);
+            message.appendChild(actions);
+        }
+
         function addMessage(role, content, isTyping = false) {
             const empty = document.getElementById('empty-state');
             if (empty) empty.remove();
@@ -187,6 +258,7 @@
                 md.innerHTML = marked.parse(md.textContent);
                 md.dataset.rendered = 'true';
             }
+            if (!isTyping) addMessageActions(div);
             return div;
         }
 
@@ -299,6 +371,7 @@
                 statusEl.remove();
                 if (started) {
                     render();
+                    addMessageActions(responseDiv);
                 } else {
                     responseDiv.remove();
                     location.reload();
@@ -322,6 +395,7 @@
                                 contentEl.textContent = d.content;
                             }
                             msgInput.disabled = false;
+                            addMessageActions(responseDiv);
                             sendBtn.disabled = false;
                             msgInput.focus();
                         } else if (attempts >= 60) {
@@ -425,6 +499,7 @@
             });
         }
         renderMarkdown();
+        messages.querySelectorAll('.message').forEach(addMessageActions);
     </script>
 </body>
 </html>
