@@ -9,15 +9,17 @@
     <style>
         html { height: 100dvh; }
         body { height: 100dvh; overflow: hidden; }
-        .app { display: flex; flex-direction: column; height: 100dvh; padding-top: 0; }
-        .app-header { position: sticky; top: 0; flex: 0 0 50px; width: 100%; max-width: none; margin: 0; }
-        .app-content { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+        /* Reserve separate rows for navigation, messages and the growing composer. */
+        .app { display: grid; grid-template-rows: 50px auto minmax(0, 1fr) auto; height: 100dvh; padding-top: 0; overflow: hidden; }
+        .app-header { position: relative; top: auto; width: 100%; max-width: none; margin: 0; }
+        .app-content { min-height: 0; min-width: 0; overflow-y: auto; padding-bottom: 24px; scroll-padding-bottom: 24px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
         .chat-toolbar { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid #ddd; background: #fff; }
         .chat-toolbar-inner { display: flex; align-items: center; gap: 12px; }
         #chat-title { flex: 1; min-width: 0; margin: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .chat-controls { display: flex; flex: 0 0 auto; gap: 6px; }
         .chat-controls button { height: 28px; line-height: 16px; }
-        .app-footer { position: sticky; bottom: 0; flex: 0 0 auto; background: #fff; }
+        .app-footer { position: static; min-width: 0; background: #fff; }
+        .app-footer textarea { min-width: 0; font-size: 16px; }
         .context-card {
             border: 1px solid #e5e5e5;
             background: #fafafa;
