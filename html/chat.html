@@ -7,10 +7,9 @@
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
     <style>
-        html { height: 100dvh; }
-        body { height: 100dvh; overflow: hidden; }
+        html, body { height: 100%; min-height: 0; overflow: hidden; }
         /* Reserve separate rows for navigation, messages and the growing composer. */
-        .app { display: grid; grid-template-rows: 50px auto minmax(0, 1fr) auto; height: 100dvh; padding-top: 0; overflow: hidden; }
+        .app { position: fixed; top: var(--chat-top, 0px); left: 0; right: 0; display: grid; grid-template-rows: 50px auto minmax(0, 1fr) auto; height: var(--chat-height, 100%); min-height: 0; padding-top: 0; overflow: hidden; }
         .app-header { position: relative; top: auto; width: 100%; max-width: none; margin: 0; }
         .app-content { min-height: 0; min-width: 0; overflow-y: auto; padding-bottom: 24px; scroll-padding-bottom: 24px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
         .chat-toolbar { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid #ddd; background: #fff; }
@@ -162,6 +161,27 @@
         const sendBtn = document.getElementById('send-btn');
         const convId = form.querySelector('input[name="conversation_id"]').value;
         const userName = '{{.UserName}}';
+
+        // Standalone browsers and on-screen keyboards can have a visible
+        // viewport smaller than the CSS layout viewport.
+        function fitChatViewport() {
+            const viewport = window.visualViewport;
+            // Leave pinch zoom under browser control.
+            if (viewport && viewport.scale !== 1) return;
+            const pinned = isNearBottom();
+            document.documentElement.style.setProperty('--chat-height',
+                (viewport ? viewport.height : window.innerHeight) + 'px');
+            document.documentElement.style.setProperty('--chat-top',
+                (viewport ? viewport.offsetTop : 0) + 'px');
+            if (pinned) scrollToBottom();
+        }
+        fitChatViewport();
+        window.addEventListener('resize', fitChatViewport);
+        window.addEventListener('pageshow', fitChatViewport);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', fitChatViewport);
+            window.visualViewport.addEventListener('scroll', fitChatViewport);
+        }
         
         function timeAgo(date) {
             const now = new Date();
