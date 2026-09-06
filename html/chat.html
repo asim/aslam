@@ -237,7 +237,9 @@
                 actions.appendChild(button);
             }
             actions.appendChild(status);
+            const pinned = isNearBottom();
             message.appendChild(actions);
+            if (pinned) scrollToBottom();
         }
 
         function addMessage(role, content, isTyping = false) {
@@ -332,13 +334,14 @@
 
                 function render() {
                     renderPending = false;
+                    const pinned = isNearBottom();
                     const displayText = fullText.replace(/\n?!tool:\w+\n?/g, '').trim();
                     if (typeof marked !== 'undefined') {
                         contentEl.innerHTML = marked.parse(displayText);
                     } else {
                         contentEl.textContent = displayText;
                     }
-                    if (isNearBottom()) scrollToBottom();
+                    if (pinned) scrollToBottom();
                 }
 
                 while (true) {
@@ -386,6 +389,7 @@
                         const r = await fetch('/api/chat/latest?id=' + convId);
                         const d = await r.json();
                         if (d.role === 'assistant') {
+                            const pinned = isNearBottom();
                             clearInterval(recover);
                             statusEl.remove();
                             responseDiv.classList.remove('typing');
@@ -396,6 +400,7 @@
                             }
                             msgInput.disabled = false;
                             addMessageActions(responseDiv);
+                            if (pinned) scrollToBottom();
                             sendBtn.disabled = false;
                             msgInput.focus();
                         } else if (attempts >= 60) {
@@ -470,9 +475,6 @@
             micBtn.style.display = 'none';
         }
 
-        // Scroll to bottom on load
-        scrollToBottom();
-
         // If arriving from the home page "Ask Aslam" box, send the pending question.
         try {
             const pendingKey = 'aslam_pending_q_' + convId;
@@ -500,6 +502,8 @@
         }
         renderMarkdown();
         messages.querySelectorAll('.message').forEach(addMessageActions);
+        // Position the initial view after markdown and action rows affect layout.
+        scrollToBottom();
     </script>
 </body>
 </html>
