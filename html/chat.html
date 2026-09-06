@@ -146,7 +146,7 @@
         <footer class="app-footer">
             <form id="chat-form">
                 <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
-                <textarea name="message" id="message-input" rows="1" placeholder="Type your message..." autofocus></textarea>
+                <textarea name="message" id="message-input" rows="1" placeholder="Type your message..."></textarea>
                 <button type="button" id="mic-btn" title="Voice input">🎤</button>
                 <button type="submit" id="send-btn">Send</button>
             </form>
@@ -426,7 +426,6 @@
                             addMessageActions(responseDiv);
                             if (pinned) scrollToBottom();
                             sendBtn.disabled = false;
-                            msgInput.focus();
                         } else if (attempts >= 60) {
                             clearInterval(recover);
                             statusEl.remove();
@@ -440,7 +439,6 @@
 
             msgInput.disabled = false;
             sendBtn.disabled = false;
-            msgInput.focus();
         });
 
         // Auto-grow textarea
@@ -526,8 +524,18 @@
         }
         renderMarkdown();
         messages.querySelectorAll('.message').forEach(addMessageActions);
-        // Position the initial view after markdown and action rows affect layout.
-        scrollToBottom();
+        // Read an existing conversation without opening the mobile keyboard.
+        // Position within the message pane so the fixed toolbar stays in place.
+        const answers = messages.querySelectorAll('.message.assistant');
+        const latestAnswer = answers[answers.length - 1];
+        const existingMessages = messages.querySelectorAll('.message');
+        const landingMessage = latestAnswer || existingMessages[existingMessages.length - 1];
+        if (landingMessage) {
+            messages.scrollTop += landingMessage.getBoundingClientRect().top -
+                messages.getBoundingClientRect().top - 16;
+        } else {
+            msgInput.focus({preventScroll: true});
+        }
     </script>
 </body>
 </html>
