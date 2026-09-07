@@ -34,6 +34,51 @@ Keep the variables available for later runs so the tool can refresh access.
 /tmp/companytax init --config /tmp/micro-companytax.json
 ```
 
+## Terminal review (recommended)
+
+After login, run:
+
+```sh
+/tmp/companytax review --config /tmp/micro-companytax.json --data /tmp/micro-xero
+/tmp/companytax generate --data /tmp/micro-xero --out /tmp/micro-return
+```
+
+`review` creates the company config if it does not exist. On the first run it
+asks for the missing trading start and lets you select an authorised Xero
+organisation, then downloads the reports. If `--data` already exists, it reviews
+those saved reports offline; no Xero credentials are needed to resume.
+
+The review asks for the UTR, confirms dates/reconciliation and tax scope, asks
+about associated companies and any special cases, and records director/approval
+details. It displays each period's P&L, asks which profit row to use and suggests
+add-backs for positive depreciation or booked-tax rows. Suggestions are never
+applied without confirmation. Other adjustments are entered with an amount and
+reason; the tool does not infer capital-allowance eligibility from account names.
+
+Each answer is saved immediately to `DATA/review.json` with owner-only
+permissions and atomic replacement. Ctrl-C or end-of-input leaves completed
+answers available for the next run. Existing answers are not asked again. Use
+`--edit` to revisit them, or `--answers FILE` to keep a separate review. Conditional
+answers (such as old director-loan details after changing the answer to no) are
+excluded from generation. A lock prevents concurrent review/generation using
+the same answers file.
+
+The saved answers include a SHA-256 fingerprint of the downloaded evidence.
+Changing any source report, company configuration or organisation data requires
+a new review. To refresh from Xero, choose a new `--data` directory. Generation
+validates all answers again and runs offline against that exact snapshot; it
+refuses incomplete reviews, unsupported tax cases or an existing output path.
+
+`generate` writes `return-review.html`, `return-data.json`, `report.html`,
+`reviewed-config.json` and `computation.json`. These contain the saved facts,
+reviewed computation and estimated balance after tax already paid. **The terminal
+review workflow is implemented; a completed CT600/statutory accounts/iXBRL
+generator is not yet implemented.** `return-data.json` explicitly records
+`filing_ready: false` and the outstanding steps. Do not upload it as a return.
+
+The commands below remain available for separately downloading and preparing
+reports without an interactive review.
+
 Login prints a URL to open on the **same computer** running the command; its
 callback listener is bound to IPv4 loopback only. Login times out after ten
 minutes. Tokens are stored with owner-only permissions under your OS user
