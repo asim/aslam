@@ -336,7 +336,6 @@ func prepare(ctx context.Context, x *xero, c Config, out string) error {
 		q := url.Values{"date": {c.To}, "paymentsOnly": {"false"}}
 		if name == "BalanceSheet" {
 			q.Set("standardLayout", "true")
-			q.Set("periods", "0")
 		}
 		if _, err = fetch(name, name, q); err != nil {
 			return err
