@@ -28,8 +28,11 @@ func run() error {
 	state := fs.String("state", filepath.Join(home, "companytax"), "private directory for Xero tokens")
 	config := fs.String("config", "companytax.json", "company and tax review configuration")
 	out := fs.String("out", "companytax-output", "new output directory (must not exist)")
+	data := fs.String("data", "companytax-data", "Xero snapshot directory for review/generate")
+	answers := fs.String("answers", "", "saved review answers (default DATA/review.json)")
+	edit := fs.Bool("edit", false, "revisit saved review answers")
 	if len(os.Args) < 2 {
-		return errors.New("usage: companytax init|login|tenants|prepare [--config FILE] [--out DIR] [--state DIR]")
+		return errors.New("usage: companytax init|login|tenants|prepare|review|generate [--config FILE] [--data DIR] [--out DIR] [--state DIR]")
 	}
 	if err := fs.Parse(os.Args[2:]); err != nil {
 		return err
@@ -40,9 +43,13 @@ func run() error {
 	switch os.Args[1] {
 	case "init":
 		return writeNew(*config, []byte(exampleConfig))
+	case "review":
+		return reviewCommand(*state, *config, *data, *answers, *edit, os.Stdin, os.Stdout)
+	case "generate":
+		return generateCommand(*data, *answers, *out)
 	case "login", "tenants", "prepare":
 	default:
-		return errors.New("unknown command; use init, login, tenants or prepare")
+		return errors.New("unknown command; use init, login, tenants, prepare, review or generate")
 	}
 	if err := os.MkdirAll(*state, 0700); err != nil {
 		return err
