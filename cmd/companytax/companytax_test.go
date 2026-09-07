@@ -136,6 +136,11 @@ func TestRefreshAndPrepare(t *testing.T) {
 			w.Write([]byte(`{"Accounts":[]}`))
 		default:
 			calls++
+			if strings.HasSuffix(r.URL.Path, "BalanceSheet") && r.URL.Query().Has("periods") {
+				t.Error("balance sheet must omit comparative periods")
+				w.WriteHeader(400)
+				return
+			}
 			if r.URL.Query().Get("paymentsOnly") != "false" {
 				t.Error("not accrual")
 			}
