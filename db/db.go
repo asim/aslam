@@ -577,6 +577,11 @@ func Migrate() error {
 		DELETE FROM ghazali_fts WHERE docid = old.id;
 	END`)
 
+	// Repair the imported OCR typo without changing section IDs or slugs.
+	if err := correctGhazaliVerseTypo(); err != nil {
+		return fmt.Errorf("correct Ghazali text: %w", err)
+	}
+
 	// Daily content — cached daily reminder (verse, hadith, name of Allah)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS daily_content (
@@ -2422,10 +2427,36 @@ func ClearGhazali() {
 	DB.Exec(`DELETE FROM ghazali_fts`)
 }
 
+// correctGhazaliVerseTypo repairs existing imports and their search index atomically.
+func correctGhazaliVerseTypo() error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	result, err := tx.Exec(`UPDATE ghazali SET content = replace(content, 'veTse', 'verse') WHERE instr(content, 'veTse') > 0`)
+	if err != nil {
+		return err
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if changed > 0 {
+		if _, err := tx.Exec(`INSERT INTO ghazali_fts(ghazali_fts) VALUES ('rebuild')`); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func InsertGhazali(volume int, volumeTitle, chapter string, part int, content string) error {
 	title := fmt.Sprintf("v%d %s p%d", volume, chapter, part)
 	canonical := fmt.Sprintf("%d|%s|%d|%s", volume, chapter, part, content)
 	slug := Slug(title, canonical)
+	// Keep the source-derived slug stable while correcting the stored text.
+	content = strings.ReplaceAll(content, "veTse", "verse")
 	_, err := DB.Exec(`INSERT INTO ghazali (slug, volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?, ?)`,
 		slug, volume, volumeTitle, chapter, part, content)
 	return err
