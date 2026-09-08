@@ -2434,16 +2434,42 @@ func correctGhazaliVerseTypo() error {
 		return err
 	}
 	defer tx.Rollback()
-
-	result, err := tx.Exec(`UPDATE ghazali SET content = replace(content, 'veTse', 'verse') WHERE instr(content, 'veTse') > 0`)
+	rows, err := tx.Query(`SELECT id, volume, chapter, part, content FROM ghazali
+		WHERE instr(content, 'veTse') > 0 OR
+		(volume = 1 AND chapter = 'Chapter I: Acquisition of Knowledge' AND part IN (1, 2))`)
 	if err != nil {
 		return err
 	}
-	changed, err := result.RowsAffected()
-	if err != nil {
+	type correction struct {
+		id int64
+		content string
+	}
+	var changes []correction
+	for rows.Next() {
+		var id int64
+		var volume, part int
+		var chapter, content string
+		if err := rows.Scan(&id, &volume, &chapter, &part, &content); err != nil {
+			rows.Close()
+			return err
+		}
+		if corrected := correctGhazaliText(volume, chapter, part, content); corrected != content {
+			changes = append(changes, correction{id, corrected})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
 		return err
 	}
-	if changed > 0 {
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, change := range changes {
+		if _, err := tx.Exec(`UPDATE ghazali SET content = ? WHERE id = ?`, change.content, change.id); err != nil {
+			return err
+		}
+	}
+	if len(changes) > 0 {
 		if _, err := tx.Exec(`INSERT INTO ghazali_fts(ghazali_fts) VALUES ('rebuild')`); err != nil {
 			return err
 		}
@@ -2451,12 +2477,55 @@ func correctGhazaliVerseTypo() error {
 	return tx.Commit()
 }
 
+// Apply only reviewed corrections; retain source-derived slugs and translation wording.
+func correctGhazaliText(volume int, chapter string, part int, content string) string {
+	content = strings.ReplaceAll(content, "veTse", "verse")
+	if volume != 1 || chapter != "Chapter I: Acquisition of Knowledge" {
+		return content
+	}
+	if part == 2 {
+		// The preceding printed page ended with "He".
+		if strings.HasPrefix(content, "said: The learned are the heirs") {
+			content = "He " + content
+		}
+		return content
+	}
+	if part != 1 {
+		return content
+	}
+	// Unwrap scanned lines while preserving paragraphs.
+	paragraphs := strings.Split(content, "\n\n")
+	for i, paragraph := range paragraphs {
+		paragraphs[i] = strings.Join(strings.Fields(paragraph), " ")
+	}
+	content = strings.Join(paragraphs, "\n\n")
+	content = strings.NewReplacer(
+		"ofference", "difference",
+		"would have know it", "would have known it",
+		"are much high", "are very high",
+		"58 : 12", "58:11",
+		"29 : 42", "29:43",
+		"4 : 93", "4:83",
+		"7 : 25", "7:26",
+		"-7:6", "- 7:7",
+		"29 : 48", "29:49",
+		"55 ; 2", "55:3–4",
+		" : ", ":",
+		" ? ", "? ",
+	).Replace(content)
+	content = strings.TrimSpace(strings.TrimSuffix(content, "Vol-I KNOWLEDGE 19"))
+	content = strings.TrimSuffix(content, " He")
+	content = strings.Replace(content, "PROOF OF THE QURAN: ", "PROOF OF THE QURAN\n\n", 1)
+	content = strings.Replace(content, "HADIS: ", "HADIS\n\n", 1)
+	return content
+}
+
 func InsertGhazali(volume int, volumeTitle, chapter string, part int, content string) error {
 	title := fmt.Sprintf("v%d %s p%d", volume, chapter, part)
 	canonical := fmt.Sprintf("%d|%s|%d|%s", volume, chapter, part, content)
 	slug := Slug(title, canonical)
 	// Keep the source-derived slug stable while correcting the stored text.
-	content = strings.ReplaceAll(content, "veTse", "verse")
+	content = correctGhazaliText(volume, chapter, part, content)
 	_, err := DB.Exec(`INSERT INTO ghazali (slug, volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?, ?)`,
 		slug, volume, volumeTitle, chapter, part, content)
 	return err
