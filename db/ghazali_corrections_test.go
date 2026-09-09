@@ -48,3 +48,33 @@ func TestReviewedGhazaliCorrections(t *testing.T) {
 	}
 	if changed != 2 { t.Fatalf("changed %d sections, want 2", changed) }
 }
+
+func TestGhazaliUnrelatedReferencesPreserved(t *testing.T) {
+	const chapter = "Chapter I: Acquisition of Knowledge"
+	// The same numbers may legitimately refer to other quotations in this part.
+	const unrelated = "Other quotation - 58 : 12. Other quotation - 29 : 42. Other quotation - 4 : 93. Other quotation - 7 : 25. Other quotation -7:6. Other quotation - 29 : 48. Other quotation - 55 ; 2."
+	const want = "Other quotation - 58:12. Other quotation - 29:42. Other quotation - 4:93. Other quotation - 7:25. Other quotation -7:6. Other quotation - 29:48. Other quotation - 55 ; 2."
+	if got := correctGhazaliText(1, chapter, 1, unrelated); got != want {
+		t.Fatalf("unrelated citation changed: %q", got)
+	}
+	cases := [][2]string{
+		{"God says: Those who are believers among you and the learned, God will increase their rank - 58 : 12.", "God says: Those who are believers among you and the learned, God will increase their rank - 58:11."},
+		{"God says: These parables We set forth for men and none understands them except the learned - 29 : 42.", "God says: These parables We set forth for men and none understands them except the learned - 29:43."},
+		{"God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have know it - 4 : 93.", "God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have known it - 4:83."},
+		{"God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7 : 25.", "God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7:26."},
+		{"God says: I shall recount their story with knowledge -7:6.", "God says: I shall recount their story with knowledge - 7:7."},
+		{"God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29 : 48.", "God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29:49."},
+		{"God says: He created man and taught him to speak - 55 ; 2.", "God says: He created man and taught him to speak - 55:3–4."},
+	}
+	for _, tc := range cases {
+		got := correctGhazaliText(1, chapter, 1, tc[0] + "\n\n" + unrelated)
+		if got != tc[1] + "\n\n" + want {
+			t.Errorf("quotation correction affected unrelated references: %q", got)
+		}
+		for _, scope := range [][2]int{{2, 1}, {1, 3}} {
+			if got := correctGhazaliText(scope[0], chapter, scope[1], tc[0]); got != tc[0] {
+				t.Error("reference changed outside reviewed section")
+			}
+		}
+	}
+}
