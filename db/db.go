@@ -2499,17 +2499,27 @@ func correctGhazaliText(volume int, chapter string, part int, content string) st
 		paragraphs[i] = strings.Join(strings.Fields(paragraph), " ")
 	}
 	content = strings.Join(paragraphs, "\n\n")
+	// Match the complete reviewed quotation and its citation, never a number alone.
+	content = strings.NewReplacer(
+		"God says: Those who are believers among you and the learned, God will increase their rank - 58 : 12.",
+		"God says: Those who are believers among you and the learned, God will increase their rank - 58:11.",
+		"God says: These parables We set forth for men and none understands them except the learned - 29 : 42.",
+		"God says: These parables We set forth for men and none understands them except the learned - 29:43.",
+		"God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have know it - 4 : 93.",
+		"God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have know it - 4:83.",
+		"God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7 : 25.",
+		"God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7:26.",
+		"God says: I shall recount their story with knowledge -7:6.",
+		"God says: I shall recount their story with knowledge - 7:7.",
+		"God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29 : 48.",
+		"God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29:49.",
+		"God says: He created man and taught him to speak - 55 ; 2.",
+		"God says: He created man and taught him to speak - 55:3–4.",
+	).Replace(content)
 	content = strings.NewReplacer(
 		"ofference", "difference",
 		"would have know it", "would have known it",
 		"are much high", "are very high",
-		"58 : 12", "58:11",
-		"29 : 42", "29:43",
-		"4 : 93", "4:83",
-		"7 : 25", "7:26",
-		"-7:6", "- 7:7",
-		"29 : 48", "29:49",
-		"55 ; 2", "55:3–4",
 		" : ", ":",
 		" ? ", "? ",
 	).Replace(content)
