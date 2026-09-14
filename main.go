@@ -139,6 +139,7 @@ func main() {
 			}
 			return s[:n] + "..."
 		},
+		"ghazaliParagraphs": ghazaliParagraphs,
 		"paragraphs": func(s string) template.HTML {
 			s = strings.ReplaceAll(s, "\r\n", "\n")
 			paras := strings.Split(s, "\n\n")
@@ -3740,4 +3741,24 @@ func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
 
 	db.DeleteNoteItem(id)
 	http.Redirect(w, r, "/notes?msg=Item+deleted", http.StatusSeeOther)
+}
+
+// ghazaliParagraphs preserves paragraph boundaries and escapes all source text.
+func ghazaliParagraphs(s string) template.HTML {
+	var out strings.Builder
+	for _, paragraph := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n\n") {
+		p := strings.Join(strings.Fields(paragraph), " ")
+		if p == "" {
+			continue
+		}
+		tag := "p"
+		switch p {
+		case "ACQUISITION OF KNOWLEDGE", "SECTION 1 - EXCELLENCE OF LEARNING":
+			tag = "h3"
+		case "PROOF OF THE QURAN", "HADIS":
+			tag = "h4"
+		}
+		out.WriteString("<" + tag + ">" + template.HTMLEscapeString(p) + "</" + tag + ">")
+	}
+	return template.HTML(out.String())
 }

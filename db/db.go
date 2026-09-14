@@ -577,6 +577,11 @@ func Migrate() error {
 		DELETE FROM ghazali_fts WHERE docid = old.id;
 	END`)
 
+	// Repair the imported OCR typo without changing section IDs or slugs.
+	if err := correctGhazaliVerseTypo(); err != nil {
+		return fmt.Errorf("correct Ghazali text: %w", err)
+	}
+
 	// Daily content — cached daily reminder (verse, hadith, name of Allah)
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS daily_content (
@@ -2422,10 +2427,115 @@ func ClearGhazali() {
 	DB.Exec(`DELETE FROM ghazali_fts`)
 }
 
+// correctGhazaliVerseTypo repairs existing imports and their search index atomically.
+func correctGhazaliVerseTypo() error {
+	tx, err := DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query(`SELECT id, volume, chapter, part, content FROM ghazali
+		WHERE instr(content, 'veTse') > 0 OR
+		(volume = 1 AND chapter = 'Chapter I: Acquisition of Knowledge' AND part IN (1, 2))`)
+	if err != nil {
+		return err
+	}
+	type correction struct {
+		id int64
+		content string
+	}
+	var changes []correction
+	for rows.Next() {
+		var id int64
+		var volume, part int
+		var chapter, content string
+		if err := rows.Scan(&id, &volume, &chapter, &part, &content); err != nil {
+			rows.Close()
+			return err
+		}
+		if corrected := correctGhazaliText(volume, chapter, part, content); corrected != content {
+			changes = append(changes, correction{id, corrected})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, change := range changes {
+		if _, err := tx.Exec(`UPDATE ghazali SET content = ? WHERE id = ?`, change.content, change.id); err != nil {
+			return err
+		}
+	}
+	if len(changes) > 0 {
+		if _, err := tx.Exec(`INSERT INTO ghazali_fts(ghazali_fts) VALUES ('rebuild')`); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// Apply only reviewed corrections; retain source-derived slugs and translation wording.
+func correctGhazaliText(volume int, chapter string, part int, content string) string {
+	content = strings.ReplaceAll(content, "veTse", "verse")
+	if volume != 1 || chapter != "Chapter I: Acquisition of Knowledge" {
+		return content
+	}
+	if part == 2 {
+		// The preceding printed page ended with "He".
+		if strings.HasPrefix(content, "said: The learned are the heirs") {
+			content = "He " + content
+		}
+		return content
+	}
+	if part != 1 {
+		return content
+	}
+	// Unwrap scanned lines while preserving paragraphs.
+	paragraphs := strings.Split(content, "\n\n")
+	for i, paragraph := range paragraphs {
+		paragraphs[i] = strings.Join(strings.Fields(paragraph), " ")
+	}
+	content = strings.Join(paragraphs, "\n\n")
+	// Match the complete reviewed quotation and its citation, never a number alone.
+	content = strings.NewReplacer(
+		"God says: Those who are believers among you and the learned, God will increase their rank - 58 : 12.",
+		"God says: Those who are believers among you and the learned, God will increase their rank - 58:11.",
+		"God says: These parables We set forth for men and none understands them except the learned - 29 : 42.",
+		"God says: These parables We set forth for men and none understands them except the learned - 29:43.",
+		"God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have know it - 4 : 93.",
+		"God says: If they had only referred it to the Apostle and to those charged with authority among them, those of them who would investigate it would have know it - 4:83.",
+		"God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7 : 25.",
+		"God says: O the children of Adam! I have sent down to you raiment to cover your shame and adornment to you, but the raiment of piety is best - 7:26.",
+		"God says: I shall recount their story with knowledge -7:6.",
+		"God says: I shall recount their story with knowledge - 7:7.",
+		"God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29 : 48.",
+		"God says: It is a clear sign in the hearts of those to whom knowledge has reached - 29:49.",
+		"God says: He created man and taught him to speak - 55 ; 2.",
+		"God says: He created man and taught him to speak - 55:3–4.",
+	).Replace(content)
+	content = strings.NewReplacer(
+		"ofference", "difference",
+		"would have know it", "would have known it",
+		"are much high", "are very high",
+		" : ", ":",
+		" ? ", "? ",
+	).Replace(content)
+	content = strings.TrimSpace(strings.TrimSuffix(content, "Vol-I KNOWLEDGE 19"))
+	content = strings.TrimSuffix(content, " He")
+	content = strings.Replace(content, "PROOF OF THE QURAN: ", "PROOF OF THE QURAN\n\n", 1)
+	content = strings.Replace(content, "HADIS: ", "HADIS\n\n", 1)
+	return content
+}
+
 func InsertGhazali(volume int, volumeTitle, chapter string, part int, content string) error {
 	title := fmt.Sprintf("v%d %s p%d", volume, chapter, part)
 	canonical := fmt.Sprintf("%d|%s|%d|%s", volume, chapter, part, content)
 	slug := Slug(title, canonical)
+	// Keep the source-derived slug stable while correcting the stored text.
+	content = correctGhazaliText(volume, chapter, part, content)
 	_, err := DB.Exec(`INSERT INTO ghazali (slug, volume, volume_title, chapter, part, content) VALUES (?, ?, ?, ?, ?, ?)`,
 		slug, volume, volumeTitle, chapter, part, content)
 	return err
