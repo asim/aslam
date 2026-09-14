@@ -2,11 +2,11 @@ package db
 
 import (
 	"crypto/rand"
-	"errors"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -104,7 +104,7 @@ func Init() error {
 
 	encodedKey := url.QueryEscape(dbKey)
 	dsn := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096", dbPath, encodedKey)
-	
+
 	var err error
 	DB, err = sql.Open("sqlite3", dsn)
 	if err != nil {
@@ -1182,6 +1182,10 @@ func SearchAll(query string, userID int64, isAdmin bool, includeUserContent bool
 		}
 	}
 
+	if seerahResults, err := SearchSeerah(query); err == nil {
+		results = append(results, seerahResults...)
+	}
+
 	// Ghazali results (Ihya Ulum al-Din — Revival of the Islamic Sciences)
 	if gResults, err := SearchGhazali(query); err == nil {
 		for _, g := range gResults {
@@ -2010,10 +2014,10 @@ func SetSettingBool(key string, value bool) error {
 // Status/stats functions
 
 type TaskStats struct {
-	Pending   int
+	Pending    int
 	Processing int
-	Completed int
-	Failed    int
+	Completed  int
+	Failed     int
 }
 
 func GetTaskStats() TaskStats {
@@ -2026,10 +2030,10 @@ func GetTaskStats() TaskStats {
 }
 
 type EmailStats struct {
-	Inbound   int
-	Outbound  int
-	Pending   int
-	Failed    int
+	Inbound  int
+	Outbound int
+	Pending  int
+	Failed   int
 }
 
 func GetEmailStats() EmailStats {
@@ -3622,14 +3626,14 @@ func GetProphet(slug string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"ID":        id,
-		"Slug":      slug,
-		"Name":      name,
-		"Arabic":    arabic.String,
-		"Title":     title.String,
-		"Summary":   summary.String,
+		"ID":         id,
+		"Slug":       slug,
+		"Name":       name,
+		"Arabic":     arabic.String,
+		"Title":      title.String,
+		"Summary":    summary.String,
 		"VersesJSON": versesJSON.String,
-		"ImageURL":  imageURL.String,
+		"ImageURL":   imageURL.String,
 	}, nil
 }
 
@@ -3672,8 +3676,8 @@ func GetAllReadingProgress(userID int64) []map[string]interface{} {
 		rows.Scan(&source, &path, &title)
 		results = append(results, map[string]interface{}{
 			"Source": source,
-			"Path":  path,
-			"Title": title,
+			"Path":   path,
+			"Title":  title,
 		})
 	}
 	return results

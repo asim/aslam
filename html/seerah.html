@@ -1,0 +1,29 @@
+{{define "seerah-nav"}}<nav class="seerah-nav" aria-label="Page navigation">
+{{if .Previous}}<a href="/seerah/page/{{.Previous}}">&larr; Previous page</a>{{else}}<span></span>{{end}}
+<a href="/seerah">Contents</a>
+{{if .Next}}<a href="/seerah/page/{{.Next}}">Next page &rarr;</a>{{else}}<span></span>{{end}}
+</nav>{{end}}
+{{define "seerah.html"}}
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{.Title}} — Seerah — Aslam</title>{{template "style"}}
+<style>
+.seerah-text{line-height:1.85;overflow-wrap:anywhere}.seerah-text p{margin:0 0 1em}.seerah-text h3{font-size:18px;margin:1.5em 0 .8em;line-height:1.5;scroll-margin-top:24px}
+.seerah-nav{display:flex;justify-content:space-between;gap:12px;padding:18px 0;border-top:1px solid #eee;margin-top:20px;font-size:13px}.seerah-nav a,.seerah-jump a{text-decoration:underline;text-underline-offset:3px}
+.seerah-jump{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0 22px;font-size:13px}.seerah-jump input{width:75px;padding:6px}.seerah-jump button{padding:6px 10px}.seerah-source{margin-top:24px;padding-top:16px;border-top:1px solid #eee;color:#777;font-size:12px}
+</style></head><body><div class="app">{{template "header" .}}<main class="app-content">
+<p style="color:#777;font-size:13px">Seerah · {{.Book.Title}}</p><h2>{{.Title}}</h2>
+{{template "seerah-nav" .}}
+<div class="seerah-jump"><form id="seerah-jump"><label for="page-number">Page</label> <input id="page-number" type="number" min="8" max="323" value="{{.Page.Number}}" required> <button type="submit">Go</button></form>
+{{if .PreviousChapter}}<a href="/seerah/page/{{.PreviousChapter}}">Previous chapter</a>{{end}}
+{{if .NextChapter}}<a href="/seerah/page/{{.NextChapter}}">Next chapter</a>{{end}}</div>
+{{if .LoggedIn}}<div class="seerah-jump">
+<form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}"><button type="submit">Save</button></form>
+<form method="POST" action="/chat/new"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="context" value="Seerah: {{.Book.Title}} by {{.Book.Author}}, translated by {{.Book.Translator}}. {{.Title}} ({{.Path}})&#10;&#10;{{.Content}}"><button type="submit">Chat</button></form>
+</div>{{end}}
+<article class="seerah-text">{{range .Page.Blocks}}{{if .Heading}}<h3 id="{{.ID}}">{{.Text}}</h3>{{else}}<p id="{{.ID}}">{{.Text}}</p>{{end}}{{end}}</article>
+{{template "seerah-nav" .}}
+<p class="seerah-source">{{.Book.Title}} · {{.Book.Author}} · Translation: {{.Book.Translator}} · Dar-us-Salam. PDF page {{.Page.Number}}. <a href="https://www.muslim-library.com/dl/books/English_ArRaheeq_AlMakhtum_THE_SEALED_NECTAR.pdf">Source edition</a></p>
+</main></div><script>
+document.getElementById('seerah-jump').addEventListener('submit',function(event){event.preventDefault();var input=document.getElementById('page-number');if(input.checkValidity()){location.href='/seerah/page/'+Number(input.value);}});
+</script></body></html>{{end}}

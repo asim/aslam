@@ -2,13 +2,13 @@ package main
 
 import (
 	"archive/zip"
-	"errors"
 	"bufio"
 	"bytes"
 	"crypto/rand"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"aslam/db"
+	"aslam/seerah"
 	"aslam/tools"
 
 	prayer "github.com/hablullah/go-prayer"
@@ -76,8 +77,6 @@ var (
 	apiKey             string
 )
 
-
-
 func main() {
 	// Load config
 	loadEnv()
@@ -114,6 +113,15 @@ func main() {
 	}
 	defer db.Close()
 
+	var seerahErr error
+	seerahBook, seerahErr = seerah.Load()
+	if seerahErr != nil {
+		log.Fatal(seerahErr)
+	}
+	if err := db.IndexSeerah(seerahBook); err != nil {
+		log.Fatal("Seerah index: ", err)
+	}
+
 	seedUsers()
 
 	go func() {
@@ -128,7 +136,7 @@ func main() {
 
 	// Parse templates
 	funcs := template.FuncMap{
-		"version": func() string { return buildVersion },
+		"version":   func() string { return buildVersion },
 		"hasPrefix": strings.HasPrefix,
 		"formatTime": func(t time.Time) string {
 			return t.Format("2006-01-02 15:04")
@@ -228,6 +236,8 @@ func main() {
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
 	http.HandleFunc("/islamqa", optionalAuth(handleIslamQAIndex))
 	http.HandleFunc("/islamqa/", optionalAuth(handleIslamQAView))
+	http.HandleFunc("/seerah", optionalAuth(handleSeerahIndex))
+	http.HandleFunc("/seerah/page/", optionalAuth(handleSeerahPage))
 	http.HandleFunc("/ghazali", optionalAuth(handleGhazaliIndex))
 	http.HandleFunc("/ghazali/", optionalAuth(handleGhazaliView))
 	http.HandleFunc("/adhkar", optionalAuth(handleAdhkarIndex))
@@ -265,7 +275,7 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-	
+
 	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
 	tools.SetNoteStorage(&noteStorage{})
@@ -285,7 +295,7 @@ func main() {
 			return true
 		}
 	})
-	
+
 	// When an email is sent from chat, create thread mapping so replies go to same conversation
 	tools.SetEmailSentCallback(func(messageID, to, subject string) {
 		if currentUserContext != nil && currentUserContext.ConversationID > 0 {
@@ -317,8 +327,8 @@ func main() {
 	log.Printf("Aslam running on http://localhost:%s", port)
 
 	// Start background workers
-	startTaskProcessor()  // Handles pending tasks from any channel
-	startEmailWorker()    // Polls inbox for new emails
+	startTaskProcessor()      // Handles pending tasks from any channel
+	startEmailWorker()        // Polls inbox for new emails
 	startDailyContentWorker() // Fetches daily verse/hadith/name
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -966,8 +976,8 @@ func loadProphets() {
 		Arabic   string `json:"arabic"`
 		Title    string `json:"title"`
 		Sections []struct {
-			Narrative   string `json:"narrative"`
-			Verses      []struct {
+			Narrative string `json:"narrative"`
+			Verses    []struct {
 				Ref     string `json:"ref"`
 				Chapter int    `json:"chapter"`
 				Start   int    `json:"start"`
@@ -1102,12 +1112,19 @@ func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 		lvl, _ := strconv.Atoi(level)
 		var offset, limit int
 		switch lvl {
-		case 1: offset, limit = 0, 50
-		case 2: offset, limit = 50, 50
-		case 3: offset, limit = 100, 100
-		case 4: offset, limit = 200, 300
-		case 5: offset, limit = 500, 500
-		default: offset, limit = 0, 50; lvl = 1
+		case 1:
+			offset, limit = 0, 50
+		case 2:
+			offset, limit = 50, 50
+		case 3:
+			offset, limit = 100, 100
+		case 4:
+			offset, limit = 200, 300
+		case 5:
+			offset, limit = 500, 500
+		default:
+			offset, limit = 0, 50
+			lvl = 1
 		}
 		words, _ := db.GetArabicByFrequencyRange(offset, limit)
 		data["Words"] = words
@@ -1502,9 +1519,9 @@ func startGoogleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Store state in cookie (works across www/non-www with Domain)
 	http.SetCookie(w, &http.Cookie{
-		Name:     "oauth_state",
-		Value:    state,
-		Path:     "/",
+		Name:  "oauth_state",
+		Value: state,
+		Path:  "/",
 
 		HttpOnly: true,
 		Secure:   true,
@@ -1816,7 +1833,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	queryState := r.URL.Query().Get("state")
-	
+
 	// Verify state exists in database (survives restarts)
 	if !db.ValidateOAuthState(queryState) {
 		log.Printf("OAuth callback: state not found in db: %s", queryState)
@@ -1826,9 +1843,9 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Clear state cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:   "oauth_state",
-		Path:   "/",
-		
+		Name: "oauth_state",
+		Path: "/",
+
 		MaxAge: -1,
 	})
 
@@ -2024,11 +2041,11 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 
 	now := time.Now().In(tz)
 	schedules, err := prayer.Calculate(prayer.Config{
-		Latitude:           lat,
-		Longitude:          lng,
-		Timezone:           tz,
-		TwilightConvention: moonsighting,
-		AsrConvention:      prayer.Shafii,
+		Latitude:            lat,
+		Longitude:           lng,
+		Timezone:            tz,
+		TwilightConvention:  moonsighting,
+		AsrConvention:       prayer.Shafii,
 		HighLatitudeAdapter: prayer.AngleBased(),
 	}, now.Year())
 	if err != nil {
@@ -2198,15 +2215,15 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	
+
 	convID, _ := strconv.ParseInt(r.FormValue("conversation_id"), 10, 64)
 	userMessage := strings.TrimSpace(r.FormValue("message"))
-	
+
 	if convID == 0 || userMessage == "" {
 		http.Error(w, "Missing fields", 400)
 		return
 	}
-	
+
 	// Set user context
 	session := getSession(r)
 	if session != nil {
@@ -2220,10 +2237,10 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	
+
 	// Get conversation history for context
 	messages, _ := db.GetMessages(convID)
-	
+
 	// Generate AI response
 	response, toolsUsed, err := generateResponse(messages, convID)
 	if err != nil {
@@ -2234,7 +2251,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		fullResponse := formatResponseWithSources(response, toolsUsed)
 		db.AddMessage(convID, "assistant", fullResponse)
 	}
-	
+
 	// Update conversation title if first message
 	if len(messages) <= 1 {
 		title := userMessage
@@ -2243,7 +2260,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		}
 		db.UpdateConversationTitle(convID, title)
 	}
-	
+
 	http.Redirect(w, r, fmt.Sprintf("/chat/%d", convID), http.StatusSeeOther)
 }
 
@@ -2570,18 +2587,17 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	
+
 	entry, err := db.GetEntry(id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	
+
 	renderTemplate(w, r, "entry.html", entry)
 }
 
 // Database functions
-
 
 // AI functions
 
@@ -2595,7 +2611,7 @@ You answer questions about Islam, the Quran, Hadith, fiqh, aqeedah, history, man
 Politely decline questions that have no Islamic relevance. You are not a general-purpose assistant. If someone asks about programming, sports scores, or unrelated topics, respond briefly: "I'm here to help with Islamic knowledge. You might find a general search engine more helpful for that." Do not answer the question.
 
 TOOLS:
-- search: Search the full knowledge base (Quran, Hadith, Names, IslamQA, Ghazali, Adhkar, Salihin, notes).
+- search: Search the full knowledge base (Quran, Hadith, Names, IslamQA, Ghazali, Seerah, Adhkar, Salihin, notes). Seerah results come from The Sealed Nectar by Safiur Rahman al-Mubarakpuri, translated by Issam Diab; cite the specific page and distinguish biographical reports from Quran and hadith.
 - reminder: Semantic search across Quran, Hadith, and Names of Allah via the reminder API.
 - islamqa: Search IslamQA for scholarly answers.
 - ghazali: Search Imam Al-Ghazali's Ihya Ulum al-Din.
@@ -2821,7 +2837,7 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 				break
 			}
 		}
-		
+
 		// If no text but we had tool calls that succeeded, return a default message
 		if textResponse == "" {
 			return "Done.", toolsUsed, nil
@@ -2957,14 +2973,14 @@ func callAnthropicStream(apiMessages []map[string]interface{}, sysPrompt string,
 			Type         string `json:"type"`
 			Index        int    `json:"index"`
 			ContentBlock struct {
-				Type  string `json:"type"`
-				ID    string `json:"id"`
-				Name  string `json:"name"`
-				Text  string `json:"text"`
-				Thinking string `json:"thinking"`
-				Signature string `json:"signature"`
-				Data string `json:"data"`
-				Input json.RawMessage `json:"input"`
+				Type      string          `json:"type"`
+				ID        string          `json:"id"`
+				Name      string          `json:"name"`
+				Text      string          `json:"text"`
+				Thinking  string          `json:"thinking"`
+				Signature string          `json:"signature"`
+				Data      string          `json:"data"`
+				Input     json.RawMessage `json:"input"`
 			} `json:"content_block"`
 			Delta struct {
 				Type        string `json:"type"`
@@ -3118,7 +3134,7 @@ func callAnthropic(apiMessages []map[string]interface{}, sysPrompt string) (*ant
 
 func handleDev(w http.ResponseWriter, r *http.Request) {
 	toolDefs := tools.GetTools()
-	
+
 	// Build integrations status
 	integrations := []map[string]interface{}{
 		{
@@ -3146,7 +3162,7 @@ func handleDev(w http.ResponseWriter, r *http.Request) {
 			"Details":     os.Getenv("GMAIL_USER"),
 		},
 	}
-	
+
 	renderTemplate(w, r, "dev.html", map[string]interface{}{
 		"Model":        anthropicModel,
 		"Tools":        toolDefs,
@@ -3162,13 +3178,13 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
 		}
-		
+
 		// Check if user is admin
 		if !db.IsAdmin(session.Email) {
 			http.Error(w, "Admin access required", http.StatusForbidden)
 			return
 		}
-		
+
 		handler(w, r)
 	}
 }
@@ -3178,7 +3194,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	accounts, _ := db.GetAccounts()
 	users, _ := db.GetUsers()
 	toolDefs := tools.GetTools()
-	
+
 	// Build integrations with enable/disable state
 	integrations := []map[string]interface{}{
 		{
@@ -3222,7 +3238,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 			"EnvVar":      "GMAIL_USER, GMAIL_APP_PASSWORD",
 		},
 	}
-	
+
 	// Get status info
 	taskStats := db.GetTaskStats()
 	emailStats := db.GetEmailStats()
@@ -3331,7 +3347,7 @@ func handleAddAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
-	
+
 	service := strings.TrimSpace(r.FormValue("service"))
 	accountID := strings.TrimSpace(r.FormValue("account_id"))
 	password := r.FormValue("password") // Don't trim passwords
@@ -3340,18 +3356,18 @@ func handleAddAccount(w http.ResponseWriter, r *http.Request) {
 	url := strings.TrimSpace(r.FormValue("url"))
 	envVar := strings.TrimSpace(r.FormValue("env_var"))
 	notes := strings.TrimSpace(r.FormValue("notes"))
-	
+
 	if service == "" {
 		http.Redirect(w, r, "/admin?error=Service+name+required", http.StatusSeeOther)
 		return
 	}
-	
+
 	_, err := db.SaveAccount(service, accountID, password, apiKey, description, url, envVar, notes)
 	if err != nil {
 		http.Redirect(w, r, "/admin?error=Failed+to+save+account", http.StatusSeeOther)
 		return
 	}
-	
+
 	http.Redirect(w, r, "/admin?msg=Account+saved", http.StatusSeeOther)
 }
 
@@ -3360,13 +3376,13 @@ func handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
-	
+
 	id, _ := strconv.ParseInt(r.FormValue("id"), 10, 64)
 	if id == 0 {
 		http.Redirect(w, r, "/admin?error=Invalid+ID", http.StatusSeeOther)
 		return
 	}
-	
+
 	db.DeleteAccount(id)
 	http.Redirect(w, r, "/admin?msg=Account+deleted", http.StatusSeeOther)
 }
@@ -3376,10 +3392,10 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 		return
 	}
-	
+
 	key := r.FormValue("key")
 	enabled := r.FormValue("enabled") == "true"
-	
+
 	switch key {
 	case "brave_search":
 		db.SetSettingBool("brave_search_enabled", enabled)
@@ -3389,7 +3405,7 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin?error=Unknown+integration", http.StatusSeeOther)
 		return
 	}
-	
+
 	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
 }
 

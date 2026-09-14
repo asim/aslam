@@ -1,0 +1,20 @@
+{{define "seerah_index.html"}}
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seerah — Aslam</title>{{template "style"}}
+<style>.seerah-toc details{padding:14px 0;border-bottom:1px solid #eee}.seerah-toc summary{cursor:pointer;line-height:1.6}.seerah-toc ul{padding-left:22px}.seerah-toc li{margin:10px 0}.seerah-toc a{text-decoration:underline;text-underline-offset:3px}</style>
+</head><body><div class="app">{{template "header" .}}<main class="app-content">
+<h2>Seerah</h2><p>{{.Book.Title}} — {{.Book.Author}}</p>
+<p style="color:#777;margin:10px 0 20px">Translated by {{.Book.Translator}}</p>
+{{if .ContinuePath}}<p style="padding:14px;background:#f8f8f8;margin-bottom:20px"><a href="{{.ContinuePath}}">Continue reading: {{.ContinueTitle}} &rarr;</a></p>{{end}}
+<p><a href="/seerah/page/8">Start reading &rarr;</a></p>
+<div class="seerah-toc">
+{{range $i,$chapter := .Book.Chapters}}
+<details><summary>{{$chapter.Title}} <small>— page {{$chapter.Page}}</small></summary>
+<p style="margin-top:12px"><a href="/seerah/page/{{$chapter.Page}}">Read from page {{$chapter.Page}} &rarr;</a></p>
+<ul>{{range $.Book.Pages}}{{if eq .Chapter $i}}{{$page := .Number}}{{range .Blocks}}{{if .Heading}}
+<li><a href="/seerah/page/{{$page}}?section={{.ID}}#{{.ID}}">{{.Text}}</a> <small>— page {{$page}}</small></li>
+{{end}}{{end}}{{end}}{{end}}</ul></details>
+{{end}}</div>
+<p style="margin-top:24px;color:#777;font-size:13px">Page numbers follow the supplied PDF edition. The text begins on page 8.</p>
+</main></div></body></html>{{end}}

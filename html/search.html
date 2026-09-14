@@ -62,8 +62,8 @@
                     <span class="kind-tag kind-{{index . "Kind"}}">{{index . "Kind"}}</span>
                     <a href="{{index . "URL"}}">{{index . "Title"}}</a>
                     <span class="result-role">[{{index . "Role"}}]</span>
-                    <span class="time">{{formatTime (index . "CreatedAt")}}</span>
-                    <div class="muted" style="margin-top: 5px">{{truncate (index . "Content") 200}}</div>
+                    {{with index . "CreatedAt"}}<span class="time">{{formatTime .}}</span>{{end}}
+                    <div class="muted" style="margin-top: 5px">{{if eq (index . "Kind") "seerah"}}{{index . "Content"}}{{else}}{{truncate (index . "Content") 200}}{{end}}</div>
                 </li>
                 {{end}}
             </ul>
@@ -119,7 +119,7 @@
                                 <span class="kind-tag kind-${escapeHtml(kind)}">${escapeHtml(kind)}</span>
                                 <a href="${escapeHtml(url)}">${escapeHtml(r.Title || '(untitled)')}</a>
                                 <span class="result-role">[${escapeHtml(r.Role || '')}]</span>
-                                <div class="muted" style="margin-top: 5px">${escapeHtml(truncate(r.Content, 200))}</div>
+                                <div class="muted" style="margin-top: 5px">${escapeHtml(kind === 'seerah' ? r.Content : truncate(r.Content, 200))}</div>
                             </li>
                         `;
                     }
