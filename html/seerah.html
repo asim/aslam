@@ -8,22 +8,30 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{.Title}} — Seerah — Aslam</title>{{template "style"}}
 <style>
-.seerah-text{line-height:1.85;overflow-wrap:anywhere}.seerah-text p{margin:0 0 1em}.seerah-text h3{font-size:18px;margin:1.5em 0 .8em;line-height:1.5;scroll-margin-top:24px}
-.seerah-nav{display:flex;justify-content:space-between;gap:12px;padding:18px 0;border-top:1px solid #eee;margin-top:20px;font-size:13px}.seerah-nav a,.seerah-jump a{text-decoration:underline;text-underline-offset:3px}
-.seerah-jump{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0 22px;font-size:13px}.seerah-jump input{width:75px;padding:6px}.seerah-jump button{padding:6px 10px}.seerah-source{margin-top:24px;padding-top:16px;border-top:1px solid #eee;color:#777;font-size:12px}
+.seerah-text{line-height:1.8;word-wrap:break-word}.seerah-text p{margin:0 0 1em}.seerah-text h3{font-size:18px;margin:1.5em 0 .8em;line-height:1.5;scroll-margin-top:24px}
+.seerah-nav{display:flex;justify-content:space-between;gap:12px;margin-top:20px;font-size:13px}
+.seerah-jump{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0 22px;font-size:13px}.seerah-jump input{width:75px;padding:6px}.seerah-source{margin-top:32px;padding-top:16px;border-top:1px solid #eee;color:#999;font-size:12px}
+
+.seerah-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.seerah-book{display:inline-block;font-size:12px;background:#f0f0f0;padding:2px 10px;border-radius:4px}
+.seerah-actions{display:flex;gap:6px}.seerah-actions form{display:inline;margin:0}
+.seerah-button{font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#666;cursor:pointer;text-decoration:none;white-space:nowrap}
+.seerah-jump form{display:flex;gap:6px;align-items:center;margin:0}.seerah-jump input{font-family:inherit;font-size:12px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#666}
 </style></head><body><div class="app">{{template "header" .}}<main class="app-content">
-<p style="color:#777;font-size:13px">Seerah · {{.Book.Title}}</p><h2>{{.Title}}</h2>
-{{template "seerah-nav" .}}
-<div class="seerah-jump"><form id="seerah-jump"><label for="page-number">Page</label> <input id="page-number" type="number" min="8" max="323" value="{{.Page.Number}}" required> <button type="submit">Go</button></form>
+<div class="seerah-toolbar"><span class="seerah-book">{{.Book.Title}}</span>
+{{if .LoggedIn}}<div class="seerah-actions">
+<form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}"><button type="submit" class="seerah-button">Save</button></form>
+<form method="POST" action="/chat/new"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="context" value="Seerah: {{.Book.Title}} by {{.Book.Author}}, translated by {{.Book.Translator}}. {{.Title}} ({{.Path}})&#10;&#10;{{.Content}}"><button type="submit" class="seerah-button">Chat</button></form>
+</div>{{else}}<a href="/auth/login" class="seerah-button">Sign in to save</a>{{end}}
+</div>
+<h2>{{.Title}}</h2>
+<div class="seerah-jump"><form id="seerah-jump"><label for="page-number">Page</label> <input id="page-number" type="number" min="8" max="323" value="{{.Page.Number}}" required> <button type="submit" class="seerah-button">Go</button></form>
 {{if .PreviousChapter}}<a href="/seerah/page/{{.PreviousChapter}}">Previous chapter</a>{{end}}
 {{if .NextChapter}}<a href="/seerah/page/{{.NextChapter}}">Next chapter</a>{{end}}</div>
-{{if .LoggedIn}}<div class="seerah-jump">
-<form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}"><button type="submit">Save</button></form>
-<form method="POST" action="/chat/new"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="context" value="Seerah: {{.Book.Title}} by {{.Book.Author}}, translated by {{.Book.Translator}}. {{.Title}} ({{.Path}})&#10;&#10;{{.Content}}"><button type="submit">Chat</button></form>
-</div>{{end}}
+
 <article class="seerah-text">{{range .Page.Blocks}}{{if .Heading}}<h3 id="{{.ID}}">{{.Text}}</h3>{{else}}<p id="{{.ID}}">{{.Text}}</p>{{end}}{{end}}</article>
-{{template "seerah-nav" .}}
 <p class="seerah-source">{{.Book.Title}} · {{.Book.Author}} · Translation: {{.Book.Translator}} · Dar-us-Salam. PDF page {{.Page.Number}}. <a href="https://www.muslim-library.com/dl/books/English_ArRaheeq_AlMakhtum_THE_SEALED_NECTAR.pdf">Source edition</a></p>
+{{template "seerah-nav" .}}
 </main></div><script>
 document.getElementById('seerah-jump').addEventListener('submit',function(event){event.preventDefault();var input=document.getElementById('page-number');if(input.checkValidity()){location.href='/seerah/page/'+Number(input.value);}});
 </script></body></html>{{end}}
