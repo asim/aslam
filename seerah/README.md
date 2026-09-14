@@ -11,10 +11,16 @@ The compressed JSON contains PDF pages 8–323 (316 reading pages), 57 PDF chapt
 With Python and PyMuPDF installed, run from the repository root:
 
 ```sh
-python scripts/extract_seerah.py /path/to/English_ArRaheeq_AlMakhtum_THE_SEALED_NECTAR.pdf seerah/data.json.gz
+python scripts/extract_seerah.py /path/to/English_ArRaheeq_AlMakhtum_THE_SEALED_NECTAR.pdf seerah/data.json.gz seerah/question-mark-review.md
 ```
 
-The JSON records the source SHA-256. Extraction removes margin headers/page labels and joins wrapped text within PDF blocks. It makes no spelling, theological, quotation or citation substitutions. Every non-whitespace body character was checked against the PDF's extracted text on all 316 included pages. The original source's errors remain for a separately reviewed correction pass.
+The JSON records the source SHA-256. Extraction removes margin headers/page labels and joins wrapped text within PDF blocks. The initial import matched every non-whitespace body character against the PDF’s extracted text; that check did not detect errors already visible in the PDF.
+
+Reviewed source corrections: damaged `All?` (213 occurrences) becomes `Allah`, and `Qur’?` (35 occurrences) becomes `Qur’an`. The one `Muhsin?` in the quoted passage on page 10 becomes `Muhsinin`, checked against المحسنين in [Qur’an 37:105](https://quran.com/as-saffat/105). The accompanying split forms `All? u Akbar` and `Qur’? ic` become `Allahu Akbar` and `Qur’anic`. Spaces between these corrected names and punctuation or possessive endings are removed. Ordinary word separators are retained. These specific corrections happen during extraction; other question marks, correct spellings, reference numbers, page numbers and block IDs are preserved. Other source defects remain uncorrected.
+
+[Question-mark review](question-mark-review.md) lists all 476 original occurrences in page/block/character order, with full original passages and decisions: 249 fixed, 47 suspicious occurrences awaiting verification, and 180 logical questions retained. Suggested readings are labelled as inferences and are not applied. The optional third extraction argument reproduces the report. This is an audit of question marks, not a complete spelling or factual review.
+
+Correction regression tests: `python -m unittest discover -s scripts -p test_extract_seerah.py`. Dataset and indexing tests: `go test ./seerah ./db -run 'Seerah|Dataset|Reviewed'`.
 
 ## Reader and search
 

@@ -42,3 +42,31 @@ func TestDatasetPagesAndAnchors(t *testing.T) {
 		t.Fatal("reference not retained")
 	}
 }
+
+func TestReviewedNameCorrections(t *testing.T) {
+	b, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range b.Pages {
+		for _, damaged := range []string{"All?", "Qur’?", "Muhsin?", "Allah ’s", "Allah ,", "Qur’an ic", "Allah u Akbar"} {
+			if strings.Contains(p.Text(), damaged) {
+				t.Fatalf("page %d contains %q", p.Number, damaged)
+			}
+		}
+	}
+	for page, want := range map[int]string{10: "Allah’s", 22: "Qur’anic verses", 71: "Allahu Akbar"} {
+		p, _ := b.Page(page)
+		if !strings.Contains(p.Text(), want) {
+			t.Fatalf("page %d missing %q", page, want)
+		}
+	}
+	p, _ := b.Page(10)
+	if !strings.Contains(p.Text(), "reward the Muhsinin (good-doers,") {
+		t.Fatal("confirmed Muhsinin correction missing")
+	}
+	p, _ = b.Page(68)
+	if !strings.Contains(p.Text(), "My Lord is Allah?") {
+		t.Fatal("genuine question after damaged name lost")
+	}
+}
