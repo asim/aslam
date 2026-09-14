@@ -3,6 +3,7 @@ package db
 import (
 	"aslam/seerah"
 	"database/sql"
+	"strings"
 	"testing"
 )
 
@@ -27,6 +28,22 @@ func TestSeerahIndexAndReadingProgress(t *testing.T) {
 	var count int
 	if err := DB.QueryRow(`SELECT count(*) FROM seerah_fts`).Scan(&count); err != nil || count != 316 {
 		t.Fatalf("index count %d: %v", count, err)
+	}
+	matches, matchErr := SearchSeerah("originated")
+	if matchErr != nil {
+		t.Fatal(matchErr)
+	}
+	found := false
+	for _, match := range matches {
+		if match["URL"] == "/seerah/page/8" {
+			found = true
+			if !strings.Contains(strings.ToLower(match["Content"].(string)), "originated") {
+				t.Fatal("snippet omitted late-page match")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing page 8 result")
 	}
 	results, err := SearchSeerah("Hira")
 	if err != nil || len(results) == 0 {

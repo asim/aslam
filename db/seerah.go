@@ -43,7 +43,7 @@ func SearchSeerah(query string) ([]map[string]interface{}, error) {
 	if query == "" {
 		return nil, nil
 	}
-	rows, err := DB.Query(`SELECT docid,title,content FROM seerah_fts WHERE seerah_fts MATCH ? LIMIT 10`, query)
+	rows, err := DB.Query(`SELECT docid,title,snippet(seerah_fts, '', '', ' … ', 1, 48) FROM seerah_fts WHERE seerah_fts MATCH ? LIMIT 10`, query)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +54,6 @@ func SearchSeerah(query string) ([]map[string]interface{}, error) {
 		var title, content string
 		if err := rows.Scan(&page, &title, &content); err != nil {
 			return nil, err
-		}
-		excerpt := []rune(content)
-		if len(excerpt) > 500 {
-			content = string(excerpt[:500]) + "..."
 		}
 		results = append(results, map[string]interface{}{"Kind": "seerah", "Title": title, "Content": content, "Role": "The Sealed Nectar — Safiur Rahman al-Mubarakpuri", "URL": fmt.Sprintf("/seerah/page/%d", page)})
 	}
