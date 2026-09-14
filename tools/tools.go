@@ -121,7 +121,7 @@ func GetTools() []ToolDefinition {
 		},
 		{
 			Name:        "search",
-			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Adhkar, Riyad us-Salihin, chats, notes, and cached content. Returns user-scoped results.",
+			Description: "Search the knowledge base across all sources: Quran, Hadith, Names of Allah, IslamQA, Ghazali, Seerah (The Sealed Nectar), Adhkar, Riyad us-Salihin, chats, notes, and cached content. Returns user-scoped results.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -733,3 +733,4 @@ func executeRiyad(input map[string]interface{}) (string, error) {
 	}
 	return output, nil
 }
+
