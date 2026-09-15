@@ -7,13 +7,16 @@ from seerah_question_marks import decision
 class SourceCorrectionsTest(unittest.TestCase):
     def test_spacing_and_split_words(self):
         cases = {
+            "‘Imran bin ‘Amr Muzaiqb?#146;": "‘Imran bin ‘Amr Muzaiqbâ’",
+            "It was a privilege granted to Moses ? ?": "It was a privilege granted to Moses عليه السلام",
+            "??? and clearly attested in the Qur’? ,": "and clearly attested in the Qur’an,",
             "All? saved her": "Allah saved her",
             "All? ’s favour": "Allah’s favour",
             "All? , the Sublime": "Allah, the Sublime",
             "All? u Akbar": "Allahu Akbar",
             "Qur’? ic verses": "Qur’anic verses",
             "Noble Qur’? .": "Noble Qur’an.",
-            "reward the Muhsin? (good-doers,": "reward the Muhsinin (good-doers,",
+            "reward the Muhsin? (good-doers,": "reward the Muhsinûn (good-doers,",
         }
         for source, expected in cases.items():
             with self.subTest(source=source):

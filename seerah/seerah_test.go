@@ -62,11 +62,21 @@ func TestReviewedNameCorrections(t *testing.T) {
 		}
 	}
 	p, _ := b.Page(10)
-	if !strings.Contains(p.Text(), "reward the Muhsinin (good-doers,") {
-		t.Fatal("confirmed Muhsinin correction missing")
+	if !strings.Contains(p.Text(), "reward the Muhsinûn (good-doers,") {
+		t.Fatal("confirmed Muhsinûn correction missing")
 	}
 	p, _ = b.Page(68)
 	if !strings.Contains(p.Text(), "My Lord is Allah?") {
 		t.Fatal("genuine question after damaged name lost")
+	}
+	p, _ = b.Page(9)
+	if !strings.Contains(p.Text(), "‘Imran bin ‘Amr Muzaiqbâ’") {
+		t.Fatal("scan-verified name missing")
+	}
+	p, _ = b.Page(46)
+	if !strings.HasSuffix(p.Blocks[2].Text, "Moses عليه السلام") ||
+		!strings.HasPrefix(p.Blocks[3].Text, "and clearly attested") ||
+		p.Blocks[2].ID != "block-3" || p.Blocks[3].ID != "block-4" {
+		t.Fatal("cross-block honorific or its anchors incorrect")
 	}
 }

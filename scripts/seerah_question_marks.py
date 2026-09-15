@@ -32,9 +32,12 @@ SUGGESTIONS = {
 
 
 def decision(text, position):
-    for pattern, replacement in [(r"(?<!\w)All\?(?=\s|$)", "Allah"),
+    for pattern, replacement in [(r"(?<=‘Imran bin ‘Amr )Muzaiqb\?#146;", "Muzaiqbâ’"),
+                                 (r"(?<=It was a privilege granted to Moses )\? \?", "عليه السلام"),
+                                 (r"^\?\?\?(?= and clearly attested in the Qur’\?)", "Continuation of the same honorific; removed"),
+                                 (r"(?<!\w)All\?(?=\s|$)", "Allah"),
                                  (r"(?<!\w)Qur’\?(?=\s|$)", "Qur’an"),
-                                 (r"(?<=reward the )Muhsin\?(?= \(good-doers,)", "Muhsinin")]:
+                                 (r"(?<=reward the )Muhsin\?(?= \(good-doers,)", "Muhsinûn")]:
         for match in re.finditer(pattern, text):
             if match.start() <= position < match.end():
                 return "Fixed", replacement + " — confirmed damaged term; surrounding spacing/split suffix repaired"
@@ -71,7 +74,7 @@ def write_audit(pages, output, source_hash):
              f"Source PDF SHA-256: `{source_hash}`.", "",
              f"{len(entries)} original question marks: {counts['Fixed']} fixed, {counts['Review']} flagged for review, {counts['Keep']} retained as logical questions.", "",
              "Ordered by PDF page, extraction block, then character position. Each occurrence has a global number, an in-passage question-mark number and a one-based character position in the original text. Full passages below preserve sentence order without guessing sentence boundaries. 【?】 marks the target occurrence in excerpts.", "",
-             "Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent spacing. Muhsinin is checked against the Arabic المحسنين in [Qur’an 37:105](https://quran.com/as-saffat/105). Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.", "",
+             "Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.", "",
              "## Remaining suspected corruption, in reading order", "",
              "| # | PDF page / block | ? in passage / character | Context | Proposed reading (not applied) |", "| --- | --- | --- | --- | --- |"]
     for n, page, block, local, char, status, reason, excerpt in entries:

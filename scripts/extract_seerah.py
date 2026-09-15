@@ -16,7 +16,12 @@ def correct_source_text(text):
     # The PDF visibly contains these damaged names; never replace arbitrary '?'.
     text = re.sub(r"(?<!\w)All\?(?=\s|$)", "Allah", text)
     text = re.sub(r"(?<!\w)Qur’\?(?=\s|$)", "Qur’an", text)
-    text = text.replace("reward the Muhsin? (good-doers,", "reward the Muhsinin (good-doers,")
+    text = text.replace("reward the Muhsin? (good-doers,", "reward the Muhsinûn (good-doers,")
+    text = text.replace("‘Imran bin ‘Amr Muzaiqb?#146;", "‘Imran bin ‘Amr Muzaiqbâ’")
+    text = text.replace("It was a privilege granted to Moses ? ?", "It was a privilege granted to Moses عليه السلام")
+    # The same honorific spills into the next PDF block. Preserve both block IDs.
+    if text.startswith("??? and clearly attested in the Qur’an"):
+        text = text.removeprefix("??? ")
     text = re.sub(r"\bAllah u(?= Akbar\b)", "Allahu", text)
     text = re.sub(r"\bQur’an ic\b", "Qur’anic", text)
     return re.sub(r"(\bAllah|\bQur’an) +(?=[,.;:!?)]|[’']s\b)", r"\1", text)

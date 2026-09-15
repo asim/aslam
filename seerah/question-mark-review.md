@@ -2,18 +2,17 @@
 
 Source PDF SHA-256: `1d4142b99e1bec382fadb2e9b532408aeeb2f2bf958d98fee4d7c118a42334e2`.
 
-476 original question marks: 249 fixed, 47 flagged for review, 180 retained as logical questions.
+476 original question marks: 255 fixed, 41 flagged for review, 180 retained as logical questions.
 
 Ordered by PDF page, extraction block, then character position. Each occurrence has a global number, an in-passage question-mark number and a one-based character position in the original text. Full passages below preserve sentence order without guessing sentence boundaries. 【?】 marks the target occurrence in excerpts.
 
-Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent spacing. Muhsinin is checked against the Arabic المحسنين in [Qur’an 37:105](https://quran.com/as-saffat/105). Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.
+Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.
 
 ## Remaining suspected corruption, in reading order
 
 | # | PDF page / block | ? in passage / character | Context | Proposed reading (not applied) |
 | --- | --- | --- | --- | --- |
 | 1 | 8 / block-10 | 1 / 100 | … The ancient Arabs, of whose history little is known, and of whom were ‘Ad, Tham【?】 , Tasam, Jadis, Emlaq, and others. 2. Pure Arabs: Who originated from the proge… | Thamud — tribal name; also named in the quoted 41:13 passage |
-| 2 | 9 / block-5 | 1 / 61 | 1. Azd: Who, under the leadership of ‘Imran bin ‘Amr Muzaiqb【?】#146;, wandered in Yemen, sent pioneers and finally headed northwards. Details o… | Possibly Muzaiqiya — personal name; check another edition |
 | 20 | 12 / block-15 | 1 / 41 | Banu Asad lived on the land east of Taim【?】#146; and west of Kufa, while family of Tai’ lived between Banu Asad and Taim?#1… | Tayma / Taima — place name; verify transliteration |
 | 21 | 12 / block-15 | 2 / 119 | …im?#146; and west of Kufa, while family of Tai’ lived between Banu Asad and Taim【?】#146;. They were five-day-walk far from Kufa. | Tayma / Taima — place name; verify transliteration |
 | 22 | 12 / block-16 | 1 / 46 | Zubyan inhabited the plot of and between Taim【?】#146; and Hawran. | Tayma / Taima — place name; verify transliteration |
@@ -25,11 +24,6 @@ Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent 
 | 74 | 37 / block-3 | 2 / 362 | …cording to the scholar Muhammad Sulaim? Al- Mansourpuri, and the astrologer Mahm【?】 Pasha. [Muhadarat Tareekh Al-Umam Al- Islamiyah 1/62; Rahmat-ul-lil'alameen 1/3… | Mahmud — personal name; verify spelling against another edition |
 | 114 | 46 / block-1 | 3 / 168 | …to him what All? had ordered him to reveal. This, as mentioned in (Qur’? ), in S【?】 ah An-Najm (Chapter 53 - The Star), happened twice. | Surah — chapter label; join the split word |
 | 117 | 46 / block-2 | 3 / 122 | …him in heaven i.e. when he ascended to heaven and received All? ’s behest of Sal【?】 (prayer). | Salat — prayer; verify the edition’s transliteration |
-| 119 | 46 / block-3 | 2 / 137 | …rst hand without the mediation of an angel. It was a privilege granted to Moses 【?】 ? | Likely a lost honorific after Moses; exact text unknown |
-| 120 | 46 / block-3 | 3 / 139 | …t hand without the mediation of an angel. It was a privilege granted to Moses ? 【?】 | Likely a lost honorific after Moses; exact text unknown |
-| 121 | 46 / block-4 | 1 / 1 | 【?】?? and clearly attested in the Qur’? , as it is attested to our Prophet [pbuh] i… | Likely continuation of the lost honorific after Moses; exact text unknown |
-| 122 | 46 / block-4 | 2 / 2 | ?【?】? and clearly attested in the Qur’? , as it is attested to our Prophet [pbuh] in… | Likely continuation of the lost honorific after Moses; exact text unknown |
-| 123 | 46 / block-4 | 3 / 3 | ??【?】 and clearly attested in the Qur’? , as it is attested to our Prophet [pbuh] in … | Likely continuation of the lost honorific after Moses; exact text unknown |
 | 125 | 46 / block-4 | 5 / 89 | …clearly attested in the Qur’? , as it is attested to our Prophet [pbuh] in the S【?】 ah Al- Isr?#146; (Chapter 17 - The Journey by Night) of the Noble Qur’? . | Surah — chapter label; join the split word |
 | 126 | 46 / block-4 | 6 / 101 | …sted in the Qur’? , as it is attested to our Prophet [pbuh] in the S? ah Al- Isr【?】#146; (Chapter 17 - The Journey by Night) of the Noble Qur’? . | Isra’ — chapter 17 title; damaged ending/entity |
 | 150 | 50 / block-1 | 1 / 1068 | …f Al-Khattab (the sister of ‘Umar bin Al-Khattab), Khabbab bin Al-Aratt, ‘Abdull【?】 bin Mas‘ud Al-Hadhali and many others. These were the Muslim predecessors. They… | Abdullah — personal name |
@@ -80,7 +74,7 @@ Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent 
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 2 | 1 | 61 | Review | Possibly Muzaiqiya — personal name; check another edition |
+| 2 | 1 | 61 | Fixed | Muzaiqbâ’ — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 10, block-1
 
@@ -123,7 +117,7 @@ Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 8 | 1 | 67 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 9 | 2 | 283 | Fixed | Muhsinin — confirmed damaged term; surrounding spacing/split suffix repaired |
+| 9 | 2 | 283 | Fixed | Muhsinûn — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 10 | 3 | 336 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 11 | 4 | 437 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
@@ -818,8 +812,8 @@ Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 118 | 1 | 17 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 119 | 2 | 137 | Review | Likely a lost honorific after Moses; exact text unknown |
-| 120 | 3 | 139 | Review | Likely a lost honorific after Moses; exact text unknown |
+| 119 | 2 | 137 | Fixed | عليه السلام — confirmed damaged term; surrounding spacing/split suffix repaired |
+| 120 | 3 | 139 | Fixed | عليه السلام — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 46, block-4
 
@@ -829,9 +823,9 @@ Fixed: Allah, Qur’an and Muhsinin only, including split suffixes and adjacent 
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 121 | 1 | 1 | Review | Likely continuation of the lost honorific after Moses; exact text unknown |
-| 122 | 2 | 2 | Review | Likely continuation of the lost honorific after Moses; exact text unknown |
-| 123 | 3 | 3 | Review | Likely continuation of the lost honorific after Moses; exact text unknown |
+| 121 | 1 | 1 | Fixed | Continuation of the same honorific; removed — confirmed damaged term; surrounding spacing/split suffix repaired |
+| 122 | 2 | 2 | Fixed | Continuation of the same honorific; removed — confirmed damaged term; surrounding spacing/split suffix repaired |
+| 123 | 3 | 3 | Fixed | Continuation of the same honorific; removed — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 124 | 4 | 37 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 125 | 5 | 89 | Review | Surah — chapter label; join the split word |
 | 126 | 6 | 101 | Review | Isra’ — chapter 17 title; damaged ending/entity |
