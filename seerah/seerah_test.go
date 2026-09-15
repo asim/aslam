@@ -80,3 +80,24 @@ func TestReviewedNameCorrections(t *testing.T) {
 		t.Fatal("cross-block honorific or its anchors incorrect")
 	}
 }
+
+func TestQuestionMarkCorrectionPassComplete(t *testing.T) {
+	b, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	questions := 0
+	for _, p := range b.Pages {
+		questions += strings.Count(p.Text(), "?")
+		if strings.Contains(p.Text(), "#146;") || strings.Contains(p.Text(), "/i>") {
+			t.Fatalf("damaged markup remains on page %d", p.Number)
+		}
+	}
+	if questions != 180 {
+		t.Fatalf("expected 180 retained genuine questions, got %d", questions)
+	}
+	p, _ := b.Page(12)
+	if strings.Count(p.Text(), "Taimâ’") != 3 {
+		t.Fatal("not all three place-name occurrences corrected")
+	}
+}

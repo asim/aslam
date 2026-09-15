@@ -11,6 +11,7 @@ import pathlib
 import re
 import sys
 import fitz
+from seerah_verified import apply_verified
 
 def correct_source_text(text):
     # The PDF visibly contains these damaged names; never replace arbitrary '?'.
@@ -24,7 +25,8 @@ def correct_source_text(text):
         text = text.removeprefix("??? ")
     text = re.sub(r"\bAllah u(?= Akbar\b)", "Allahu", text)
     text = re.sub(r"\bQur’an ic\b", "Qur’anic", text)
-    return re.sub(r"(\bAllah|\bQur’an) +(?=[,.;:!?)]|[’']s\b)", r"\1", text)
+    text = re.sub(r"(\bAllah|\bQur’an) +(?=[,.;:!?)]|[’']s\b)", r"\1", text)
+    return apply_verified(text)
 
 
 def main():
