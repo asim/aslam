@@ -24,10 +24,20 @@ class SourceCorrectionsTest(unittest.TestCase):
 
     def test_real_questions_and_unreviewed_text_are_preserved(self):
         for text in ["Qur'an", "Qur’ân?", "Allâh?", "Have you said all?",
-                     "Tham? , Tasam", "Moses ? ?", "???", "Muhsin? elsewhere",
+                     "Moses ? ?", "???", "Muhsin? elsewhere",
                      "All?word", "SmallAll?", "[Al-Qur'an 37:103-107]"]:
             with self.subTest(text=text):
                 self.assertEqual(correct_source_text(text), text)
+
+    def test_verified_fragments_and_attached_markup(self):
+        self.assertEqual(correct_source_text("east of Taim?#146; and west of Kufa"),
+                         "east of Taimâ’ and west of Kufa")
+        self.assertEqual(correct_source_text("Tham? , Tasam"), "Thamûd, Tasam")
+        self.assertEqual(correct_source_text("Chapter T?H?/i>"), "Chapter Tâ-Hâ")
+        self.assertEqual(correct_source_text("L?il? a illa Ana (Iq? at-as-Sal? )"),
+                         "Lâ ilâha illa Ana (Iqâmat-as-Salât)")
+        self.assertEqual(correct_source_text("Say: O Al-K? ir? (disbelievers)"),
+                         "Say: O Al-Kâfirûn (disbelievers)")
 
     def test_damaged_name_next_to_real_question(self):
         source = 'My Lord is All? ?" [Bukhari 1/544]'

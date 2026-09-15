@@ -2,57 +2,18 @@
 
 Source PDF SHA-256: `1d4142b99e1bec382fadb2e9b532408aeeb2f2bf958d98fee4d7c118a42334e2`.
 
-476 original question marks: 255 fixed, 41 flagged for review, 180 retained as logical questions.
+476 original question marks: 296 fixed, 0 flagged for review, 180 retained as logical questions.
 
 Ordered by PDF page, extraction block, then character position. Each occurrence has a global number, an in-passage question-mark number and a one-based character position in the original text. Full passages below preserve sentence order without guessing sentence boundaries. 【?】 marks the target occurrence in excerpts.
 
-Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.
+Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. The remaining damaged fragments have also been verified visually against the scan and corrected; each entry names the printed verification page. All 296 corrupt question marks are resolved. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.
 
 ## Remaining suspected corruption, in reading order
 
 | # | PDF page / block | ? in passage / character | Context | Proposed reading (not applied) |
 | --- | --- | --- | --- | --- |
-| 1 | 8 / block-10 | 1 / 100 | … The ancient Arabs, of whose history little is known, and of whom were ‘Ad, Tham【?】 , Tasam, Jadis, Emlaq, and others. 2. Pure Arabs: Who originated from the proge… | Thamud — tribal name; also named in the quoted 41:13 passage |
-| 20 | 12 / block-15 | 1 / 41 | Banu Asad lived on the land east of Taim【?】#146; and west of Kufa, while family of Tai’ lived between Banu Asad and Taim?#1… | Tayma / Taima — place name; verify transliteration |
-| 21 | 12 / block-15 | 2 / 119 | …im?#146; and west of Kufa, while family of Tai’ lived between Banu Asad and Taim【?】#146;. They were five-day-walk far from Kufa. | Tayma / Taima — place name; verify transliteration |
-| 22 | 12 / block-16 | 1 / 46 | Zubyan inhabited the plot of and between Taim【?】#146; and Hawran. | Tayma / Taima — place name; verify transliteration |
-| 45 | 23 / block-6 | 2 / 448 | …elivery and then again gives birth to a she-camel at its second delivery) or a H【?】 (a stallion-camel freed from work for their idols, after it had finished a numb… | Ham — camel category in Qur’an 5:103; verify transliteration |
-| 60 | 26 / block-6 | 1 / 104 | …lar among the Arabs living in the neighbourhood of Persia, Iraq, Bahrain, Al-Ahs【?】#146; and some areas on the Arabian Gulf coast. Some Yemenis are also reported t… | Al-Ahsa — place name; verify ending and transliteration |
-| 61 | 28 / block-5 | 1 / 127 | …ata where prostitution and indecency were rampant and in full operation. Abu Da’【?】 , on the authority of ‘Aishah [R] reported four kinds of marriage in pre-Islami… | Dawud / Da’ud — Abu Dawud in the reporting context |
-| 62 | 29 / block-1 | 1 / 51 | feel ashamed of committing this obscenity. Abu Da’【?】 reported: A man stood up in front of Prophet Muhammad [pbuh] and said: "O Proph… | Dawud / Da’ud — Abu Dawud in the reporting context |
-| 73 | 37 / block-3 | 1 / 320 | …th or twenty-second of April, 571 A.D., according to the scholar Muhammad Sulaim【?】 Al- Mansourpuri, and the astrologer Mahm? Pasha. [Muhadarat Tareekh Al-Umam Al-… | Sulaiman — personal name; verify spelling against another edition |
-| 74 | 37 / block-3 | 2 / 362 | …cording to the scholar Muhammad Sulaim? Al- Mansourpuri, and the astrologer Mahm【?】 Pasha. [Muhadarat Tareekh Al-Umam Al- Islamiyah 1/62; Rahmat-ul-lil'alameen 1/3… | Mahmud — personal name; verify spelling against another edition |
-| 114 | 46 / block-1 | 3 / 168 | …to him what All? had ordered him to reveal. This, as mentioned in (Qur’? ), in S【?】 ah An-Najm (Chapter 53 - The Star), happened twice. | Surah — chapter label; join the split word |
-| 117 | 46 / block-2 | 3 / 122 | …him in heaven i.e. when he ascended to heaven and received All? ’s behest of Sal【?】 (prayer). | Salat — prayer; verify the edition’s transliteration |
-| 125 | 46 / block-4 | 5 / 89 | …clearly attested in the Qur’? , as it is attested to our Prophet [pbuh] in the S【?】 ah Al- Isr?#146; (Chapter 17 - The Journey by Night) of the Noble Qur’? . | Surah — chapter label; join the split word |
-| 126 | 46 / block-4 | 6 / 101 | …sted in the Qur’? , as it is attested to our Prophet [pbuh] in the S? ah Al- Isr【?】#146; (Chapter 17 - The Journey by Night) of the Noble Qur’? . | Isra’ — chapter 17 title; damaged ending/entity |
-| 150 | 50 / block-1 | 1 / 1068 | …f Al-Khattab (the sister of ‘Umar bin Al-Khattab), Khabbab bin Al-Aratt, ‘Abdull【?】 bin Mas‘ud Al-Hadhali and many others. These were the Muslim predecessors. They… | Abdullah — personal name |
-| 151 | 50 / block-3 | 1 / 283 | …fter the first verses of "O you wrapped in garments." The verses and pieces of S【?】 ah (chapters) revealed at this time were short ones with wonderful strong pause… | Surah — chapter label; join the split word |
-| 152 | 50 / block-4 | 1 / 7 | As-Sal【?】 (the Prayer) | Salat — prayer; verify the edition’s transliteration |
-| 153 | 50 / block-5 | 1 / 32 | Muqatil bin Sulaiman said: "Sal【?】 (prayer) was established as an obligatory ritual at | Salat — prayer; verify the edition’s transliteration |
-| 154 | 50 / block-6 | 1 / 71 | an early stage of the Islamic Call, a two rak‘ ah (unit of prayer) Sal【?】 in the morning and the same in the evening: | Salat — prayer; verify the edition’s transliteration |
-| 158 | 52 / block-4 | 1 / 77 | This was the first verse to be revealed in this concern. It is included in S【?】 ah Ash- Shu‘ar?/i&gt; (Chapter 26 – The Poets) which relates the story of Moses [A… | Surah — chapter label; join the split word |
-| 159 | 52 / block-4 | 2 / 93 | … first verse to be revealed in this concern. It is included in S? ah Ash- Shu‘ar【?】/i&gt; (Chapter 26 – The Poets) which relates the story of Moses [AWS] from his ear… | Shu‘ara’ — chapter 26 title; remove damaged markup after verification |
-| 178 | 54 / block-3 | 2 / 127 | …Islamic Monotheism), that which you are commanded, and turn away from Al-Mushrik【?】 (polytheists)." [Al-Qur'an 15:94] | Al-Mushrikun — plural defined as polytheists in 15:94 |
-| 210 | 59 / block-1 | 1 / 14 | "Say: "O Al-K【?】 ir? (disbelievers in All? , in His Oneness, in His Angels, in His Books, in His… | Al-Kafirun — chapter 109 address; join split word after verification |
-| 211 | 59 / block-1 | 2 / 18 | "Say: "O Al-K? ir【?】 (disbelievers in All? , in His Oneness, in His Angels, in His Books, in His Mes… | Al-Kafirun — chapter 109 address; join split word after verification |
-| 226 | 63 / block-3 | 1 / 423 | …nful tortures meted out to them. It was at that gloomy and desperate time that S【?】 ah Al-Kahf (Chapter 18 — The Cave) was revealed comprising definite answers to … | Surah — chapter label; join the split word |
-| 230 | 63 / block-6 | 1 / 2 | S【?】 ah Az-Zumar (Chapter 39 — The Crowds) was then revealed pointing directly to mi… | Surah — chapter label; join the split word |
-| 234 | 64 / block-4 | 1 / 200 | …lytheists, including some notables and celebrities. Suddenly he began reciting S【?】 ah An-Najm (Chapter 41 — The Star). The awe-inspiring Words of All? descended u… | Surah — chapter label; join the split word |
-| 248 | 66 / block-1 | 2 / 147 | …ims to recite some of All? ’s Revelation. Ja‘far recited the opening verses of S【?】 ah Maryam (Chapter 19 — Mary) wherein is told the story of the birth of both Jo… | Surah — chapter label; join the split word |
-| 267 | 69 / block-7 | 1 / 169 | …where he saw the Prophet [pbuh] offering prayer and overheard him reciting the S【?】 ah Al-H? qah (Chapter 69 — The Reality) of the Noble Qur’? . The Words of All? … | Surah — chapter label; join the split word |
-| 268 | 69 / block-7 | 2 / 178 | …saw the Prophet [pbuh] offering prayer and overheard him reciting the S? ah Al-H【?】 qah (Chapter 69 — The Reality) of the Noble Qur’? . The Words of All? appealed … | Al-Haqqah — chapter 69 title; join split word |
-| 277 | 70 / block-5 | 2 / 149 | … he heard the voice of Khabbab bin Aratt, who was reading the Qur’? ic Chapter T【?】H?/i&gt; (mystic letters, T. H.) to both of them. Khabbab, perceiving the noise of … | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 278 | 70 / block-5 | 3 / 151 | …e heard the voice of Khabbab bin Aratt, who was reading the Qur’? ic Chapter T?H【?】/i&gt; (mystic letters, T. H.) to both of them. Khabbab, perceiving the noise of hi… | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 281 | 70 / block-5 | 6 / 1354 | …irst." He did so, and took the page and read the opening verses of the Chapter T【?】H?/i&gt; until he reached: | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 282 | 70 / block-5 | 7 / 1356 | …st." He did so, and took the page and read the opening verses of the Chapter T?H【?】/i&gt; until he reached: | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 284 | 71 / block-1 | 2 / 23 | "Verily! I am All? ! L【?】il? a illa Ana (none has the right to be worshipped but I), so worship Me and of… | La ilaha — transliteration in quoted 20:14; verify whole phrase |
-| 285 | 71 / block-1 | 3 / 26 | "Verily! I am All? ! L?il【?】 a illa Ana (none has the right to be worshipped but I), so worship Me and offer… | La ilaha — transliteration in quoted 20:14; verify whole phrase |
-| 286 | 71 / block-1 | 4 / 129 | …the right to be worshipped but I), so worship Me and offer prayers perfectly (Iq【?】 at-as-Sal? ), for My Remembrance." [Al- Qur'an 20:14]. | Iqamat-as-Salat — prayer expression in 20:14; verify whole phrase |
-| 287 | 71 / block-1 | 5 / 140 | …o be worshipped but I), so worship Me and offer prayers perfectly (Iq? at-as-Sal【?】 ), for My Remembrance." [Al- Qur'an 20:14]. | Iqamat-as-Salat — prayer expression in 20:14; verify whole phrase |
-| 303 | 73 / block-1 | 2 / 65 | "In the Name of All? , the Most Beneficent, the Most Merciful. H【?】M? . [These letters are one of the miracles of the Qur’? , and none but All? (Al… | Ha-Mim — opening letters of chapter 41 |
-| 304 | 73 / block-1 | 3 / 67 | "In the Name of All? , the Most Beneficent, the Most Merciful. H?M【?】 . [These letters are one of the miracles of the Qur’? , and none but All? (Alon… | Ha-Mim — opening letters of chapter 41 |
-| 315 | 73 / block-5 | 1 / 186 | …l cry, torment, hit, a thunder-bolt) like the Sa‘iqa which overtook ‘Ad and Tham【?】 (people)." [Al-Qur'an 41:13] | Thamud — tribal name; also named in the quoted 41:13 passage |
+
+None: all flagged question-mark corruption has been resolved. This is not a complete spelling or factual review.
 
 ## Every occurrence, with full original passages
 
@@ -64,7 +25,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 1 | 1 | 100 | Review | Thamud — tribal name; also named in the quoted 41:13 passage |
+| 1 | 1 | 100 | Fixed | Thamûd — verified on printed scan page(s) 16, 116 |
 
 ### PDF page 9, block-5
 
@@ -209,8 +170,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 20 | 1 | 41 | Review | Tayma / Taima — place name; verify transliteration |
-| 21 | 2 | 119 | Review | Tayma / Taima — place name; verify transliteration |
+| 20 | 1 | 41 | Fixed | Taimâ’ — verified on printed scan page(s) 22 |
+| 21 | 2 | 119 | Fixed | Taimâ’ — verified on printed scan page(s) 22 |
 
 ### PDF page 12, block-16
 
@@ -220,7 +181,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 22 | 1 | 46 | Review | Tayma / Taima — place name; verify transliteration |
+| 22 | 1 | 46 | Fixed | Taimâ’ — verified on printed scan page(s) 22 |
 
 ### PDF page 14, block-7
 
@@ -342,7 +303,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 44 | 1 | 5 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 45 | 2 | 448 | Review | Ham — camel category in Qur’an 5:103; verify transliteration |
+| 45 | 2 | 448 | Fixed | Hâm (a stallion — verified on printed scan page(s) 37 |
 | 46 | 3 | 721 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 23, block-7
@@ -456,7 +417,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 60 | 1 | 104 | Review | Al-Ahsa — place name; verify ending and transliteration |
+| 60 | 1 | 104 | Fixed | Al-Ahsâ’ — verified on printed scan page(s) 41 |
 
 ### PDF page 28, block-5
 
@@ -466,7 +427,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 61 | 1 | 127 | Review | Dawud / Da’ud — Abu Dawud in the reporting context |
+| 61 | 1 | 127 | Fixed | Da’ûd — verified on printed scan page(s) 43, 44 |
 
 ### PDF page 29, block-1
 
@@ -476,7 +437,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 62 | 1 | 51 | Review | Dawud / Da’ud — Abu Dawud in the reporting context |
+| 62 | 1 | 51 | Fixed | Da’ûd — verified on printed scan page(s) 43, 44 |
 | 63 | 2 | 141 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 30, block-6
@@ -559,8 +520,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 73 | 1 | 320 | Review | Sulaiman — personal name; verify spelling against another edition |
-| 74 | 2 | 362 | Review | Mahmud — personal name; verify spelling against another edition |
+| 73 | 1 | 320 | Fixed | Sulaimân — verified on printed scan page(s) 56 |
+| 74 | 2 | 362 | Fixed | Mahmûd — verified on printed scan page(s) 56 |
 
 ### PDF page 37, block-6
 
@@ -789,7 +750,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | --- | --- | --- | --- | --- |
 | 112 | 1 | 103 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 113 | 2 | 159 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 114 | 3 | 168 | Review | Surah — chapter label; join the split word |
+| 114 | 3 | 168 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 
 ### PDF page 46, block-2
 
@@ -801,7 +762,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | --- | --- | --- | --- | --- |
 | 115 | 1 | 20 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 116 | 2 | 104 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 117 | 3 | 122 | Review | Salat — prayer; verify the edition’s transliteration |
+| 117 | 3 | 122 | Fixed | Salât — verified on printed scan page(s) 72, 78 |
 
 ### PDF page 46, block-3
 
@@ -827,8 +788,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | 122 | 2 | 2 | Fixed | Continuation of the same honorific; removed — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 123 | 3 | 3 | Fixed | Continuation of the same honorific; removed — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 124 | 4 | 37 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 125 | 5 | 89 | Review | Surah — chapter label; join the split word |
-| 126 | 6 | 101 | Review | Isra’ — chapter 17 title; damaged ending/entity |
+| 125 | 5 | 89 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
+| 126 | 6 | 101 | Fixed | Isrâ’ — verified on printed scan page(s) 72 |
 | 127 | 7 | 161 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 46, block-5
@@ -942,7 +903,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 150 | 1 | 1068 | Review | Abdullah — personal name |
+| 150 | 1 | 1068 | Fixed | Abdullâh — verified on printed scan page(s) 78 |
 
 ### PDF page 50, block-3
 
@@ -952,7 +913,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 151 | 1 | 283 | Review | Surah — chapter label; join the split word |
+| 151 | 1 | 283 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 
 ### PDF page 50, block-4
 
@@ -962,7 +923,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 152 | 1 | 7 | Review | Salat — prayer; verify the edition’s transliteration |
+| 152 | 1 | 7 | Fixed | Salât — verified on printed scan page(s) 72, 78 |
 
 ### PDF page 50, block-5
 
@@ -972,7 +933,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 153 | 1 | 32 | Review | Salat — prayer; verify the edition’s transliteration |
+| 153 | 1 | 32 | Fixed | Salât — verified on printed scan page(s) 72, 78 |
 
 ### PDF page 50, block-6
 
@@ -982,7 +943,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 154 | 1 | 71 | Review | Salat — prayer; verify the edition’s transliteration |
+| 154 | 1 | 71 | Fixed | Salât — verified on printed scan page(s) 72, 78 |
 
 ### PDF page 51, block-1
 
@@ -1022,8 +983,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 158 | 1 | 77 | Review | Surah — chapter label; join the split word |
-| 159 | 2 | 93 | Review | Shu‘ara’ — chapter 26 title; remove damaged markup after verification |
+| 158 | 1 | 77 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
+| 159 | 2 | 93 | Fixed | Shu‘arâ — verified on printed scan page(s) 81 |
 | 160 | 3 | 496 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 52, block-7
@@ -1114,7 +1075,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 177 | 1 | 32 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 178 | 2 | 127 | Review | Al-Mushrikun — plural defined as polytheists in 15:94 |
+| 178 | 2 | 127 | Fixed | Al-Mushrikûn — verified on printed scan page(s) 84 |
 
 ### PDF page 54, block-4
 
@@ -1371,8 +1332,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 210 | 1 | 14 | Review | Al-Kafirun — chapter 109 address; join split word after verification |
-| 211 | 2 | 18 | Review | Al-Kafirun — chapter 109 address; join split word after verification |
+| 210 | 1 | 14 | Fixed | Al-Kâfirûn — verified on printed scan page(s) 92 |
+| 211 | 2 | 18 | Fixed | Al-Kâfirûn — verified on printed scan page(s) 92 |
 | 212 | 3 | 40 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
 ### PDF page 59, block-3
@@ -1504,7 +1465,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 226 | 1 | 423 | Review | Surah — chapter label; join the split word |
+| 226 | 1 | 423 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 
 ### PDF page 63, block-4
 
@@ -1535,7 +1496,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 230 | 1 | 2 | Review | Surah — chapter label; join the split word |
+| 230 | 1 | 2 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 
 ### PDF page 63, block-7
 
@@ -1566,7 +1527,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 234 | 1 | 200 | Review | Surah — chapter label; join the split word |
+| 234 | 1 | 200 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 | 235 | 2 | 268 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 236 | 3 | 726 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 237 | 4 | 789 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
@@ -1643,7 +1604,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 247 | 1 | 92 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 248 | 2 | 147 | Review | Surah — chapter label; join the split word |
+| 248 | 2 | 147 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
 
 ### PDF page 66, block-2
 
@@ -1770,8 +1731,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 267 | 1 | 169 | Review | Surah — chapter label; join the split word |
-| 268 | 2 | 178 | Review | Al-Haqqah — chapter 69 title; join split word |
+| 267 | 1 | 169 | Fixed | Sûrah — verified on printed scan page(s) 72, 78, 81, 99–100, 103, 110 |
+| 268 | 2 | 178 | Fixed | Al-Hâqqah — verified on printed scan page(s) 110 |
 | 269 | 3 | 228 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 270 | 4 | 248 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 
@@ -1825,12 +1786,12 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 276 | 1 | 135 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 277 | 2 | 149 | Review | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 278 | 3 | 151 | Review | Ta-Ha — chapter 20 title; damaged letters and markup |
+| 277 | 2 | 149 | Fixed | Tâ-Hâ — verified on printed scan page(s) 111 |
+| 278 | 3 | 151 | Fixed | Tâ-Hâ — verified on printed scan page(s) 111 |
 | 279 | 4 | 405 | Keep | Logical question in context; retain punctuation |
 | 280 | 5 | 880 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 281 | 6 | 1354 | Review | Ta-Ha — chapter 20 title; damaged letters and markup |
-| 282 | 7 | 1356 | Review | Ta-Ha — chapter 20 title; damaged letters and markup |
+| 281 | 6 | 1354 | Fixed | Tâ-Hâ — verified on printed scan page(s) 111 |
+| 282 | 7 | 1356 | Fixed | Tâ-Hâ — verified on printed scan page(s) 111 |
 
 ### PDF page 71, block-1
 
@@ -1841,10 +1802,10 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 283 | 1 | 18 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 284 | 2 | 23 | Review | La ilaha — transliteration in quoted 20:14; verify whole phrase |
-| 285 | 3 | 26 | Review | La ilaha — transliteration in quoted 20:14; verify whole phrase |
-| 286 | 4 | 129 | Review | Iqamat-as-Salat — prayer expression in 20:14; verify whole phrase |
-| 287 | 5 | 140 | Review | Iqamat-as-Salat — prayer expression in 20:14; verify whole phrase |
+| 284 | 2 | 23 | Fixed | Lâ ilâha — verified on printed scan page(s) 111 |
+| 285 | 3 | 26 | Fixed | Lâ ilâha — verified on printed scan page(s) 111 |
+| 286 | 4 | 129 | Fixed | Iqâmat-as-Salât — verified on printed scan page(s) 111 |
+| 287 | 5 | 140 | Fixed | Iqâmat-as-Salât — verified on printed scan page(s) 111 |
 
 ### PDF page 71, block-2
 
@@ -1932,8 +1893,8 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
 | 302 | 1 | 20 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
-| 303 | 2 | 65 | Review | Ha-Mim — opening letters of chapter 41 |
-| 304 | 3 | 67 | Review | Ha-Mim — opening letters of chapter 41 |
+| 303 | 2 | 65 | Fixed | Hâ-Mîm — verified on printed scan page(s) 115 |
+| 304 | 3 | 67 | Fixed | Hâ-Mîm — verified on printed scan page(s) 115 |
 | 305 | 4 | 121 | Fixed | Qur’an — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 306 | 5 | 141 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
 | 307 | 6 | 195 | Fixed | Allah — confirmed damaged term; surrounding spacing/split suffix repaired |
@@ -1980,7 +1941,7 @@ Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn,
 
 | # | ? in passage | Character | Decision | Reading / reason |
 | --- | --- | --- | --- | --- |
-| 315 | 1 | 186 | Review | Thamud — tribal name; also named in the quoted 41:13 passage |
+| 315 | 1 | 186 | Fixed | Thamûd — verified on printed scan page(s) 16, 116 |
 
 ### PDF page 73, block-6
 

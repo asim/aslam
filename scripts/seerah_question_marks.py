@@ -3,32 +3,7 @@ import collections
 import html
 import re
 
-# Match whole damaged fragments, including multi-question-mark fragments.
-# Proposed readings are contextual inferences, not verified edition transcriptions.
-SUGGESTIONS = {
-    "Tham?": "Thamud — tribal name; also named in the quoted 41:13 passage",
-    "Muzaiqb?#146;": "Possibly Muzaiqiya — personal name; check another edition",
-    "Taim?#146;": "Tayma / Taima — place name; verify transliteration",
-    "H? (a stallion": "Ham — camel category in Qur’an 5:103; verify transliteration",
-    "Al-Ahs?#146;": "Al-Ahsa — place name; verify ending and transliteration",
-    "Da’?": "Dawud / Da’ud — Abu Dawud in the reporting context",
-    "Sulaim?": "Sulaiman — personal name; verify spelling against another edition",
-    "Mahm?": "Mahmud — personal name; verify spelling against another edition",
-    "S? ah": "Surah — chapter label; join the split word",
-    "Sal?": "Salat — prayer; verify the edition’s transliteration",
-    "Moses ? ?": "Likely a lost honorific after Moses; exact text unknown",
-    "???": "Likely continuation of the lost honorific after Moses; exact text unknown",
-    "Isr?#146;": "Isra’ — chapter 17 title; damaged ending/entity",
-    "Abdull?": "Abdullah — personal name",
-    "Shu‘ar?/i>": "Shu‘ara’ — chapter 26 title; remove damaged markup after verification",
-    "Al-Mushrik?": "Al-Mushrikun — plural defined as polytheists in 15:94",
-    "Al-K? ir?": "Al-Kafirun — chapter 109 address; join split word after verification",
-    "Al-H? qah": "Al-Haqqah — chapter 69 title; join split word",
-    "T?H?/i>": "Ta-Ha — chapter 20 title; damaged letters and markup",
-    "L?il? a": "La ilaha — transliteration in quoted 20:14; verify whole phrase",
-    "Iq? at-as-Sal?": "Iqamat-as-Salat — prayer expression in 20:14; verify whole phrase",
-    "H?M?": "Ha-Mim — opening letters of chapter 41",
-}
+from seerah_verified import VERIFIED
 
 
 def decision(text, position):
@@ -41,11 +16,10 @@ def decision(text, position):
         for match in re.finditer(pattern, text):
             if match.start() <= position < match.end():
                 return "Fixed", replacement + " — confirmed damaged term; surrounding spacing/split suffix repaired"
-    # Longer matches take precedence over generic Sal? etc.
-    for fragment in sorted(SUGGESTIONS, key=len, reverse=True):
+    for fragment, corrected, pages in VERIFIED:
         for match in re.finditer(re.escape(fragment), text):
             if match.start() <= position < match.end():
-                return "Review", SUGGESTIONS[fragment]
+                return "Fixed", corrected + " — verified on printed scan page(s) " + pages
     return "Keep", "Logical question in context; retain punctuation"
 
 
@@ -74,12 +48,14 @@ def write_audit(pages, output, source_hash):
              f"Source PDF SHA-256: `{source_hash}`.", "",
              f"{len(entries)} original question marks: {counts['Fixed']} fixed, {counts['Review']} flagged for review, {counts['Keep']} retained as logical questions.", "",
              "Ordered by PDF page, extraction block, then character position. Each occurrence has a global number, an in-passage question-mark number and a one-based character position in the original text. Full passages below preserve sentence order without guessing sentence boundaries. 【?】 marks the target occurrence in excerpts.", "",
-             "Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. Review suggestions are contextual inferences, not applied changes or verified transcriptions. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.", "",
+             "Fixed: Allah and Qur’an, including split suffixes and spacing, plus Muhsinûn, Muzaiqbâ’ and the honorific عليه السلام after Moses. The latter three are verified visually against printed pages 18, 16 and 72 of the [archive scan](https://archive.org/details/TheSealedNectar-Alhamdulillah-library.blogspot.in.pdf). Muhsinûn supersedes the earlier inferred Muhsinin reading. The remaining damaged fragments have also been verified visually against the scan and corrected; each entry names the printed verification page. All 296 corrupt question marks are resolved. Keep decisions reflect a contextual review of this edition, not a general-purpose punctuation detector.", "",
              "## Remaining suspected corruption, in reading order", "",
              "| # | PDF page / block | ? in passage / character | Context | Proposed reading (not applied) |", "| --- | --- | --- | --- | --- |"]
     for n, page, block, local, char, status, reason, excerpt in entries:
         if status == "Review":
             lines.append(f"| {n} | {page} / {block} | {local} / {char} | {escape(excerpt)} | {escape(reason)} |")
+    if not counts["Review"]:
+        lines += ["", "None: all flagged question-mark corruption has been resolved. This is not a complete spelling or factual review."]
     lines += ["", "## Every occurrence, with full original passages", ""]
     for page, block, text, rows in passages:
         lines += [f"### PDF page {page}, {block}", "", f"[Open passage](https://aslam.org/seerah/page/{page}#{block})", "", "> " + escape(text), "",
