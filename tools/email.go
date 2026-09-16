@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"mime/quotedprintable"
+	"net"
 	"net/smtp"
 	"net/textproto"
 	"os"
@@ -34,7 +35,16 @@ type Email struct {
 	// AuthResults is the Authentication-Results header added by our own
 	// receiving server. See VerifyAuthResults.
 	AuthResults string
+	// ReadError indicates a message deliberately skipped rather than truncated.
+	ReadError string
 }
+
+const (
+	maxEmailBytes     = 2 << 20
+	maxEmailTextBytes = 256 << 10
+	maxEmailBatch     = 50
+	imapTimeout       = 30 * time.Second
+)
 
 func getEmailConfig() (user, password string, err error) {
 	user = os.Getenv("GMAIL_USER")
@@ -60,12 +70,26 @@ func Connect() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, err := client.DialTLS("imap.gmail.com:993", &tls.Config{})
+	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: imapTimeout}, "tcp", "imap.gmail.com:993", &tls.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %w", err)
 	}
+	// Bound the server greeting too, and close even if client construction fails.
+	if err := conn.SetDeadline(time.Now().Add(imapTimeout)); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	// New may issue CAPABILITY before its command timeout can be set.
+	greetingTimer := time.AfterFunc(imapTimeout, func() { conn.Close() })
+	c, err := client.New(conn)
+	greetingTimer.Stop()
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("IMAP greeting failed: %w", err)
+	}
+	c.Timeout = imapTimeout
 	if err := c.Login(user, password); err != nil {
-		c.Logout()
+		c.Terminate()
 		return nil, fmt.Errorf("login failed: %w", err)
 	}
 	return &Session{c: c}, nil
@@ -73,6 +97,8 @@ func Connect() (*Session, error) {
 
 func (s *Session) Close() {
 	if s != nil && s.c != nil {
+		defer s.c.Terminate()
+		s.c.Timeout = 5 * time.Second
 		s.c.Logout()
 	}
 }
@@ -95,6 +121,7 @@ func (s *Session) selectInbox() error {
 // and they are silently never handled. Anything not yet dealt with stays
 // unread and is picked up on a later cycle instead.
 func (s *Session) FetchUnread(limit int) ([]Email, error) {
+	limit = boundedEmailLimit(limit)
 	if err := s.selectInbox(); err != nil {
 		return nil, err
 	}
@@ -123,6 +150,7 @@ func (s *Session) FetchUnread(limit int) ([]Email, error) {
 // FetchRecent returns the most recent messages, newest first, regardless of
 // read state.
 func (s *Session) FetchRecent(limit int) ([]Email, error) {
+	limit = boundedEmailLimit(limit)
 	// Selected directly rather than via selectInbox: the message count is
 	// needed to build the sequence range.
 	status, err := s.c.Select("INBOX", false)
@@ -153,11 +181,20 @@ func (s *Session) FetchRecent(limit int) ([]Email, error) {
 	return emails, nil
 }
 
-func (s *Session) fetch(seqSet *imap.SeqSet, byUID bool) ([]Email, error) {
-	section := &imap.BodySectionName{}
-	items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchUid, section.FetchItem()}
+func boundedEmailLimit(limit int) int {
+	if limit <= 0 || limit > maxEmailBatch {
+		return maxEmailBatch
+	}
+	return limit
+}
 
-	messages := make(chan *imap.Message, 32)
+func (s *Session) fetch(seqSet *imap.SeqSet, byUID bool) ([]Email, error) {
+	// Limit bytes on the wire: limiting the MIME reader alone is too late,
+	// since go-imap buffers literals. PEEK leaves transient failures unread.
+	section := &imap.BodySectionName{Peek: true, Partial: []int{0, maxEmailBytes + 1}}
+	items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid, imap.FetchRFC822Size, section.FetchItem()}
+
+	messages := make(chan *imap.Message)
 	done := make(chan error, 1)
 	go func() {
 		if byUID {
@@ -195,7 +232,16 @@ func (s *Session) fetch(seqSet *imap.SeqSet, byUID bool) ([]Email, error) {
 		}
 
 		for _, literal := range msg.Body {
-			email.Body, email.AuthResults = parseMessage(literal)
+			if msg.Size > maxEmailBytes || literal.Len() > maxEmailBytes {
+				email.ReadError = "message exceeds 2 MiB including attachments"
+				continue
+			}
+			var err error
+			email.Body, email.AuthResults, err = parseMessage(literal)
+			if err != nil {
+				email.Body = ""
+				email.ReadError = err.Error()
+			}
 		}
 
 		emails = append(emails, email)
@@ -236,12 +282,12 @@ func FetchEmails(limit int, unreadOnly bool) ([]Email, error) {
 }
 
 // parseMessage extracts the text body and the Authentication-Results header.
-func parseMessage(r imap.Literal) (body, authResults string) {
+func parseMessage(r imap.Literal) (body, authResults string, err error) {
 	mr, err := mail.CreateReader(r)
 	if err != nil {
 		// Try reading as plain text
-		b, _ := io.ReadAll(r)
-		return string(b), ""
+		b, err := readEmailText(r)
+		return string(b), "", err
 	}
 
 	// Headers are prepended by each hop, so the first Authentication-Results
@@ -251,27 +297,42 @@ func parseMessage(r imap.Literal) (body, authResults string) {
 
 	for {
 		p, err := mr.NextPart()
-		if err != nil {
+		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			return "", authResults, fmt.Errorf("cannot read email MIME part: %w", err)
 		}
 
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
 			contentType, _, _ := h.ContentType()
 			if strings.HasPrefix(contentType, "text/plain") {
-				b, _ := io.ReadAll(p.Body)
+				b, err := readEmailText(p.Body)
+				if err != nil {
+					return "", authResults, err
+				}
 				body = string(b)
 			} else if strings.HasPrefix(contentType, "text/html") && body == "" {
-				b, _ := io.ReadAll(p.Body)
+				b, err := readEmailText(p.Body)
+				if err != nil {
+					return "", authResults, err
+				}
 				body = stripHTML(string(b))
 			}
 		}
 	}
 
-	return strings.TrimSpace(body), authResults
+	return strings.TrimSpace(body), authResults, nil
 }
 
-
+func readEmailText(r io.Reader) ([]byte, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxEmailTextBytes+1))
+	if len(b) > maxEmailTextBytes {
+		return nil, fmt.Errorf("email text exceeds 256 KiB")
+	}
+	return b, err
+}
 
 // SendEmail sends an email via Gmail SMTP.
 func SendEmail(to, subject, body string) (string, error) {

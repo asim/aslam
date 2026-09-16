@@ -61,15 +61,14 @@ func startEmailWorker() {
 
 	log.Println("Email worker: starting (checking every 2 minutes)")
 	log.Println("Email worker: can be disabled from /admin")
-	
-	// Initial check after 30 seconds
-	time.AfterFunc(30*time.Second, func() {
-		checkInbox()
-	})
 
-	// Then check every 2 minutes
-	ticker := time.NewTicker(2 * time.Minute)
+	// Initial check after 30 seconds
 	go func() {
+		time.Sleep(30 * time.Second)
+		checkInbox()
+		// Keep startup and periodic polls on the same goroutine.
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
 		for range ticker.C {
 			checkInbox()
 		}
@@ -94,8 +93,6 @@ func checkInbox() {
 		})
 		return
 	}
-
-	log.Println("Email worker: checking inbox")
 
 	// One session for the whole poll: fetching and flagging over a single
 	// connection instead of reconnecting per message.
@@ -126,7 +123,6 @@ func checkInbox() {
 	})
 
 	if len(emails) == 0 {
-		log.Println("Email worker: no emails")
 		return
 	}
 
@@ -157,6 +153,13 @@ func checkInbox() {
 // flag it as read. A false return means a transient failure worth retrying, so
 // the message is left unread.
 func processEmail(email tools.Email) bool {
+	if email.ReadError != "" {
+		log.Printf("Email worker: skipped UID %d: %s", email.UID, email.ReadError)
+		updateEmailStatus(func(s *emailWorkerStatus) {
+			s.LastResult = fmt.Sprintf("Skipped email UID %d: %s", email.UID, email.ReadError)
+		})
+		return true
+	}
 	// Extract sender email address
 	senderEmail := extractEmail(email.From)
 
@@ -236,7 +239,7 @@ func processEmail(email tools.Email) bool {
 		"thread_id":  threadID,
 		"references": email.References,
 	})
-	
+
 	_, err = db.CreatePendingTask("email", convID, email.MessageID, string(metadata))
 	if err != nil {
 		log.Printf("Email worker: failed to create pending task: %v", err)
@@ -288,12 +291,12 @@ func determineThreadID(email tools.Email) string {
 		}
 		log.Printf("Email worker: no thread found for In-Reply-To %s", email.InReplyTo)
 	}
-	
+
 	// New thread - use this message's ID
 	if email.MessageID != "" {
 		return email.MessageID
 	}
-	
+
 	// Fallback
 	return fmt.Sprintf("thread-%d", time.Now().UnixNano())
 }
@@ -321,5 +324,3 @@ func getOrCreateConversation(threadID, subject, sender string) (int64, error) {
 
 	return convID, nil
 }
-
-
