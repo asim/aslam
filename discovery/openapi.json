@@ -1,0 +1,297 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aslam Public Knowledge API",
+    "version": "1.0.0",
+    "description": "Read-only retrieval of published Islamic reference collections. No API key or session is required. Excludes user content and cached AI answers. Read full passages before quoting and retain source attribution. Account and chat APIs are outside this description."
+  },
+  "servers": [
+    {
+      "url": "https://aslam.org"
+    }
+  ],
+  "security": [],
+  "externalDocs": {
+    "description": "Agent guide",
+    "url": "https://aslam.org/llms.txt"
+  },
+  "paths": {
+    "/api/knowledge/search": {
+      "get": {
+        "operationId": "searchKnowledge",
+        "summary": "Search published reference collections",
+        "description": "Keyword search, not a generated answer. Missing or whitespace-only q returns an empty results array. Results contain excerpts and reader URL paths. No pagination parameter is supported.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords; trimmed value must not exceed 1000 UTF-8 bytes.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "patience"
+          },
+          {
+            "name": "collection",
+            "in": "query",
+            "required": false,
+            "description": "Omit or leave empty to search all collections.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "",
+                "quran",
+                "hadith",
+                "names",
+                "seerah",
+                "ghazali",
+                "islamqa",
+                "adhkar",
+                "salihin"
+              ]
+            },
+            "example": "quran"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of results returned.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "example": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching excerpts; results is an empty array when there are no matches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Query too long, unknown collection, or invalid limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Only GET is supported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Knowledge search unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/knowledge/resource": {
+      "get": {
+        "operationId": "getKnowledgeResource",
+        "summary": "Read a complete reference resource",
+        "description": "Use the relative URL path from a search result, URL-encoded as path. Supported shapes: /quran/{chapter}/{verse}, /hadith/{number}, /names/{number}, /salihin/{number}, /ghazali/{slug}, /islamqa/{slug}, /adhkar/{slug}, /seerah/page/{page}. Seerah pages range from 8 to 323. Do not pass a full URL, query string or fragment. Resource keys vary by collection.",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "Reader path for the requested resource. Obtain slugs from search results.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "/quran/2/153"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full resource and citation metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown or unsupported knowledge resource path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Only GET is supported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Knowledge resource unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Seerah dataset unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Collection": {
+        "type": "string",
+        "enum": [
+          "quran",
+          "hadith",
+          "names",
+          "seerah",
+          "ghazali",
+          "islamqa",
+          "adhkar",
+          "salihin"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "required": [
+          "Kind",
+          "Source"
+        ],
+        "properties": {
+          "Kind": {
+            "$ref": "#/components/schemas/Collection"
+          },
+          "Title": {
+            "type": "string"
+          },
+          "Content": {
+            "type": "string",
+            "description": "Excerpt, not necessarily the full passage"
+          },
+          "Role": {
+            "type": "string",
+            "description": "Source attribution or context"
+          },
+          "Source": {
+            "type": "string",
+            "description": "Collection attribution"
+          },
+          "URL": {
+            "type": "string",
+            "description": "Relative reader URL path; resolve against https://aslam.org"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ResourceResponse": {
+        "type": "object",
+        "required": [
+          "kind",
+          "source",
+          "url",
+          "resource"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/Collection"
+          },
+          "source": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute citation URL"
+          },
+          "resource": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Full collection-specific record. Fields and casing vary. Preserve Arabic, translation, commentary and attribution where present; Seerah includes Title, Content, Page, Author and Translator."
+          }
+        }
+      }
+    }
+  }
+}

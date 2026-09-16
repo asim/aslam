@@ -43,6 +43,16 @@ AI works in the background to help find, organise, and connect information acros
 - **User accounts** — email/password or Google OAuth, admin/user roles
 - **Auto-deploy** — cron checks GitHub every 5 minutes, rebuilds on changes
 
+## Agent discovery
+
+Public discovery documents are embedded in the Go binary and served without authentication:
+
+- `/.well-known/api-catalog` — RFC 9727 Linkset linking to the public knowledge endpoints and their descriptions.
+- `/openapi.json` — OpenAPI 3.1 specification for search and full-resource retrieval.
+- `/llms.txt` — collection guidance, citation rules, and example requests for agents.
+
+All three support GET and HEAD. The catalog uses `application/linkset+json` with the RFC 9727 profile and advertises discovery links in its HTTP headers. They describe the public knowledge API; account and chat actions are outside this catalog. Keep `discovery/openapi.json` and `discovery/llms.txt` in sync when changing the knowledge handlers. Run `go test . -run 'TestDiscoveryRoutes|TestKnowledgeDiscoveryContract'` to check the serving and API contracts.
+
 ## Knowledge API
 
 Public reference retrieval needs no API key or session. It never includes chats,
