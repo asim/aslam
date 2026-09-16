@@ -17,12 +17,11 @@ func startTaskProcessor() {
 		log.Printf("Task processor: failed to reset stale tasks: %v", err)
 	}
 
-	// Process pending tasks immediately
-	go processPendingTasks()
-
-	// Then check every 30 seconds
-	ticker := time.NewTicker(30 * time.Second)
 	go func() {
+		// Run startup processing inline so a slow task cannot overlap a tick.
+		processPendingTasks()
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
 		for range ticker.C {
 			processPendingTasks()
 		}
@@ -175,7 +174,7 @@ func processEmailTask(task db.PendingTask) error {
 
 	// Create thread mapping for outbound message so replies to it continue the conversation
 	db.CreateEmailThread(outboundMsgID, task.ConversationID, outboundMsgID)
-	
+
 	// Update original thread
 	if meta.ThreadID != "" {
 		db.UpdateEmailThread(meta.ThreadID, outboundMsgID)

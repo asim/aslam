@@ -473,6 +473,9 @@ func executeEmailCheck(input map[string]interface{}) (string, error) {
 	var output string
 	for i, e := range emails {
 		body := e.Body
+		if e.ReadError != "" {
+			body = "Skipped: " + e.ReadError
+		}
 		if len(body) > 500 {
 			body = body[:500] + "..."
 		}
@@ -635,7 +638,6 @@ func executeIslamQA(input map[string]interface{}) (string, error) {
 	return output, nil
 }
 
-
 func executeGhazali(input map[string]interface{}) (string, error) {
 	query, _ := input["query"].(string)
 	if query == "" {
@@ -733,4 +735,3 @@ func executeRiyad(input map[string]interface{}) (string, error) {
 	}
 	return output, nil
 }
-
