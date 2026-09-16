@@ -16,7 +16,7 @@
     "url": "https://aslam.org/llms.txt"
   },
   "paths": {
-    "/api/knowledge/search": {
+    "/api/search": {
       "get": {
         "operationId": "searchKnowledge",
         "summary": "Search published reference collections",
@@ -111,7 +111,7 @@
         }
       }
     },
-    "/api/knowledge/resource": {
+    "/api/resource": {
       "get": {
         "operationId": "getKnowledgeResource",
         "summary": "Read a complete reference resource",

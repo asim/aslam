@@ -58,10 +58,10 @@ All three support GET and HEAD. The catalog uses `application/linkset+json` with
 Public reference retrieval needs no API key or session. It never includes chats,
 notes, saved entries or cached AI answers.
 
-- `GET /api/knowledge/search?q=patience&collection=quran&limit=20` returns
+- `GET /api/search?q=patience&collection=quran&limit=20` returns
   `results` with `Kind`, `Title`, `Content` (excerpt), `Role`, `Source` and `URL`.
   `collection` is optional; `limit` defaults to 20 and is bounded to 1–50.
-- `GET /api/knowledge/resource?path=/quran/2/153` returns `kind`, `source`,
+- `GET /api/resource?path=/quran/2/153` returns `kind`, `source`,
   an absolute citation `url`, and the full `resource` record. Pass the path from
   a search result. Arabic, translation, commentary and source metadata remain
   separate fields where present. Seerah records include page, author and translator.
@@ -70,7 +70,7 @@ Collections: `quran`, `hadith`, `names`, `seerah`, `ghazali`, `islamqa`,
 `adhkar`, `salihin`. Search uses keywords, not generated answers. Read the full
 passage before quoting an excerpt; distinguish scripture from biography and
 scholarly interpretation. Invalid input returns 400, missing resources 404.
-The existing `/api/search` retains its account-aware search behaviour.
+The app and CLI use `/api/app/search` for account-aware search. `/api/search` always returns public reference content, even when a session or API key is supplied. The earlier `/api/knowledge/search` and `/api/knowledge/resource` paths remain compatibility aliases.
 
 ## Pages
 

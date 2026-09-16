@@ -178,7 +178,7 @@ func handleSearch(args []string) {
 	}
 
 	query := strings.Join(args, " ")
-	resp, err := doGet("/api/search?q=" + query)
+	resp, err := doGet("/api/app/search?q=" + query)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)

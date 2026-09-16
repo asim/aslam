@@ -104,7 +104,7 @@
             btn.disabled = true;
 
             try {
-                const resp = await fetch('/api/search?q=' + encodeURIComponent(query));
+                const resp = await fetch('/api/app/search?q=' + encodeURIComponent(query));
                 const data = await resp.json();
 
                 if (data.error) {

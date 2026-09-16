@@ -67,8 +67,8 @@ func TestKnowledgeDiscoveryContract(t *testing.T) {
 		}
 	}
 	handlers := map[string]http.HandlerFunc{
-		"/api/knowledge/search":   handleKnowledgeSearch,
-		"/api/knowledge/resource": handleKnowledgeResource,
+		"/api/search":   handleKnowledgeSearch,
+		"/api/resource": handleKnowledgeResource,
 	}
 	if len(spec.Paths) != len(handlers) {
 		t.Fatal("documented paths drifted")
@@ -120,13 +120,13 @@ func TestKnowledgeDiscoveryContract(t *testing.T) {
 		path   string
 		status int
 	}{
-		{"/api/knowledge/search", 200},
-		{"/api/knowledge/search?collection=notes", 400},
-		{"/api/knowledge/search?limit=51", 400},
-		{"/api/knowledge/search?limit=0", 400},
-		{"/api/knowledge/search?q=" + strings.Repeat("a", 1001), 400},
-		{"/api/knowledge/resource?path=/notes/1", 400},
-		{"/api/knowledge/resource", 400},
+		{"/api/search", 200},
+		{"/api/search?collection=notes", 400},
+		{"/api/search?limit=51", 400},
+		{"/api/search?limit=0", 400},
+		{"/api/search?q=" + strings.Repeat("a", 1001), 400},
+		{"/api/resource?path=/notes/1", 400},
+		{"/api/resource", 400},
 	} {
 		r := httptest.NewRequest("GET", tc.path, nil)
 		w := httptest.NewRecorder()

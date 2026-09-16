@@ -127,3 +127,12 @@ func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"kind": kind, "source": knowledgeCollections[kind], "url": "https://aslam.org" + path, "resource": item})
 }
+
+func registerContentAPIRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/search", handleKnowledgeSearch)
+	mux.HandleFunc("/api/resource", handleKnowledgeResource)
+	mux.HandleFunc("/api/app/search", optionalAuth(handleAPISearch))
+	// Compatibility for integrations already using the earlier public routes.
+	mux.HandleFunc("/api/knowledge/search", handleKnowledgeSearch)
+	mux.HandleFunc("/api/knowledge/resource", handleKnowledgeResource)
+}
