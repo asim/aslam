@@ -231,6 +231,8 @@ func main() {
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
 	http.HandleFunc("/api/search", optionalAuth(handleAPISearch))
+	http.HandleFunc("/api/knowledge/search", handleKnowledgeSearch)
+	http.HandleFunc("/api/knowledge/resource", handleKnowledgeResource)
 	http.HandleFunc("/search", optionalAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))

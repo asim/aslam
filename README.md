@@ -43,6 +43,25 @@ AI works in the background to help find, organise, and connect information acros
 - **User accounts** — email/password or Google OAuth, admin/user roles
 - **Auto-deploy** — cron checks GitHub every 5 minutes, rebuilds on changes
 
+## Knowledge API
+
+Public reference retrieval needs no API key or session. It never includes chats,
+notes, saved entries or cached AI answers.
+
+- `GET /api/knowledge/search?q=patience&collection=quran&limit=20` returns
+  `results` with `Kind`, `Title`, `Content` (excerpt), `Role`, `Source` and `URL`.
+  `collection` is optional; `limit` defaults to 20 and is bounded to 1–50.
+- `GET /api/knowledge/resource?path=/quran/2/153` returns `kind`, `source`,
+  an absolute citation `url`, and the full `resource` record. Pass the path from
+  a search result. Arabic, translation, commentary and source metadata remain
+  separate fields where present. Seerah records include page, author and translator.
+
+Collections: `quran`, `hadith`, `names`, `seerah`, `ghazali`, `islamqa`,
+`adhkar`, `salihin`. Search uses keywords, not generated answers. Read the full
+passage before quoting an excerpt; distinguish scripture from biography and
+scholarly interpretation. Invalid input returns 400, missing resources 404.
+The existing `/api/search` retains its account-aware search behaviour.
+
 ## Pages
 
 | Route | What it does |
