@@ -33,37 +33,13 @@ func TestKnowledgeSearchAndCompleteResource(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// The canonical route must preserve the original handler's response.
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/search?q=patience&collection=quran", nil))
-	var result struct {
-		Results []map[string]interface{} `json:"results"`
-	}
-	if w.Code != 200 {
-		t.Fatal(w.Body.String())
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
-		t.Fatal(err)
-	}
-	if len(result.Results) != 1 || result.Results[0]["Kind"] != "quran" || result.Results[0]["Source"] != "Quran" {
-		t.Fatal(w.Body.String())
-	}
-	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/search?q=patience", nil))
-	if strings.Contains(w.Body.String(), `"Kind":"notes"`) || strings.Contains(w.Body.String(), `"Kind":"chat"`) {
-		t.Fatal(w.Body.String())
-	}
-	publicBody := w.Body.String()
-	previousKey := apiKey
-	apiKey = "public-content-test-key"
-	t.Cleanup(func() { apiKey = previousKey })
-	for _, path := range []string{"/api/search", "/api/knowledge/search"} {
-		r := httptest.NewRequest("GET", path+"?q=patience", nil)
-		r.Header.Set("Authorization", "Bearer "+apiKey)
-		w = httptest.NewRecorder()
-		mux.ServeHTTP(w, r)
-		if w.Code != 200 || w.Body.String() != publicBody {
-			t.Fatalf("public results depend on credentials or alias: %s", path)
-		}
+	baseline := httptest.NewRecorder()
+	optionalAuth(handleAPISearch)(baseline, httptest.NewRequest("GET", "/api/search?q=patience", nil))
+	if w.Code != baseline.Code || w.Body.String() != baseline.Body.String() {
+		t.Fatal("existing search behavior changed")
 	}
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/resource?path=/quran/2/153", nil))
@@ -76,17 +52,15 @@ func TestKnowledgeSearchAndCompleteResource(t *testing.T) {
 	if w.Code != 200 || resource.Resource["Text"] != text || resource.Resource["Arabic"] != "عربي" {
 		t.Fatal(w.Body.String())
 	}
-	fullBody := w.Body.String()
-	w = httptest.NewRecorder()
-	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/knowledge/resource?path=/quran/2/153", nil))
-	if w.Code != 200 || w.Body.String() != fullBody {
-		t.Fatal("resource alias changed")
+
+	for _, path := range []string{"/api/app/search", "/api/knowledge/search", "/api/knowledge/resource"} {
+		w = httptest.NewRecorder()
+		mux.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		if w.Code != 404 {
+			t.Fatalf("unrequested route still registered: %s", path)
+		}
 	}
-	w = httptest.NewRecorder()
-	mux.ServeHTTP(w, httptest.NewRequest("GET", "/api/app/search", nil))
-	if w.Code != 200 {
-		t.Fatal("app search route unavailable")
-	}
+
 }
 
 func TestKnowledgeResourceBoundary(t *testing.T) {
@@ -111,12 +85,5 @@ func TestKnowledgeResourceBoundary(t *testing.T) {
 	handleKnowledgeResource(w, httptest.NewRequest("GET", "/api/resource?path=/seerah/page/999", nil))
 	if w.Code != 404 {
 		t.Fatal(w.Code)
-	}
-	for _, q := range []string{"collection=notes", "limit=-1", "limit=51", "limit=invalid"} {
-		w = httptest.NewRecorder()
-		handleKnowledgeSearch(w, httptest.NewRequest("GET", "/api/search?"+q, nil))
-		if w.Code != 400 {
-			t.Fatal(q, w.Code)
-		}
 	}
 }

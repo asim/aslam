@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Aslam Public Knowledge API",
+    "title": "Aslam Content API",
     "version": "1.0.0",
-    "description": "Read-only retrieval of published Islamic reference collections. No API key or session is required. Excludes user content and cached AI answers. Read full passages before quoting and retain source attribution. Account and chat APIs are outside this description."
+    "description": "Programmatic access to the site's existing search and full reference content. Search retains existing account-aware behavior; resource retrieval is public and reference-only."
   },
   "servers": [
     {
@@ -18,53 +18,19 @@
   "paths": {
     "/api/search": {
       "get": {
-        "operationId": "searchKnowledge",
-        "summary": "Search published reference collections",
-        "description": "Keyword search, not a generated answer. Missing or whitespace-only q returns an empty results array. Results contain excerpts and reader URL paths. No pagination parameter is supported.",
+        "operationId": "search",
+        "summary": "Search the site's content",
+        "description": "Existing site search, unchanged. No authentication required. Results may include reference sources, public chats/notes and cached answers. Signed-in requests use existing account permissions. Only q is supported; collection, limit and pagination parameters are not supported. Missing or empty q returns an empty array; other no-match queries may return null.",
         "parameters": [
           {
             "name": "q",
             "in": "query",
             "required": false,
-            "description": "Search keywords; trimmed value must not exceed 1000 UTF-8 bytes.",
+            "description": "Search keywords.",
             "schema": {
               "type": "string"
             },
             "example": "patience"
-          },
-          {
-            "name": "collection",
-            "in": "query",
-            "required": false,
-            "description": "Omit or leave empty to search all collections.",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "",
-                "quran",
-                "hadith",
-                "names",
-                "seerah",
-                "ghazali",
-                "islamqa",
-                "adhkar",
-                "salihin"
-              ]
-            },
-            "example": "quran"
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results returned.",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20
-            },
-            "example": 5
           }
         ],
         "responses": {
@@ -78,28 +44,8 @@
               }
             }
           },
-          "400": {
-            "description": "Query too long, unknown collection, or invalid limit",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "405": {
-            "description": "Only GET is supported",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
-            "description": "Knowledge search unavailable",
+            "description": "Search failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -226,7 +172,10 @@
         ],
         "properties": {
           "results": {
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "$ref": "#/components/schemas/SearchResult"
             }
@@ -236,12 +185,12 @@
       "SearchResult": {
         "type": "object",
         "required": [
-          "Kind",
-          "Source"
+          "Kind"
         ],
         "properties": {
           "Kind": {
-            "$ref": "#/components/schemas/Collection"
+            "type": "string",
+            "description": "Result category; may include reference collections, chat, note, entry or searches."
           },
           "Title": {
             "type": "string"
@@ -254,13 +203,9 @@
             "type": "string",
             "description": "Source attribution or context"
           },
-          "Source": {
-            "type": "string",
-            "description": "Collection attribution"
-          },
           "URL": {
             "type": "string",
-            "description": "Relative reader URL path; resolve against https://aslam.org"
+            "description": "Reader URL path, or # for cached answers. Only supported reference paths can be passed to /api/resource."
           }
         },
         "additionalProperties": true

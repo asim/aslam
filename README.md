@@ -53,24 +53,14 @@ Public discovery documents are embedded in the Go binary and served without auth
 
 All three support GET and HEAD. The catalog uses `application/linkset+json` with the RFC 9727 profile and advertises discovery links in its HTTP headers. They describe the public knowledge API; account and chat actions are outside this catalog. Keep `discovery/openapi.json` and `discovery/llms.txt` in sync when changing the knowledge handlers. Run `go test . -run 'TestDiscoveryRoutes|TestKnowledgeDiscoveryContract'` to check the serving and API contracts.
 
-## Knowledge API
+## Content API
 
-Public reference retrieval needs no API key or session. It never includes chats,
-notes, saved entries or cached AI answers.
+- `GET /api/search?q=patience` uses the site's existing search unchanged. No login is required; signed-in requests use the existing account permissions. Results can include reference sources, public user content and cached answers, with additional account-visible content when authenticated.
+- Search accepts `q`. It does not support collection, limit or pagination parameters. The response is `{"results": [...]}`, with case-sensitive fields such as `Kind`, `Title`, `Content`, `Role` and `URL`. Results can be null when there are no matches.
+- `GET /api/resource?path=/quran/2/153` retrieves a full reference record with `kind`, `source`, citation `url` and `resource`. It requires no login. Arabic, translation, commentary and attribution remain separate where available.
+- Full-resource retrieval supports `quran`, `hadith`, `names`, `seerah`, `ghazali`, `islamqa`, `adhkar` and `salihin`. Use a supported result's reader path. Other search result kinds, user content and cached-answer links are not accepted by this endpoint.
 
-- `GET /api/search?q=patience&collection=quran&limit=20` returns
-  `results` with `Kind`, `Title`, `Content` (excerpt), `Role`, `Source` and `URL`.
-  `collection` is optional; `limit` defaults to 20 and is bounded to 1–50.
-- `GET /api/resource?path=/quran/2/153` returns `kind`, `source`,
-  an absolute citation `url`, and the full `resource` record. Pass the path from
-  a search result. Arabic, translation, commentary and source metadata remain
-  separate fields where present. Seerah records include page, author and translator.
-
-Collections: `quran`, `hadith`, `names`, `seerah`, `ghazali`, `islamqa`,
-`adhkar`, `salihin`. Search uses keywords, not generated answers. Read the full
-passage before quoting an excerpt; distinguish scripture from biography and
-scholarly interpretation. Invalid input returns 400, missing resources 404.
-The app and CLI use `/api/app/search` for account-aware search. `/api/search` always returns public reference content, even when a session or API key is supplied. The earlier `/api/knowledge/search` and `/api/knowledge/resource` paths remain compatibility aliases.
+Read full passages before quoting excerpts and retain their references. Discovery and examples are available at `/.well-known/api-catalog`, `/openapi.json` and `/llms.txt`.
 
 ## Pages
 

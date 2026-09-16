@@ -20,54 +20,6 @@ var knowledgeCollections = map[string]string{
 	"adhkar": "Duas and dhikr", "salihin": "Riyad us-Salihin",
 }
 
-func handleKnowledgeSearch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", "GET")
-		jsonError(w, "method not allowed", 405)
-		return
-	}
-	q := strings.TrimSpace(r.URL.Query().Get("q"))
-	collection := r.URL.Query().Get("collection")
-	if len(q) > 1000 {
-		jsonError(w, "query is too long", 400)
-		return
-	}
-	if collection != "" && knowledgeCollections[collection] == "" {
-		jsonError(w, "unknown collection", 400)
-		return
-	}
-	limit := 20
-	if raw := r.URL.Query().Get("limit"); raw != "" {
-		n, err := strconv.Atoi(raw)
-		if err != nil || n < 1 || n > 50 {
-			jsonError(w, "limit must be between 1 and 50", 400)
-			return
-		}
-		limit = n
-	}
-	results := []map[string]interface{}{}
-	if q != "" {
-		found, err := db.SearchAll(q, -1, false, false)
-		if err != nil {
-			jsonError(w, "knowledge search unavailable", 500)
-			return
-		}
-		for _, item := range found {
-			kind, _ := item["Kind"].(string)
-			if knowledgeCollections[kind] == "" || (collection != "" && collection != kind) {
-				continue
-			}
-			item["Source"] = knowledgeCollections[kind]
-			results = append(results, item)
-			if len(results) == limit {
-				break
-			}
-		}
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"results": results})
-}
-
 // Resource paths use the same references as the reader and search results.
 // No URL is fetched, and no user-owned resource type is accepted.
 func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
@@ -129,10 +81,6 @@ func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerContentAPIRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/search", handleKnowledgeSearch)
+	mux.HandleFunc("/api/search", optionalAuth(handleAPISearch))
 	mux.HandleFunc("/api/resource", handleKnowledgeResource)
-	mux.HandleFunc("/api/app/search", optionalAuth(handleAPISearch))
-	// Compatibility for integrations already using the earlier public routes.
-	mux.HandleFunc("/api/knowledge/search", handleKnowledgeSearch)
-	mux.HandleFunc("/api/knowledge/resource", handleKnowledgeResource)
 }
