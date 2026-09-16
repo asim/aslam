@@ -115,6 +115,26 @@
             </div>
 
             <!-- Status Section -->
+            <div class="admin-section" id="memory">
+                <h3>Memory</h3>
+                <div class="item-meta">{{.Memory.CapturedAt}} · Uptime {{.Memory.Uptime}} · Model {{.Memory.Model}}</div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0;">
+                    <div class="stat-box"><div class="stat-label">Resident memory (RSS)</div><div class="stat-value">{{.Memory.RSS}}</div></div>
+                    <div class="stat-box"><div class="stat-label">Go heap allocated</div><div class="stat-value">{{.Memory.HeapAllocated}}</div><div class="stat-detail">Includes garbage not yet collected</div></div>
+                    <div class="stat-box"><div class="stat-label">Goroutines</div><div class="stat-value">{{.Memory.Goroutines}}</div></div>
+                </div>
+                <p class="item-meta">Heap in use {{.Memory.HeapInUse}} · Idle heap {{.Memory.HeapIdle}} · Released to OS {{.Memory.HeapReleased}} · GC cycles {{.Memory.GCCount}}</p>
+                <p class="item-meta">Database connections: {{.Memory.Database.OpenConnections}} open, {{.Memory.Database.InUse}} in use, {{.Memory.Database.Idle}} idle.</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0;">
+                    <a class="btn btn-small" href="/admin#memory">Refresh</a>
+                    <a class="btn btn-small" href="/admin/profile?kind=heap">Download heap</a>
+                    <a class="btn btn-small" href="/admin/profile?kind=allocs">Download allocations</a>
+                    <a class="btn btn-small" href="/admin/profile?kind=goroutine">Download goroutines</a>
+                    <a class="btn btn-small" href="/admin/memory">Snapshot JSON</a>
+                </div>
+                <p class="item-meta">Heap downloads run garbage collection first. Capture one now and another after memory grows, before restarting. Refresh afterwards to see post-collection figures. RSS includes memory outside the Go heap, including SQLite.</p>
+            </div>
+
             <div class="admin-section">
                 <h3>Status</h3>
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px;">

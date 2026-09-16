@@ -259,6 +259,7 @@ func main() {
 	http.HandleFunc("/names", optionalAuth(handleNamesIndex))
 	http.HandleFunc("/names/", optionalAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
+	registerProfilingRoutes(http.DefaultServeMux)
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
@@ -3193,6 +3194,7 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	session := getSession(r)
 	accounts, _ := db.GetAccounts()
 	users, _ := db.GetUsers()
@@ -3265,6 +3267,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	renderTemplate(w, r, "admin.html", map[string]interface{}{
 		"Accounts":     accounts,
+		"Memory":       captureMemory(),
 		"Users":        users,
 		"Integrations": integrations,
 		"Tools":        toolDefs,
