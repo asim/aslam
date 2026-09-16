@@ -217,6 +217,7 @@ func main() {
 	http.HandleFunc("/app.js", handleStatic("app.js", "application/javascript"))
 
 	// Public landing page
+	registerDiscoveryRoutes(http.DefaultServeMux)
 	http.HandleFunc("/", handleLanding)
 
 	// Protected routes

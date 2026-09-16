@@ -1,0 +1,47 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://aslam.org/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://aslam.org/api/knowledge/search",
+          "title": "Search public Islamic references"
+        },
+        {
+          "href": "https://aslam.org/api/knowledge/resource",
+          "title": "Retrieve a full reference passage"
+        }
+      ]
+    },
+    {
+      "anchor": "https://aslam.org/api/knowledge/search",
+      "service-desc": [
+        {
+          "href": "https://aslam.org/openapi.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://aslam.org/llms.txt",
+          "type": "text/plain"
+        }
+      ]
+    },
+    {
+      "anchor": "https://aslam.org/api/knowledge/resource",
+      "service-desc": [
+        {
+          "href": "https://aslam.org/openapi.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://aslam.org/llms.txt",
+          "type": "text/plain"
+        }
+      ]
+    }
+  ]
+}
