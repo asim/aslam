@@ -6,41 +6,26 @@ Personal AI assistant for the family. Hosted at [aslam.org](https://aslam.org).
 
 See `ARCHITECTURE.md` for full details. Key principle: **single agent, multiple channels**.
 
-```
-aslam/
-├── main.go           # HTTP server, routes, Anthropic integration
-├── email_worker.go   # Email channel (IMAP polling)
-├── task_processor.go # Unified task queue processor
-├── db/
-│   ├── db.go         # Database functions (SQLCipher)
-│   └── schema.sql    # Reference schema
-├── tools/
-│   ├── tools.go      # Tool definitions and execution
-│   ├── email.go      # Email send/receive (IMAP/SMTP)
-│   ├── web.go        # URL fetching
-│   ├── wiki.go       # Wikipedia API
-│   ├── islam.go      # Islamic sources API
-│   └── search.go     # Web search (Brave API)
-├── html/             # HTML templates (embedded at build)
-├── scripts/
-│   ├── aslam.service        # Systemd service file
-│   ├── aslam-update.service # Auto-update oneshot service
-│   ├── aslam-update.timer   # Checks for updates every 5 minutes
-│   ├── deploy.sh            # Pull, build, restart
-│   └── kb                   # CLI tool for database operations
-├── cmd/
-│   ├── nas/          # Command line client (binary: nas)
-│   └── taxreport/    # HMRC capital gains report tool
-├── ARCHITECTURE.md   # System architecture docs
-├── .env              # Configuration (not committed)
-└── ~/.aslam/
-    ├── .key          # Database encryption key
-    └── aslam.db      # Encrypted SQLite database
-```
+| Path | Responsibility |
+| --- | --- |
+| `main.go` | Entry point; starts the server |
+| `internal/server/` | Startup, routes, handlers, model calls and background workers |
+| `internal/server/html/` | Embedded templates and browser assets |
+| `internal/discovery/` | Discovery handlers, OpenAPI, API catalog and llms.txt |
+| `internal/tools/` | Runtime model tools and external integrations |
+| `internal/seerah/` | Seerah archive reader and page navigation |
+| `db/` | SQLCipher persistence and indexing |
+| `data/` | Embedded reference archives, including seerah.zip |
+| `tools/seerah/` | PDF extraction and reviewed source corrections |
+| `scripts/` | Deployment, systemd and database administration |
+| `cmd/` | Aslam CLI and tax utilities |
+| `docs/` | Profiling, source provenance and correction reviews |
+
+The runtime database and encryption key live in `~/.aslam/`, outside the repository.
 
 ## Key Files
 
-### main.go
+### internal/server/
 - HTTP server on port 8000
 - Google OAuth authentication
 - Anthropic Claude API integration with tool use
@@ -51,7 +36,7 @@ aslam/
 - Sessions, conversations, messages, entries tables
 - All database functions exported (GetConversation, CreateSession, etc.)
 
-### tools/
+### internal/tools/
 - `tools.go` - Tool registry, definitions for Claude API
 - `search.go` - Web search using Brave Search API
 - `wiki.go` - Wikipedia API (free, no key needed)
@@ -133,7 +118,7 @@ cannot lock itself out.
 The email channel only answers senders on the allowlist (`db.IsUser`), but a
 `From` header is trivially forged. Before a message reaches the agent, the
 `Authentication-Results` header added by the receiving server must show a DMARC
-pass, or an SPF/DKIM pass aligned with the `From` domain (`tools/authresults.go`).
+pass, or an SPF/DKIM pass aligned with the `From` domain (`internal/tools/authresults.go`).
 
 Only the *first* such header is trusted — headers are prepended by each hop, so
 the first is the one our own server added — and it must carry `EMAIL_AUTHSERV_ID`,
@@ -154,7 +139,7 @@ forgeable header, so avoid it.
 
 ## Tools System
 
-Claude can use tools defined in `tools/tools.go`. Each tool has:
+Claude can use tools defined in `internal/tools/tools.go`. Each tool has:
 - Name (e.g., "www", "wikipedia")
 - Description (tells Claude when to use it)
 - Input schema (JSON schema for parameters)

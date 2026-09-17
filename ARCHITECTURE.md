@@ -57,15 +57,24 @@ The assistant is a single agent with multiple input/output channels. All channel
 
 | File | Purpose |
 |------|---------|
-| `main.go` | HTTP handlers, OAuth, `generateResponse()` |
-| `email_worker.go` | Email channel (IMAP polling, sends replies) |
-| `tools/tools.go` | Tool registry and execution |
-| `tools/*.go` | Individual tool implementations |
+| `main.go` | Starts `internal/server.Run()` |
+| `internal/server/server.go` | Application startup, routes and dependencies |
+| `internal/server/auth.go`, `chat.go`, `content.go`, `admin.go` | HTTP handlers grouped by responsibility |
+| `internal/server/model.go` | Shared Claude response generation |
+| `internal/server/html/` | Embedded templates and browser assets |
+| `internal/discovery/` | Public discovery handlers and their embedded documents |
+| `data/` | Compressed reference datasets and Go embedding declarations |
+| `internal/seerah/` | Seerah archive reader and page navigation |
+| `tools/seerah/` | PDF extraction, reviewed corrections and extraction tests |
+| `docs/` | Operational notes and source provenance/review documents |
+| `internal/server/email_worker.go` | Email channel (IMAP polling, sends replies) |
+| `internal/tools/tools.go` | Tool registry and execution |
+| `internal/tools/*.go` | Individual tool implementations |
 | `db/db.go` | Persistence (conversations, messages, threads) |
 
 ## Adding a New Channel
 
-1. Create a worker/handler that receives input
+1. Create a worker/handler in `internal/server` that receives input
 2. Find or create a conversation for the thread
 3. Add the user message: `db.AddMessage(convID, "user", content)`
 4. Generate response: `generateResponse(messages)`
