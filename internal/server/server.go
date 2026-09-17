@@ -290,5 +290,6 @@ func Run() {
 	startEmailWorker()        // Polls inbox for new emails
 	startDailyContentWorker() // Fetches daily verse/hadith/name
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	srv := newHTTPServer(":"+port, http.DefaultServeMux)
+	log.Fatal(srv.ListenAndServe())
 }

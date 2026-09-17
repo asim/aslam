@@ -29,7 +29,7 @@ func handleToggleNotePublic(w http.ResponseWriter, r *http.Request) {
 	ownerID := db.GetNoteOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 	isOwner := userID != 0 && ownerID == userID
 	if !isOwner && !isAdmin {
@@ -140,7 +140,7 @@ func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
 	ownerID := db.GetNoteOwner(id)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 	// Orphans (ownerID == 0) are only writable by admins; an admin edit adopts the note.
 	isOwner := userID != 0 && ownerID == userID
@@ -202,7 +202,7 @@ func handleNoteDelete(w http.ResponseWriter, r *http.Request) {
 	ownerID := db.GetNoteOwner(id)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 	isOwner := userID != 0 && ownerID == userID
 	if !isOwner && !isAdmin {

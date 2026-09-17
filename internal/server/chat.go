@@ -39,7 +39,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 
 	// Access check: owner, public, or admin. Orphaned chats (user_id IS NULL)
@@ -147,7 +147,7 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(convID)
 
 	// Generate AI response
-	response, toolsUsed, err := generateResponse(messages, convID)
+	response, toolsUsed, err := generateResponseWithProgressContext(r.Context(), messages, convID, nil)
 	if err != nil {
 		// Save error as assistant message
 		db.AddMessage(convID, "assistant", "Error: "+err.Error())
@@ -246,7 +246,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, toolsUsed, err := generateResponseStreaming(messages, req.ConversationID, func(text string) {
+	response, toolsUsed, err := generateResponseStreaming(r.Context(), messages, req.ConversationID, func(text string) {
 		fmt.Fprint(w, text)
 		flusher.Flush()
 	})
@@ -306,7 +306,7 @@ func handleAPIDeleteChat(w http.ResponseWriter, r *http.Request) {
 	ownerID := db.GetConversationOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 	isOwner := userID != 0 && ownerID == userID
 	if !isOwner && !isAdmin {
@@ -371,7 +371,7 @@ func handleToggleChatPublic(w http.ResponseWriter, r *http.Request) {
 	ownerID := db.GetConversationOwner(req.ID)
 	isAdmin := false
 	if session := getSession(r); session != nil {
-		isAdmin = db.IsAdmin(session.Email)
+		isAdmin = db.IsAdminContext(r.Context(), session.Email)
 	}
 	isOwner := userID != 0 && ownerID == userID
 	if !isOwner && !isAdmin {

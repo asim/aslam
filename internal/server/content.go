@@ -16,19 +16,19 @@ func handleAdhkarIndex(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 	data := map[string]interface{}{}
 
-	categories, _ := db.GetAdhkarCategories()
+	categories, _ := db.GetAdhkarCategoriesContext(r.Context())
 	data["Categories"] = categories
 
 	if category != "" {
-		items, _ := db.GetAdhkarByCategory(category)
+		items, _ := db.GetAdhkarByCategoryContext(r.Context(), category)
 		data["Items"] = items
 		data["SelectedCategory"] = category
 	} else {
-		items, _ := db.GetAllAdhkar()
+		items, _ := db.GetAllAdhkarContext(r.Context())
 		data["Items"] = items
 	}
 
-	p, t := db.GetReadingProgress(getUserID(r), "adhkar")
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "adhkar")
 	data["ContinuePath"] = p
 	data["ContinueTitle"] = t
 
@@ -41,15 +41,15 @@ func handleAdhkarView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetAdhkar(slug)
+	item, err := db.GetAdhkarContext(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetAdhkarPrevNext(slug)
+	prev, next := db.GetAdhkarPrevNextContext(r.Context(), slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
-	db.SaveReadingProgress(getUserID(r), "adhkar", r.URL.Path, item["Title"].(string))
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "adhkar", r.URL.Path, item["Title"].(string))
 	renderTemplate(w, r, "adhkar.html", item)
 }
 
@@ -57,16 +57,16 @@ func handleRiyadIndex(w http.ResponseWriter, r *http.Request) {
 	book := r.URL.Query().Get("book")
 	data := map[string]interface{}{}
 
-	books, _ := db.GetRiyadBooks()
+	books, _ := db.GetRiyadBooksContext(r.Context())
 	data["Books"] = books
 
 	if book != "" {
-		items, _ := db.GetRiyadByBook(book)
+		items, _ := db.GetRiyadByBookContext(r.Context(), book)
 		data["Items"] = items
 		data["SelectedBook"] = book
 	}
 
-	p, t := db.GetReadingProgress(getUserID(r), "salihin")
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "salihin")
 	data["ContinuePath"] = p
 	data["ContinueTitle"] = t
 
@@ -80,21 +80,21 @@ func handleRiyadView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetRiyad(number)
+	item, err := db.GetRiyadContext(r.Context(), number)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetRiyadPrevNext(number)
+	prev, next := db.GetRiyadPrevNextContext(r.Context(), number)
 	item["PrevNumber"] = prev
 	item["NextNumber"] = next
-	db.SaveReadingProgress(getUserID(r), "salihin", r.URL.Path, fmt.Sprintf("Hadith %d", number))
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "salihin", r.URL.Path, fmt.Sprintf("Hadith %d", number))
 	renderTemplate(w, r, "salihin.html", item)
 }
 
 func handleStoriesIndex(w http.ResponseWriter, r *http.Request) {
-	prophets, _ := db.GetAllProphets()
-	p, t := db.GetReadingProgress(getUserID(r), "stories")
+	prophets, _ := db.GetAllProphetsContext(r.Context())
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "stories")
 	renderTemplate(w, r, "stories_index.html", map[string]interface{}{
 		"Prophets":      prophets,
 		"ContinuePath":  p,
@@ -108,7 +108,7 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	prophet, err := db.GetProphet(slug)
+	prophet, err := db.GetProphetContext(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -141,7 +141,7 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 	for _, rs := range rawSections {
 		var groups []VerseGroup
 		for _, vr := range rs.Verses {
-			verses, _ := db.GetQuranVerseRange(vr.Chapter, vr.Start, vr.End)
+			verses, _ := db.GetQuranVerseRangeContext(r.Context(), vr.Chapter, vr.Start, vr.End)
 			groups = append(groups, VerseGroup{
 				Ref:     vr.Ref,
 				Context: vr.Context,
@@ -157,11 +157,11 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 	}
 	prophet["Sections"] = sections
 
-	prev, next := db.GetProphetPrevNext(slug)
+	prev, next := db.GetProphetPrevNextContext(r.Context(), slug)
 	prophet["PrevSlug"] = prev
 	prophet["NextSlug"] = next
 
-	db.SaveReadingProgress(getUserID(r), "stories", r.URL.Path, prophet["Name"].(string))
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "stories", r.URL.Path, prophet["Name"].(string))
 	renderTemplate(w, r, "stories.html", prophet)
 }
 
@@ -181,7 +181,7 @@ func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 	data["Levels"] = levels
 
 	if query != "" {
-		results, _ := db.SearchArabic(query)
+		results, _ := db.SearchArabicContext(r.Context(), query)
 		data["Words"] = results
 		data["Query"] = query
 	} else if level != "" {
@@ -202,16 +202,16 @@ func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 			offset, limit = 0, 50
 			lvl = 1
 		}
-		words, _ := db.GetArabicByFrequencyRange(offset, limit)
+		words, _ := db.GetArabicByFrequencyRangeContext(r.Context(), offset, limit)
 		data["Words"] = words
 		data["SelectedLevel"] = lvl
 	} else {
-		words, _ := db.GetArabicByFrequency(50)
+		words, _ := db.GetArabicByFrequencyContext(r.Context(), 50)
 		data["Words"] = words
 		data["SelectedLevel"] = 1
 	}
 
-	p, t := db.GetReadingProgress(getUserID(r), "arabic")
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "arabic")
 	data["ContinuePath"] = p
 	data["ContinueTitle"] = t
 
@@ -225,12 +225,12 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetArabicWord(id)
+	item, err := db.GetArabicWordContext(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prevID, nextID := db.GetArabicPrevNext(id)
+	prevID, nextID := db.GetArabicPrevNextContext(r.Context(), id)
 	item["PrevID"] = prevID
 	item["NextID"] = nextID
 
@@ -239,7 +239,7 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 		if m := regexp.MustCompile(`(\d+):(\d+)$`).FindStringSubmatch(ref); m != nil {
 			ch, _ := strconv.Atoi(m[1])
 			v, _ := strconv.Atoi(m[2])
-			if verse, err := db.GetQuranVerse(ch, v); err == nil {
+			if verse, err := db.GetQuranVerseContext(r.Context(), ch, v); err == nil {
 				item["Verse"] = verse
 				item["VerseURL"] = fmt.Sprintf("/quran/%d/%d", ch, v)
 				item["VerseWBW"] = fmt.Sprintf("https://reminder.dev/quran/%d?wbw=1#%d", ch, v)
@@ -248,7 +248,7 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	translit, _ := item["Transliteration"].(string)
-	db.SaveReadingProgress(getUserID(r), "arabic", r.URL.Path, translit)
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "arabic", r.URL.Path, translit)
 	renderTemplate(w, r, "arabic.html", item)
 }
 
@@ -260,7 +260,7 @@ func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := db.SearchArabic(query)
+	results, err := db.SearchArabicContext(r.Context(), query)
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -274,8 +274,8 @@ func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleQuranIndex(w http.ResponseWriter, r *http.Request) {
-	chapters, _ := db.GetQuranChapters()
-	p, t := db.GetReadingProgress(getUserID(r), "quran")
+	chapters, _ := db.GetQuranChaptersContext(r.Context())
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "quran")
 	renderTemplate(w, r, "quran_index.html", map[string]interface{}{
 		"Chapters":      chapters,
 		"ContinuePath":  p,
@@ -294,12 +294,12 @@ func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	verses, _ := db.GetQuranChapter(chapter)
+	verses, _ := db.GetQuranChapterContext(r.Context(), chapter)
 	if len(verses) == 0 {
 		http.NotFound(w, r)
 		return
 	}
-	first, _ := db.GetQuranVerse(chapter, 1)
+	first, _ := db.GetQuranVerseContext(r.Context(), chapter, 1)
 	name := ""
 	if first != nil {
 		if n, ok := first["ChapterName"].(string); ok {
@@ -323,7 +323,7 @@ func handleQuranRouter(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHadithIndex(w http.ResponseWriter, r *http.Request) {
-	books, _ := db.GetHadithBooks()
+	books, _ := db.GetHadithBooksContext(r.Context())
 	renderTemplate(w, r, "hadith_index.html", map[string]interface{}{"Books": books})
 }
 
@@ -336,12 +336,12 @@ func handleHadithRouter(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		items, _ := db.GetHadithByBook(bookNum)
+		items, _ := db.GetHadithByBookContext(r.Context(), bookNum)
 		if len(items) == 0 {
 			http.NotFound(w, r)
 			return
 		}
-		books, _ := db.GetHadithBooks()
+		books, _ := db.GetHadithBooksContext(r.Context())
 		bookName := ""
 		for _, b := range books {
 			if b["BookNumber"] == bookNum {
@@ -349,7 +349,7 @@ func handleHadithRouter(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		prevBook, nextBook := db.GetHadithBookPrevNext(bookNum)
+		prevBook, nextBook := db.GetHadithBookPrevNextContext(r.Context(), bookNum)
 		renderTemplate(w, r, "hadith_book.html", map[string]interface{}{
 			"BookNumber": bookNum,
 			"BookName":   bookName,
@@ -363,7 +363,7 @@ func handleHadithRouter(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNamesIndex(w http.ResponseWriter, r *http.Request) {
-	names, _ := db.GetAllNames()
+	names, _ := db.GetAllNamesContext(r.Context())
 	renderTemplate(w, r, "names_index.html", map[string]interface{}{"Names": names})
 }
 
@@ -384,15 +384,15 @@ func handleQuranView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetQuranVerse(chapter, verse)
+	item, err := db.GetQuranVerseContext(r.Context(), chapter, verse)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 	chName, _ := item["ChapterName"].(string)
-	db.SaveReadingProgress(getUserID(r), "quran", r.URL.Path, fmt.Sprintf("%s %d:%d", chName, chapter, verse))
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "quran", r.URL.Path, fmt.Sprintf("%s %d:%d", chName, chapter, verse))
 
-	prevCh, prevV, nextCh, nextV := db.GetQuranVersePrevNext(chapter, verse)
+	prevCh, prevV, nextCh, nextV := db.GetQuranVersePrevNextContext(r.Context(), chapter, verse)
 	if prevCh > 0 {
 		item["PrevURL"] = fmt.Sprintf("/quran/%d/%d", prevCh, prevV)
 	}
@@ -410,12 +410,12 @@ func handleHadithView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetHadith(id)
+	item, err := db.GetHadithContext(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetHadithPrevNext(id)
+	prev, next := db.GetHadithPrevNextContext(r.Context(), id)
 	item["PrevNumber"] = prev
 	item["NextNumber"] = next
 	renderTemplate(w, r, "hadith.html", item)
@@ -428,12 +428,12 @@ func handleNameView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetName(id)
+	item, err := db.GetNameContext(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetNamePrevNext(id)
+	prev, next := db.GetNamePrevNextContext(r.Context(), id)
 	item["PrevNumber"] = prev
 	item["NextNumber"] = next
 	renderTemplate(w, r, "name.html", item)
@@ -449,7 +449,7 @@ func handleAPISearch(w http.ResponseWriter, r *http.Request) {
 
 	// Unified search across chats, entries, and notes.
 	userID := getUserID(r)
-	results, err := db.SearchAll(query, userID, isAdminReq(r), isLoggedIn(r))
+	results, err := db.SearchAllContext(r.Context(), query, userID, isAdminReq(r), isLoggedIn(r))
 	if err != nil {
 		jsonError(w, err.Error(), 500)
 		return
@@ -465,7 +465,12 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	var results []map[string]interface{}
 	if query != "" {
 		userID := getUserID(r)
-		results, _ = db.SearchAll(query, userID, isAdminReq(r), isLoggedIn(r))
+		var err error
+		results, err = db.SearchAllContext(r.Context(), query, userID, isAdminReq(r), isLoggedIn(r))
+		if err != nil {
+			http.Error(w, "Search unavailable; please retry", http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	renderTemplate(w, r, "search.html", map[string]interface{}{
@@ -475,7 +480,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleEntries(w http.ResponseWriter, r *http.Request) {
-	entries, _ := db.GetEntries(50)
+	entries, _ := db.GetEntriesContext(r.Context(), 50)
 	renderTemplate(w, r, "entries.html", map[string]interface{}{
 		"Entries": entries,
 	})
@@ -487,15 +492,15 @@ func handleGhazaliView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetGhazali(slug)
+	item, err := db.GetGhazaliContext(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetGhazaliPrevNext(slug)
+	prev, next := db.GetGhazaliPrevNextContext(r.Context(), slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
-	db.SaveReadingProgress(getUserID(r), "ghazali", r.URL.Path, item["Chapter"].(string))
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "ghazali", r.URL.Path, item["Chapter"].(string))
 	renderTemplate(w, r, "ghazali.html", item)
 }
 
@@ -506,16 +511,16 @@ func handleGhazaliIndex(w http.ResponseWriter, r *http.Request) {
 	if volumeStr != "" {
 		volume, err := strconv.Atoi(volumeStr)
 		if err == nil {
-			chapters, _ := db.GetGhazaliByVolume(volume)
+			chapters, _ := db.GetGhazaliByVolumeContext(r.Context(), volume)
 			data["Chapters"] = chapters
 			data["SelectedVolume"] = volume
 		}
 	} else {
-		chapters, _ := db.GetGhazaliChapters()
+		chapters, _ := db.GetGhazaliChaptersContext(r.Context())
 		data["Chapters"] = chapters
 	}
 
-	p, t := db.GetReadingProgress(getUserID(r), "ghazali")
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "ghazali")
 	data["ContinuePath"] = p
 	data["ContinueTitle"] = t
 
@@ -528,19 +533,19 @@ func handleIslamQAView(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	item, err := db.GetIslamQA(slug)
+	item, err := db.GetIslamQAContext(r.Context(), slug)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	prev, next := db.GetIslamQAPrevNext(slug)
+	prev, next := db.GetIslamQAPrevNextContext(r.Context(), slug)
 	item["PrevSlug"] = prev
 	item["NextSlug"] = next
 	q, _ := item["Question"].(string)
 	if len(q) > 60 {
 		q = q[:60] + "..."
 	}
-	db.SaveReadingProgress(getUserID(r), "islamqa", r.URL.Path, q)
+	db.SaveReadingProgressContext(r.Context(), getUserID(r), "islamqa", r.URL.Path, q)
 	renderTemplate(w, r, "islamqa.html", item)
 }
 
@@ -548,19 +553,19 @@ func handleIslamQAIndex(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 	data := map[string]interface{}{}
 
-	categories, _ := db.GetIslamQACategories()
+	categories, _ := db.GetIslamQACategoriesContext(r.Context())
 	data["Categories"] = categories
 
 	if category != "" {
-		questions, _ := db.GetIslamQAByCategory(category)
+		questions, _ := db.GetIslamQAByCategoryContext(r.Context(), category)
 		data["Questions"] = questions
 		data["SelectedCategory"] = category
 	} else {
-		questions, _ := db.GetAllIslamQA()
+		questions, _ := db.GetAllIslamQAContext(r.Context())
 		data["Questions"] = questions
 	}
 
-	p, t := db.GetReadingProgress(getUserID(r), "islamqa")
+	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "islamqa")
 	data["ContinuePath"] = p
 	data["ContinueTitle"] = t
 
@@ -575,7 +580,7 @@ func handleEntryView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entry, err := db.GetEntry(id)
+	entry, err := db.GetEntryContext(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return

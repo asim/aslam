@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha1"
 	"database/sql"
@@ -19,6 +20,15 @@ import (
 
 	_ "github.com/mutecomm/go-sqlcipher/v4"
 )
+
+const queryTimeout = 5 * time.Second
+
+func searchResultLimit(limit, count int) int {
+	if limit > 0 {
+		return min(10, limit-count)
+	}
+	return 10
+}
 
 var slugBadChars = regexp.MustCompile(`[^a-z0-9]+`)
 var ftsSpecialChars = regexp.MustCompile(`[*"():]`)
@@ -103,7 +113,7 @@ func Init() error {
 	}
 
 	encodedKey := url.QueryEscape(dbKey)
-	dsn := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096", dbPath, encodedKey)
+	dsn := fmt.Sprintf("%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_busy_timeout=1000", dbPath, encodedKey)
 
 	var err error
 	DB, err = sql.Open("sqlite3", dsn)
@@ -111,6 +121,10 @@ func Init() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Bound native SQLite caches and concurrent query execution.
+	DB.SetMaxOpenConns(4)
+	DB.SetMaxIdleConns(2)
+	DB.SetConnMaxIdleTime(time.Minute)
 	return Migrate()
 }
 
@@ -986,11 +1000,18 @@ func AddMessage(convID int64, role, content string) error {
 }
 
 func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
+	return SearchMessagesContext(context.Background(), query, userID, isAdmin)
+}
+
+func SearchMessagesContext(ctx context.Context, query string, userID int64, isAdmin bool) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	scope := `(c.user_id = ? OR c.public = 1)`
 	if isAdmin {
 		scope = `(c.user_id = ? OR c.public = 1 OR c.user_id IS NULL)`
 	}
-	rows, err := DB.Query(`
+	rows, err := DB.QueryContext(ctx, `
 		SELECT m.id, m.conversation_id, m.role, m.content, m.created_at, c.title
 		FROM messages m
 		JOIN messages_fts fts ON m.id = fts.docid
@@ -1020,7 +1041,7 @@ func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]inte
 			"Title":          title,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // SearchAll runs a query across chats, entries, and note items and returns a
@@ -1037,6 +1058,22 @@ func SearchMessages(query string, userID int64, isAdmin bool) ([]map[string]inte
 // them by — and forces the chat and note searches to a user id that matches no
 // row, leaving only material explicitly marked public.
 func SearchAll(query string, userID int64, isAdmin bool, includeUserContent bool) ([]map[string]interface{}, error) {
+	return SearchAllContext(context.Background(), query, userID, isAdmin, includeUserContent)
+}
+
+func SearchAllContext(ctx context.Context, query string, userID int64, isAdmin bool, includeUserContent bool) ([]map[string]interface{}, error) {
+	return searchAllContext(ctx, query, userID, isAdmin, includeUserContent, "", 0, false)
+}
+
+// SearchKnowledgeContext searches only reference collections, stopping at the requested limit.
+func SearchKnowledgeContext(ctx context.Context, query, collection string, limit int) ([]map[string]interface{}, error) {
+	return searchAllContext(ctx, query, -1, false, false, collection, limit, true)
+}
+
+func searchAllContext(ctx context.Context, query string, userID int64, isAdmin, includeUserContent bool, collection string, limit int, knowledgeOnly bool) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	query = sanitiseFTS(query)
 	if query == "" {
 		return nil, nil
@@ -1052,217 +1089,301 @@ func SearchAll(query string, userID int64, isAdmin bool, includeUserContent bool
 	var results []map[string]interface{}
 
 	// Chats (messages + conversation title)
-	if msgs, err := SearchMessages(query, userID, isAdmin); err == nil {
-		for _, m := range msgs {
-			createdAt, _ := m["CreatedAt"].(time.Time)
-			results = append(results, map[string]interface{}{
-				"Kind":      "chat",
-				"Title":     m["Title"],
-				"Content":   m["Content"],
-				"Role":      m["Role"],
-				"URL":       fmt.Sprintf("/chat/%d", m["ConversationID"]),
-				"CreatedAt": createdAt,
-			})
+	if !knowledgeOnly {
+		if msgs, err := SearchMessagesContext(ctx, query, userID, isAdmin); err == nil {
+			for _, m := range msgs {
+				createdAt, _ := m["CreatedAt"].(time.Time)
+				results = append(results, map[string]interface{}{
+					"Kind":      "chat",
+					"Title":     m["Title"],
+					"Content":   m["Content"],
+					"Role":      m["Role"],
+					"URL":       fmt.Sprintf("/chat/%d", m["ConversationID"]),
+					"CreatedAt": createdAt,
+				})
+			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// Entries (remembered facts, fetched URLs). Unowned and unscoped, so they
 	// are only ever shown to signed-in users.
-	if entries, err := SearchEntries(query); err == nil && includeUserContent {
-		for _, e := range entries {
-			createdAt, _ := e["CreatedAt"].(time.Time)
-			typ, _ := e["Type"].(string)
-			results = append(results, map[string]interface{}{
-				"Kind":      "entry",
-				"Title":     e["Title"],
-				"Content":   e["Content"],
-				"Role":      typ,
-				"URL":       fmt.Sprintf("/entries/%d", e["ID"]),
-				"CreatedAt": createdAt,
-			})
+	if !knowledgeOnly && includeUserContent {
+		if entries, err := SearchEntriesContext(ctx, query); err == nil && includeUserContent {
+			for _, e := range entries {
+				createdAt, _ := e["CreatedAt"].(time.Time)
+				typ, _ := e["Type"].(string)
+				results = append(results, map[string]interface{}{
+					"Kind":      "entry",
+					"Title":     e["Title"],
+					"Content":   e["Content"],
+					"Role":      typ,
+					"URL":       fmt.Sprintf("/entries/%d", e["ID"]),
+					"CreatedAt": createdAt,
+				})
+			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// IslamQA results
-	if qaResults, err := SearchIslamQA(query); err == nil {
-		for _, q := range qaResults {
-			question, _ := q["Question"].(string)
-			answer, _ := q["Answer"].(string)
-			category, _ := q["Category"].(string)
-			if len(answer) > 500 {
-				answer = answer[:500] + "..."
+	if collection == "" || collection == "islamqa" {
+		if qaResults, err := searchIslamQAContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, q := range qaResults {
+				question, _ := q["Question"].(string)
+				answer, _ := q["Answer"].(string)
+				category, _ := q["Category"].(string)
+				if len(answer) > 500 {
+					answer = answer[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "islamqa",
+					"Title":   question,
+					"Content": answer,
+					"Role":    category,
+					"URL":     fmt.Sprintf("/islamqa/%s", q["Slug"]),
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "islamqa",
-				"Title":   question,
-				"Content": answer,
-				"Role":    category,
-				"URL":     fmt.Sprintf("/islamqa/%s", q["Slug"]),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Searches results (cached Quran/Hadith/Names of Allah from reminder API)
-	if remResults, err := SearchSearches(query); err == nil {
-		for _, r := range remResults {
-			question, _ := r["Question"].(string)
-			answer, _ := r["Answer"].(string)
-			if len(answer) > 500 {
-				answer = answer[:500] + "..."
+	if !knowledgeOnly {
+		if remResults, err := SearchSearchesContext(ctx, query); err == nil {
+			for _, r := range remResults {
+				question, _ := r["Question"].(string)
+				answer, _ := r["Answer"].(string)
+				if len(answer) > 500 {
+					answer = answer[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "searches",
+					"Title":   question,
+					"Content": answer,
+					"Role":    "quran/hadith",
+					"URL":     "#",
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "searches",
-				"Title":   question,
-				"Content": answer,
-				"Role":    "quran/hadith",
-				"URL":     "#",
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// Quran verses
-	if qResults, err := SearchQuran(query); err == nil {
-		for _, q := range qResults {
-			text, _ := q["Text"].(string)
-			chapterName, _ := q["ChapterName"].(string)
-			chapter, _ := q["Chapter"].(int)
-			verse, _ := q["Verse"].(int)
-			if len(text) > 500 {
-				text = text[:500] + "..."
+	if collection == "" || collection == "quran" {
+		if qResults, err := searchQuranContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, q := range qResults {
+				text, _ := q["Text"].(string)
+				chapterName, _ := q["ChapterName"].(string)
+				chapter, _ := q["Chapter"].(int)
+				verse, _ := q["Verse"].(int)
+				if len(text) > 500 {
+					text = text[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "quran",
+					"Title":   fmt.Sprintf("%s %d:%d", chapterName, chapter, verse),
+					"Content": text,
+					"Role":    "quran",
+					"URL":     fmt.Sprintf("/quran/%d/%d", chapter, verse),
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "quran",
-				"Title":   fmt.Sprintf("%s %d:%d", chapterName, chapter, verse),
-				"Content": text,
-				"Role":    "quran",
-				"URL":     fmt.Sprintf("/quran/%d/%d", chapter, verse),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Hadith results
-	if hResults, err := SearchHadith(query); err == nil {
-		for _, h := range hResults {
-			text, _ := h["Text"].(string)
-			book, _ := h["Book"].(string)
-			narrator, _ := h["Narrator"].(string)
-			if len(text) > 500 {
-				text = text[:500] + "..."
+	if collection == "" || collection == "hadith" {
+		if hResults, err := searchHadithContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, h := range hResults {
+				text, _ := h["Text"].(string)
+				book, _ := h["Book"].(string)
+				narrator, _ := h["Narrator"].(string)
+				if len(text) > 500 {
+					text = text[:500] + "..."
+				}
+				title := book
+				if narrator != "" {
+					title = book + " — " + narrator
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "hadith",
+					"Title":   title,
+					"Content": text,
+					"Role":    "hadith",
+					"URL":     fmt.Sprintf("/hadith/%d", h["Number"]),
+				})
 			}
-			title := book
-			if narrator != "" {
-				title = book + " — " + narrator
-			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "hadith",
-				"Title":   title,
-				"Content": text,
-				"Role":    "hadith",
-				"URL":     fmt.Sprintf("/hadith/%d", h["Number"]),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Names of Allah results
-	if nResults, err := SearchNames(query); err == nil {
-		for _, n := range nResults {
-			english, _ := n["English"].(string)
-			meaning, _ := n["Meaning"].(string)
-			desc, _ := n["Description"].(string)
-			if len(desc) > 500 {
-				desc = desc[:500] + "..."
+	if collection == "" || collection == "names" {
+		if nResults, err := searchNamesContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, n := range nResults {
+				english, _ := n["English"].(string)
+				meaning, _ := n["Meaning"].(string)
+				desc, _ := n["Description"].(string)
+				if len(desc) > 500 {
+					desc = desc[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "names",
+					"Title":   english + " — " + meaning,
+					"Content": desc,
+					"Role":    "names of allah",
+					"URL":     fmt.Sprintf("/names/%d", n["Number"]),
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "names",
-				"Title":   english + " — " + meaning,
-				"Content": desc,
-				"Role":    "names of allah",
-				"URL":     fmt.Sprintf("/names/%d", n["Number"]),
-			})
 		}
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
+	}
 
-	if seerahResults, err := SearchSeerah(query); err == nil {
-		results = append(results, seerahResults...)
+	if collection == "" || collection == "seerah" {
+		if seerahResults, err := searchSeerahContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			results = append(results, seerahResults...)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Ghazali results (Ihya Ulum al-Din — Revival of the Islamic Sciences)
-	if gResults, err := SearchGhazali(query); err == nil {
-		for _, g := range gResults {
-			content, _ := g["Content"].(string)
-			chapter, _ := g["Chapter"].(string)
-			volumeTitle, _ := g["VolumeTitle"].(string)
-			if len(content) > 500 {
-				content = content[:500] + "..."
+	if collection == "" || collection == "ghazali" {
+		if gResults, err := searchGhazaliContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, g := range gResults {
+				content, _ := g["Content"].(string)
+				chapter, _ := g["Chapter"].(string)
+				volumeTitle, _ := g["VolumeTitle"].(string)
+				if len(content) > 500 {
+					content = content[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "ghazali",
+					"Title":   chapter,
+					"Content": content,
+					"Role":    volumeTitle,
+					"URL":     fmt.Sprintf("/ghazali/%s", g["Slug"]),
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "ghazali",
-				"Title":   chapter,
-				"Content": content,
-				"Role":    volumeTitle,
-				"URL":     fmt.Sprintf("/ghazali/%s", g["Slug"]),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Riyad us-Saliheen results
-	if rResults, err := SearchRiyad(query); err == nil {
-		for _, r := range rResults {
-			text, _ := r["Text"].(string)
-			book, _ := r["Book"].(string)
-			narrator, _ := r["Narrator"].(string)
-			if len(text) > 500 {
-				text = text[:500] + "..."
+	if collection == "" || collection == "salihin" {
+		if rResults, err := searchRiyadContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, r := range rResults {
+				text, _ := r["Text"].(string)
+				book, _ := r["Book"].(string)
+				narrator, _ := r["Narrator"].(string)
+				if len(text) > 500 {
+					text = text[:500] + "..."
+				}
+				title := book
+				if narrator != "" {
+					title = book + " — " + narrator
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "salihin",
+					"Title":   title,
+					"Content": text,
+					"Role":    "hadith",
+					"URL":     fmt.Sprintf("/salihin/%d", r["Number"]),
+				})
 			}
-			title := book
-			if narrator != "" {
-				title = book + " — " + narrator
-			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "salihin",
-				"Title":   title,
-				"Content": text,
-				"Role":    "hadith",
-				"URL":     fmt.Sprintf("/salihin/%d", r["Number"]),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Adhkar results (duas/dhikr)
-	if aResults, err := SearchAdhkar(query); err == nil {
-		for _, a := range aResults {
-			translation, _ := a["Translation"].(string)
-			category, _ := a["Category"].(string)
-			title, _ := a["Title"].(string)
-			if len(translation) > 500 {
-				translation = translation[:500] + "..."
+	if collection == "" || collection == "adhkar" {
+		if aResults, err := searchAdhkarContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
+			for _, a := range aResults {
+				translation, _ := a["Translation"].(string)
+				category, _ := a["Category"].(string)
+				title, _ := a["Title"].(string)
+				if len(translation) > 500 {
+					translation = translation[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":    "adhkar",
+					"Title":   title,
+					"Content": translation,
+					"Role":    category,
+					"URL":     fmt.Sprintf("/adhkar/%s", a["Slug"]),
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":    "adhkar",
-				"Title":   title,
-				"Content": translation,
-				"Role":    category,
-				"URL":     fmt.Sprintf("/adhkar/%s", a["Slug"]),
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
 	}
 
 	// Note items
-	if items, err := SearchNotes(query, userID, isAdmin); err == nil {
-		for _, n := range items {
-			content := n.Content
-			if len(content) > 500 {
-				content = content[:500] + "..."
+	if !knowledgeOnly {
+		if items, err := SearchNotesContext(ctx, query, userID, isAdmin); err == nil {
+			for _, n := range items {
+				content := n.Content
+				if len(content) > 500 {
+					content = content[:500] + "..."
+				}
+				results = append(results, map[string]interface{}{
+					"Kind":      "notes",
+					"Title":     n.Title,
+					"Content":   content,
+					"Role":      "note",
+					"URL":       fmt.Sprintf("/notes/%d", n.ID),
+					"CreatedAt": n.UpdatedAt,
+				})
 			}
-			results = append(results, map[string]interface{}{
-				"Kind":      "notes",
-				"Title":     n.Title,
-				"Content":   content,
-				"Role":      "note",
-				"URL":       fmt.Sprintf("/notes/%d", n.ID),
-				"CreatedAt": n.UpdatedAt,
-			})
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// Sort newest first.
@@ -1278,8 +1399,15 @@ func SearchAll(query string, userID int64, isAdmin bool, includeUserContent bool
 // Session functions
 
 func GetSessionByToken(token string) *Session {
+	return GetSessionByTokenContext(context.Background(), token)
+}
+
+func GetSessionByTokenContext(ctx context.Context, token string) *Session {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var s Session
-	err := DB.QueryRow(`
+	err := DB.QueryRowContext(ctx, `
 		SELECT token, email, name, created_at, expires_at 
 		FROM sessions WHERE token = ? AND expires_at > CURRENT_TIMESTAMP
 	`, token).Scan(&s.Token, &s.Email, &s.Name, &s.CreatedAt, &s.ExpiresAt)
@@ -1332,7 +1460,14 @@ func ValidateOAuthState(state string) bool {
 // Entry functions
 
 func GetEntries(limit int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return GetEntriesContext(context.Background(), limit)
+}
+
+func GetEntriesContext(ctx context.Context, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT id, type, title, content, created_at 
 		FROM entries 
 		ORDER BY created_at DESC 
@@ -1394,7 +1529,14 @@ func GetEntryByTitle(entryType, title string) (map[string]interface{}, error) {
 }
 
 func SearchEntries(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchEntriesContext(context.Background(), query)
+}
+
+func SearchEntriesContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT e.id, e.type, e.title, e.content, e.created_at
 		FROM entries e
 		JOIN entries_fts fts ON e.id = fts.docid
@@ -1428,15 +1570,22 @@ func SearchEntries(query string) ([]map[string]interface{}, error) {
 			"CreatedAt": createdAt,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetEntry(id int64) (map[string]interface{}, error) {
+	return GetEntryContext(context.Background(), id)
+}
+
+func GetEntryContext(ctx context.Context, id int64) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var typ, title string
 	var content, metadata sql.NullString
 	var createdAt, updatedAt time.Time
 
-	err := DB.QueryRow(`
+	err := DB.QueryRowContext(ctx, `
 		SELECT id, type, title, content, metadata, created_at, updated_at 
 		FROM entries WHERE id = ?
 	`, id).Scan(&id, &typ, &title, &content, &metadata, &createdAt, &updatedAt)
@@ -1811,8 +1960,15 @@ func RemoveUser(id int64) error {
 }
 
 func IsAdmin(email string) bool {
+	return IsAdminContext(context.Background(), email)
+}
+
+func IsAdminContext(ctx context.Context, email string) bool {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	err := DB.QueryRow(`SELECT id FROM users WHERE email = ? AND role = 'admin'`, email).Scan(&id)
+	err := DB.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND role = 'admin'`, email).Scan(&id)
 	return err == nil
 }
 
@@ -1821,8 +1977,15 @@ func IsAdmin(email string) bool {
 // for the email channel, so an unverified signup must not pass it. Use
 // UserExists to test mere presence (e.g. "is this address taken").
 func IsUser(email string) bool {
+	return IsUserContext(context.Background(), email)
+}
+
+func IsUserContext(ctx context.Context, email string) bool {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	err := DB.QueryRow(`SELECT id FROM users WHERE email = ? AND verified = 1`, email).Scan(&id)
+	err := DB.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND verified = 1`, email).Scan(&id)
 	return err == nil
 }
 
@@ -1835,8 +1998,15 @@ func UserExists(email string) bool {
 
 // IsVerified reports whether an existing account has confirmed its address.
 func IsVerified(email string) bool {
+	return IsVerifiedContext(context.Background(), email)
+}
+
+func IsVerifiedContext(ctx context.Context, email string) bool {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var verified int
-	err := DB.QueryRow(`SELECT verified FROM users WHERE email = ?`, email).Scan(&verified)
+	err := DB.QueryRowContext(ctx, `SELECT verified FROM users WHERE email = ?`, email).Scan(&verified)
 	return err == nil && verified == 1
 }
 
@@ -1951,7 +2121,14 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*User, error) {
 }
 
 func GetUserByEmail(email string) (*User, error) {
-	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE email = ?`, email))
+	return GetUserByEmailContext(context.Background(), email)
+}
+
+func GetUserByEmailContext(ctx context.Context, email string) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	return scanUser(DB.QueryRowContext(ctx, `SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE email = ?`, email))
 }
 
 func GetUserByID(id int64) (*User, error) {
@@ -2190,11 +2367,18 @@ func DeleteNoteItem(id int64) error {
 }
 
 func SearchNotes(query string, userID int64, isAdmin bool) ([]NoteItem, error) {
+	return SearchNotesContext(context.Background(), query, userID, isAdmin)
+}
+
+func SearchNotesContext(ctx context.Context, query string, userID int64, isAdmin bool) ([]NoteItem, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	scope := `(n.user_id = ? OR n.public = 1)`
 	if isAdmin {
 		scope = `(n.user_id = ? OR n.public = 1 OR n.user_id IS NULL)`
 	}
-	rows, err := DB.Query(`
+	rows, err := DB.QueryContext(ctx, `
 		SELECT n.id, n.title, n.content, COALESCE(n.user_id, 0), COALESCE(n.public, 0), n.created_at, n.updated_at
 		FROM notes_v2 n
 		JOIN notes_fts fts ON n.id = fts.docid
@@ -2262,8 +2446,15 @@ func GetNoteOwner(id int64) int64 {
 }
 
 func GetUserID(email string) int64 {
+	return GetUserIDContext(context.Background(), email)
+}
+
+func GetUserIDContext(ctx context.Context, email string) int64 {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	DB.QueryRow(`SELECT id FROM users WHERE email = ?`, email).Scan(&id)
+	DB.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ?`, email).Scan(&id)
 	return id
 }
 
@@ -2280,7 +2471,14 @@ func InsertSearch(question, answer string) error {
 }
 
 func SearchSearches(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchSearchesContext(context.Background(), query)
+}
+
+func SearchSearchesContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT s.id, s.question, s.answer
 		FROM searches s
 		JOIN searches_fts fts ON s.id = fts.docid
@@ -2303,7 +2501,7 @@ func SearchSearches(query string) ([]map[string]interface{}, error) {
 			"Answer":   answer,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func IslamQACount() int {
@@ -2320,13 +2518,24 @@ func InsertIslamQA(category, question, answer string) error {
 }
 
 func SearchIslamQA(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchIslamQAContext(context.Background(), query)
+}
+
+func SearchIslamQAContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchIslamQAContext(ctx, query, 10)
+}
+
+func searchIslamQAContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT i.id, i.slug, i.category, i.question, i.answer
 		FROM islamqa i
 		JOIN islamqa_fts fts ON i.id = fts.docid
 		WHERE islamqa_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2346,13 +2555,20 @@ func SearchIslamQA(query string) ([]map[string]interface{}, error) {
 			"Answer":   answer,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetIslamQA(slug string) (map[string]interface{}, error) {
+	return GetIslamQAContext(context.Background(), slug)
+}
+
+func GetIslamQAContext(ctx context.Context, slug string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var category, question, answer string
-	err := DB.QueryRow(`SELECT id, category, question, answer FROM islamqa WHERE slug = ?`, slug).Scan(&id, &category, &question, &answer)
+	err := DB.QueryRowContext(ctx, `SELECT id, category, question, answer FROM islamqa WHERE slug = ?`, slug).Scan(&id, &category, &question, &answer)
 	if err != nil {
 		return nil, err
 	}
@@ -2445,7 +2661,7 @@ func correctGhazaliVerseTypo() error {
 		return err
 	}
 	type correction struct {
-		id int64
+		id      int64
 		content string
 	}
 	var changes []correction
@@ -2546,13 +2762,24 @@ func InsertGhazali(volume int, volumeTitle, chapter string, part int, content st
 }
 
 func SearchGhazali(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchGhazaliContext(context.Background(), query)
+}
+
+func SearchGhazaliContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchGhazaliContext(ctx, query, 10)
+}
+
+func searchGhazaliContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT g.id, g.slug, g.volume, g.volume_title, g.chapter, g.part, g.content
 		FROM ghazali g
 		JOIN ghazali_fts fts ON g.id = fts.docid
 		WHERE ghazali_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2575,14 +2802,21 @@ func SearchGhazali(query string) ([]map[string]interface{}, error) {
 			"Content":     content,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetGhazali(slug string) (map[string]interface{}, error) {
+	return GetGhazaliContext(context.Background(), slug)
+}
+
+func GetGhazaliContext(ctx context.Context, slug string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var volume, part int
 	var volumeTitle, chapter, content string
-	err := DB.QueryRow(`SELECT id, volume, volume_title, chapter, part, content FROM ghazali WHERE slug = ?`, slug).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, volume, volume_title, chapter, part, content FROM ghazali WHERE slug = ?`, slug).Scan(
 		&id, &volume, &volumeTitle, &chapter, &part, &content)
 	if err != nil {
 		return nil, err
@@ -2618,13 +2852,24 @@ func InsertQuranVerse(chapter int, chapterName string, verse int, text, arabic, 
 }
 
 func SearchQuran(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchQuranContext(context.Background(), query)
+}
+
+func SearchQuranContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchQuranContext(ctx, query, 10)
+}
+
+func searchQuranContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT q.id, q.chapter, q.chapter_name, q.verse, q.text, q.arabic, q.commentary
 		FROM quran q
 		JOIN quran_fts fts ON q.id = fts.docid
 		WHERE quran_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2647,14 +2892,21 @@ func SearchQuran(query string) ([]map[string]interface{}, error) {
 			"Commentary":  commentary.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetQuranVerse(chapter, verse int) (map[string]interface{}, error) {
+	return GetQuranVerseContext(context.Background(), chapter, verse)
+}
+
+func GetQuranVerseContext(ctx context.Context, chapter, verse int) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var chapterName, text string
 	var arabic, commentary sql.NullString
-	err := DB.QueryRow(`SELECT id, chapter_name, text, arabic, commentary FROM quran WHERE chapter = ? AND verse = ?`,
+	err := DB.QueryRowContext(ctx, `SELECT id, chapter_name, text, arabic, commentary FROM quran WHERE chapter = ? AND verse = ?`,
 		chapter, verse).Scan(&id, &chapterName, &text, &arabic, &commentary)
 	if err != nil {
 		return nil, err
@@ -2671,15 +2923,29 @@ func GetQuranVerse(chapter, verse int) (map[string]interface{}, error) {
 }
 
 func GetQuranVersePrevNext(chapter, verse int) (prevCh, prevV, nextCh, nextV int) {
-	DB.QueryRow(`SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse < ?) OR chapter < ? ORDER BY chapter DESC, verse DESC LIMIT 1`,
+	return GetQuranVersePrevNextContext(context.Background(), chapter, verse)
+}
+
+func GetQuranVersePrevNextContext(ctx context.Context, chapter, verse int) (prevCh, prevV, nextCh, nextV int) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse < ?) OR chapter < ? ORDER BY chapter DESC, verse DESC LIMIT 1`,
 		chapter, verse, chapter).Scan(&prevCh, &prevV)
-	DB.QueryRow(`SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse > ?) OR chapter > ? ORDER BY chapter ASC, verse ASC LIMIT 1`,
+	DB.QueryRowContext(ctx, `SELECT chapter, verse FROM quran WHERE (chapter = ? AND verse > ?) OR chapter > ? ORDER BY chapter ASC, verse ASC LIMIT 1`,
 		chapter, verse, chapter).Scan(&nextCh, &nextV)
 	return
 }
 
 func GetQuranVerseRange(chapter, start, end int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT verse, text, arabic FROM quran WHERE chapter = ? AND verse >= ? AND verse <= ? ORDER BY verse`,
+	return GetQuranVerseRangeContext(context.Background(), chapter, start, end)
+}
+
+func GetQuranVerseRangeContext(ctx context.Context, chapter, start, end int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT verse, text, arabic FROM quran WHERE chapter = ? AND verse >= ? AND verse <= ? ORDER BY verse`,
 		chapter, start, end)
 	if err != nil {
 		return nil, err
@@ -2698,7 +2964,7 @@ func GetQuranVerseRange(chapter, start, end int) ([]map[string]interface{}, erro
 			"Arabic":  arabic.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // Hadith functions
@@ -2721,13 +2987,24 @@ func InsertHadith(book string, bookNumber, number int, narrator, text, arabic st
 }
 
 func SearchHadith(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchHadithContext(context.Background(), query)
+}
+
+func SearchHadithContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchHadithContext(ctx, query, 10)
+}
+
+func searchHadithContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT h.id, h.book, h.number, h.narrator, h.text, h.arabic
 		FROM hadith h
 		JOIN hadith_fts fts ON h.id = fts.docid
 		WHERE hadith_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2749,16 +3026,23 @@ func SearchHadith(query string) ([]map[string]interface{}, error) {
 			"Arabic":   arabic.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetHadith(number int64) (map[string]interface{}, error) {
+	return GetHadithContext(context.Background(), number)
+}
+
+func GetHadithContext(ctx context.Context, number int64) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var num int
 	var bookNumber sql.NullInt64
 	var book, text string
 	var narrator, arabic sql.NullString
-	err := DB.QueryRow(`SELECT id, book, book_number, number, narrator, text, arabic FROM hadith WHERE number = ?`, number).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, book, book_number, number, narrator, text, arabic FROM hadith WHERE number = ?`, number).Scan(
 		&id, &book, &bookNumber, &num, &narrator, &text, &arabic)
 	if err != nil {
 		return nil, err
@@ -2804,13 +3088,24 @@ func InsertName(number int, english, arabic, meaning, description, summary strin
 }
 
 func SearchNames(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchNamesContext(context.Background(), query)
+}
+
+func SearchNamesContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchNamesContext(ctx, query, 10)
+}
+
+func searchNamesContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT n.id, n.number, n.english, n.arabic, n.meaning, n.description, n.summary
 		FROM names n
 		JOIN names_fts fts ON n.id = fts.docid
 		WHERE names_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2833,15 +3128,22 @@ func SearchNames(query string) ([]map[string]interface{}, error) {
 			"Summary":     summary.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetName(number int64) (map[string]interface{}, error) {
+	return GetNameContext(context.Background(), number)
+}
+
+func GetNameContext(ctx context.Context, number int64) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var num int
 	var english string
 	var arabic, meaning, description, summary sql.NullString
-	err := DB.QueryRow(`SELECT id, number, english, arabic, meaning, description, summary FROM names WHERE number = ?`, number).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, number, english, arabic, meaning, description, summary FROM names WHERE number = ?`, number).Scan(
 		&id, &num, &english, &arabic, &meaning, &description, &summary)
 	if err != nil {
 		return nil, err
@@ -2860,7 +3162,14 @@ func GetName(number int64) (map[string]interface{}, error) {
 // IslamQA index functions
 
 func GetIslamQACategories() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT category, COUNT(*) as count FROM islamqa GROUP BY category ORDER BY category`)
+	return GetIslamQACategoriesContext(context.Background())
+}
+
+func GetIslamQACategoriesContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT category, COUNT(*) as count FROM islamqa GROUP BY category ORDER BY category`)
 	if err != nil {
 		return nil, err
 	}
@@ -2876,11 +3185,18 @@ func GetIslamQACategories() ([]map[string]interface{}, error) {
 			"Count":    count,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, slug, category, question FROM islamqa WHERE category = ? ORDER BY id`, category)
+	return GetIslamQAByCategoryContext(context.Background(), category)
+}
+
+func GetIslamQAByCategoryContext(ctx context.Context, category string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, slug, category, question FROM islamqa WHERE category = ? ORDER BY id`, category)
 	if err != nil {
 		return nil, err
 	}
@@ -2899,11 +3215,18 @@ func GetIslamQAByCategory(category string) ([]map[string]interface{}, error) {
 			"Question": question,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetAllIslamQA() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, slug, category, question FROM islamqa ORDER BY category, id`)
+	return GetAllIslamQAContext(context.Background())
+}
+
+func GetAllIslamQAContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, slug, category, question FROM islamqa ORDER BY category, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -2922,18 +3245,25 @@ func GetAllIslamQA() ([]map[string]interface{}, error) {
 			"Question": question,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetIslamQAPrevNext(slug string) (prevSlug, nextSlug string) {
+	return GetIslamQAPrevNextContext(context.Background(), slug)
+}
+
+func GetIslamQAPrevNextContext(ctx context.Context, slug string) (prevSlug, nextSlug string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	DB.QueryRow(`SELECT id FROM islamqa WHERE slug = ?`, slug).Scan(&id)
+	DB.QueryRowContext(ctx, `SELECT id FROM islamqa WHERE slug = ?`, slug).Scan(&id)
 	if id == 0 {
 		return
 	}
 	var p, n sql.NullString
-	DB.QueryRow(`SELECT slug FROM islamqa WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
-	DB.QueryRow(`SELECT slug FROM islamqa WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	DB.QueryRowContext(ctx, `SELECT slug FROM islamqa WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRowContext(ctx, `SELECT slug FROM islamqa WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
 	return p.String, n.String
 }
 
@@ -2964,7 +3294,14 @@ func chapterSortKey(chapter string) int {
 }
 
 func GetGhazaliChapters() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT volume, volume_title, chapter, MIN(id) as first_id,
+	return GetGhazaliChaptersContext(context.Background())
+}
+
+func GetGhazaliChaptersContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT volume, volume_title, chapter, MIN(id) as first_id,
 		(SELECT slug FROM ghazali g2 WHERE g2.volume = ghazali.volume AND g2.chapter = ghazali.chapter ORDER BY g2.id LIMIT 1) as first_slug
 		FROM ghazali GROUP BY volume, chapter`)
 	if err != nil {
@@ -2995,11 +3332,18 @@ func GetGhazaliChapters() ([]map[string]interface{}, error) {
 		}
 		return chapterSortKey(results[i]["Chapter"].(string)) < chapterSortKey(results[j]["Chapter"].(string))
 	})
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id,
+	return GetGhazaliByVolumeContext(context.Background(), volume)
+}
+
+func GetGhazaliByVolumeContext(ctx context.Context, volume int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT DISTINCT volume, volume_title, chapter, MIN(id) as first_id,
 		(SELECT slug FROM ghazali g2 WHERE g2.volume = ghazali.volume AND g2.chapter = ghazali.chapter ORDER BY g2.id LIMIT 1) as first_slug
 		FROM ghazali WHERE volume = ? GROUP BY chapter ORDER BY chapter`, volume)
 	if err != nil {
@@ -3025,18 +3369,25 @@ func GetGhazaliByVolume(volume int) ([]map[string]interface{}, error) {
 	sort.SliceStable(results, func(i, j int) bool {
 		return chapterSortKey(results[i]["Chapter"].(string)) < chapterSortKey(results[j]["Chapter"].(string))
 	})
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetGhazaliPrevNext(slug string) (prevSlug, nextSlug string) {
+	return GetGhazaliPrevNextContext(context.Background(), slug)
+}
+
+func GetGhazaliPrevNextContext(ctx context.Context, slug string) (prevSlug, nextSlug string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	DB.QueryRow(`SELECT id FROM ghazali WHERE slug = ?`, slug).Scan(&id)
+	DB.QueryRowContext(ctx, `SELECT id FROM ghazali WHERE slug = ?`, slug).Scan(&id)
 	if id == 0 {
 		return
 	}
 	var p, n sql.NullString
-	DB.QueryRow(`SELECT slug FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
-	DB.QueryRow(`SELECT slug FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	DB.QueryRowContext(ctx, `SELECT slug FROM ghazali WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRowContext(ctx, `SELECT slug FROM ghazali WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
 	return p.String, n.String
 }
 
@@ -3062,13 +3413,24 @@ func InsertAdhkar(category, title, arabic, transliteration, translation, notes, 
 }
 
 func SearchAdhkar(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchAdhkarContext(context.Background(), query)
+}
+
+func SearchAdhkarContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchAdhkarContext(ctx, query, 10)
+}
+
+func searchAdhkarContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT a.id, a.slug, a.category, a.title, a.arabic, a.transliteration, a.translation, a.notes, a.benefits, a.source
 		FROM adhkar a
 		JOIN adhkar_fts fts ON a.id = fts.docid
 		WHERE adhkar_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3094,14 +3456,21 @@ func SearchAdhkar(query string) ([]map[string]interface{}, error) {
 			"Source":          source.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetAdhkar(slug string) (map[string]interface{}, error) {
+	return GetAdhkarContext(context.Background(), slug)
+}
+
+func GetAdhkarContext(ctx context.Context, slug string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var category, title string
 	var arabic, transliteration, translation, notes, benefits, source sql.NullString
-	err := DB.QueryRow(`SELECT id, category, title, arabic, transliteration, translation, notes, benefits, source FROM adhkar WHERE slug = ?`, slug).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, category, title, arabic, transliteration, translation, notes, benefits, source FROM adhkar WHERE slug = ?`, slug).Scan(
 		&id, &category, &title, &arabic, &transliteration, &translation, &notes, &benefits, &source)
 	if err != nil {
 		return nil, err
@@ -3121,7 +3490,14 @@ func GetAdhkar(slug string) (map[string]interface{}, error) {
 }
 
 func GetAdhkarByCategory(category string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, slug, category, title, arabic, translation FROM adhkar WHERE category = ? ORDER BY id`, category)
+	return GetAdhkarByCategoryContext(context.Background(), category)
+}
+
+func GetAdhkarByCategoryContext(ctx context.Context, category string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, slug, category, title, arabic, translation FROM adhkar WHERE category = ? ORDER BY id`, category)
 	if err != nil {
 		return nil, err
 	}
@@ -3143,11 +3519,18 @@ func GetAdhkarByCategory(category string) ([]map[string]interface{}, error) {
 			"Translation": translation.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetAdhkarCategories() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT category, COUNT(*) as count FROM adhkar GROUP BY category ORDER BY category`)
+	return GetAdhkarCategoriesContext(context.Background())
+}
+
+func GetAdhkarCategoriesContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT category, COUNT(*) as count FROM adhkar GROUP BY category ORDER BY category`)
 	if err != nil {
 		return nil, err
 	}
@@ -3163,11 +3546,18 @@ func GetAdhkarCategories() ([]map[string]interface{}, error) {
 			"Count":    count,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetAllAdhkar() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, slug, category, title, arabic, translation FROM adhkar ORDER BY category, id`)
+	return GetAllAdhkarContext(context.Background())
+}
+
+func GetAllAdhkarContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, slug, category, title, arabic, translation FROM adhkar ORDER BY category, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -3189,18 +3579,25 @@ func GetAllAdhkar() ([]map[string]interface{}, error) {
 			"Translation": translation.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetAdhkarPrevNext(slug string) (prevSlug, nextSlug string) {
+	return GetAdhkarPrevNextContext(context.Background(), slug)
+}
+
+func GetAdhkarPrevNextContext(ctx context.Context, slug string) (prevSlug, nextSlug string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
-	DB.QueryRow(`SELECT id FROM adhkar WHERE slug = ?`, slug).Scan(&id)
+	DB.QueryRowContext(ctx, `SELECT id FROM adhkar WHERE slug = ?`, slug).Scan(&id)
 	if id == 0 {
 		return
 	}
 	var p, n sql.NullString
-	DB.QueryRow(`SELECT slug FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
-	DB.QueryRow(`SELECT slug FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
+	DB.QueryRowContext(ctx, `SELECT slug FROM adhkar WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&p)
+	DB.QueryRowContext(ctx, `SELECT slug FROM adhkar WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&n)
 	return p.String, n.String
 }
 
@@ -3224,13 +3621,24 @@ func InsertRiyad(book string, number int, narrator, text, arabic string) error {
 }
 
 func SearchRiyad(query string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`
+	return SearchRiyadContext(context.Background(), query)
+}
+
+func SearchRiyadContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchRiyadContext(ctx, query, 10)
+}
+
+func searchRiyadContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `
 		SELECT r.id, r.book, r.number, r.narrator, r.text, r.arabic
 		FROM salihin r
 		JOIN salihin_fts fts ON r.id = fts.docid
 		WHERE salihin_fts MATCH ?
-		LIMIT 10
-	`, query)
+		LIMIT ?
+	`, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -3252,15 +3660,22 @@ func SearchRiyad(query string) ([]map[string]interface{}, error) {
 			"Arabic":   arabic.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetRiyad(number int64) (map[string]interface{}, error) {
+	return GetRiyadContext(context.Background(), number)
+}
+
+func GetRiyadContext(ctx context.Context, number int64) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var num int
 	var book, text string
 	var narrator, arabic sql.NullString
-	err := DB.QueryRow(`SELECT id, book, number, narrator, text, arabic FROM salihin WHERE number = ?`, number).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, book, number, narrator, text, arabic FROM salihin WHERE number = ?`, number).Scan(
 		&id, &book, &num, &narrator, &text, &arabic)
 	if err != nil {
 		return nil, err
@@ -3276,8 +3691,15 @@ func GetRiyad(number int64) (map[string]interface{}, error) {
 }
 
 func GetRiyadPrevNext(number int64) (prevNumber, nextNumber int64) {
-	DB.QueryRow(`SELECT number FROM salihin WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
-	DB.QueryRow(`SELECT number FROM salihin WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
+	return GetRiyadPrevNextContext(context.Background(), number)
+}
+
+func GetRiyadPrevNextContext(ctx context.Context, number int64) (prevNumber, nextNumber int64) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT number FROM salihin WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRowContext(ctx, `SELECT number FROM salihin WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
 	return
 }
 
@@ -3285,30 +3707,58 @@ func GetRiyadPrevNext(number int64) (prevNumber, nextNumber int64) {
 // none. Numbers are not guaranteed contiguous, so the neighbours are looked up
 // rather than assumed to be number±1.
 func GetHadithPrevNext(number int64) (prevNumber, nextNumber int64) {
-	DB.QueryRow(`SELECT number FROM hadith WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
-	DB.QueryRow(`SELECT number FROM hadith WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
+	return GetHadithPrevNextContext(context.Background(), number)
+}
+
+func GetHadithPrevNextContext(ctx context.Context, number int64) (prevNumber, nextNumber int64) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT number FROM hadith WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRowContext(ctx, `SELECT number FROM hadith WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
 	return
 }
 
 // GetNamePrevNext returns the surrounding Names of Allah numbers, 0 where there
 // is none.
 func GetNamePrevNext(number int64) (prevNumber, nextNumber int64) {
-	DB.QueryRow(`SELECT number FROM names WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
-	DB.QueryRow(`SELECT number FROM names WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
+	return GetNamePrevNextContext(context.Background(), number)
+}
+
+func GetNamePrevNextContext(ctx context.Context, number int64) (prevNumber, nextNumber int64) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT number FROM names WHERE number < ? ORDER BY number DESC LIMIT 1`, number).Scan(&prevNumber)
+	DB.QueryRowContext(ctx, `SELECT number FROM names WHERE number > ? ORDER BY number ASC LIMIT 1`, number).Scan(&nextNumber)
 	return
 }
 
 // GetHadithBookPrevNext returns the surrounding Bukhari book numbers.
 func GetHadithBookPrevNext(bookNumber int64) (prevNumber, nextNumber int64) {
-	DB.QueryRow(`SELECT book_number FROM hadith WHERE book_number < ? AND book_number IS NOT NULL
+	return GetHadithBookPrevNextContext(context.Background(), bookNumber)
+}
+
+func GetHadithBookPrevNextContext(ctx context.Context, bookNumber int64) (prevNumber, nextNumber int64) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT book_number FROM hadith WHERE book_number < ? AND book_number IS NOT NULL
 		ORDER BY book_number DESC LIMIT 1`, bookNumber).Scan(&prevNumber)
-	DB.QueryRow(`SELECT book_number FROM hadith WHERE book_number > ? AND book_number IS NOT NULL
+	DB.QueryRowContext(ctx, `SELECT book_number FROM hadith WHERE book_number > ? AND book_number IS NOT NULL
 		ORDER BY book_number ASC LIMIT 1`, bookNumber).Scan(&nextNumber)
 	return
 }
 
 func GetRiyadBooks() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT book, COUNT(*) as count FROM salihin GROUP BY book ORDER BY MIN(id)`)
+	return GetRiyadBooksContext(context.Background())
+}
+
+func GetRiyadBooksContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT book, COUNT(*) as count FROM salihin GROUP BY book ORDER BY MIN(id)`)
 	if err != nil {
 		return nil, err
 	}
@@ -3324,11 +3774,18 @@ func GetRiyadBooks() ([]map[string]interface{}, error) {
 			"Count": count,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetRiyadByBook(book string) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, number, narrator FROM salihin WHERE book = ? ORDER BY id`, book)
+	return GetRiyadByBookContext(context.Background(), book)
+}
+
+func GetRiyadByBookContext(ctx context.Context, book string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, number, narrator FROM salihin WHERE book = ? ORDER BY id`, book)
 	if err != nil {
 		return nil, err
 	}
@@ -3346,13 +3803,20 @@ func GetRiyadByBook(book string) ([]map[string]interface{}, error) {
 			"Narrator": narrator.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // Quran index
 
 func GetQuranChapters() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT chapter, chapter_name, COUNT(*) FROM quran GROUP BY chapter ORDER BY chapter`)
+	return GetQuranChaptersContext(context.Background())
+}
+
+func GetQuranChaptersContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT chapter, chapter_name, COUNT(*) FROM quran GROUP BY chapter ORDER BY chapter`)
 	if err != nil {
 		return nil, err
 	}
@@ -3368,11 +3832,18 @@ func GetQuranChapters() ([]map[string]interface{}, error) {
 			"Count":   count,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetQuranChapter(chapter int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT verse, text FROM quran WHERE chapter = ? ORDER BY verse`, chapter)
+	return GetQuranChapterContext(context.Background(), chapter)
+}
+
+func GetQuranChapterContext(ctx context.Context, chapter int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT verse, text FROM quran WHERE chapter = ? ORDER BY verse`, chapter)
 	if err != nil {
 		return nil, err
 	}
@@ -3387,13 +3858,20 @@ func GetQuranChapter(chapter int) ([]map[string]interface{}, error) {
 			"Text":  text,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // Hadith index
 
 func GetHadithBooks() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT book, book_number, COUNT(*) FROM hadith GROUP BY book_number, book ORDER BY book_number`)
+	return GetHadithBooksContext(context.Background())
+}
+
+func GetHadithBooksContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT book, book_number, COUNT(*) FROM hadith GROUP BY book_number, book ORDER BY book_number`)
 	if err != nil {
 		return nil, err
 	}
@@ -3410,11 +3888,18 @@ func GetHadithBooks() ([]map[string]interface{}, error) {
 			"Count":      count,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetHadithByBook(bookNumber int64) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, number, narrator FROM hadith WHERE book_number = ? ORDER BY number`, bookNumber)
+	return GetHadithByBookContext(context.Background(), bookNumber)
+}
+
+func GetHadithByBookContext(ctx context.Context, bookNumber int64) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, number, narrator FROM hadith WHERE book_number = ? ORDER BY number`, bookNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -3431,13 +3916,20 @@ func GetHadithByBook(bookNumber int64) ([]map[string]interface{}, error) {
 			"Narrator": narrator.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // Names index
 
 func GetAllNames() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT number, english, arabic, meaning FROM names ORDER BY number`)
+	return GetAllNamesContext(context.Background())
+}
+
+func GetAllNamesContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT number, english, arabic, meaning FROM names ORDER BY number`)
 	if err != nil {
 		return nil, err
 	}
@@ -3455,7 +3947,7 @@ func GetAllNames() ([]map[string]interface{}, error) {
 			"Meaning": meaning.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 // Arabic vocabulary functions
@@ -3478,11 +3970,18 @@ func InsertArabicWord(arabic, transliteration, english string, frequency int, ex
 }
 
 func SearchArabic(query string) ([]map[string]interface{}, error) {
+	return SearchArabicContext(context.Background(), query)
+}
+
+func SearchArabicContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	query = sanitiseFTS(query)
 	if query == "" {
 		return nil, nil
 	}
-	rows, err := DB.Query(`
+	rows, err := DB.QueryContext(ctx, `
 		SELECT a.id, a.arabic, a.transliteration, a.english, a.frequency, a.example_ref, a.type
 		FROM arabic a
 		JOIN arabic_fts fts ON a.id = fts.docid
@@ -3511,14 +4010,21 @@ func SearchArabic(query string) ([]map[string]interface{}, error) {
 			"Type":            wordType.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetArabicWord(id int64) (map[string]interface{}, error) {
+	return GetArabicWordContext(context.Background(), id)
+}
+
+func GetArabicWordContext(ctx context.Context, id int64) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var arabicText string
 	var frequency int
 	var transliteration, english, exampleRef, wordType sql.NullString
-	err := DB.QueryRow(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic WHERE id = ?`, id).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic WHERE id = ?`, id).Scan(
 		&id, &arabicText, &transliteration, &english, &frequency, &exampleRef, &wordType)
 	if err != nil {
 		return nil, err
@@ -3535,11 +4041,25 @@ func GetArabicWord(id int64) (map[string]interface{}, error) {
 }
 
 func GetArabicByFrequency(limit int) ([]map[string]interface{}, error) {
-	return GetArabicByFrequencyRange(0, limit)
+	return GetArabicByFrequencyContext(context.Background(), limit)
+}
+
+func GetArabicByFrequencyContext(ctx context.Context, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	return GetArabicByFrequencyRangeContext(ctx, 0, limit)
 }
 
 func GetArabicByFrequencyRange(offset, limit int) ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic ORDER BY frequency DESC LIMIT ? OFFSET ?`, limit, offset)
+	return GetArabicByFrequencyRangeContext(context.Background(), offset, limit)
+}
+
+func GetArabicByFrequencyRangeContext(ctx context.Context, offset, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT id, arabic, transliteration, english, frequency, example_ref, type FROM arabic ORDER BY frequency DESC LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -3562,12 +4082,19 @@ func GetArabicByFrequencyRange(offset, limit int) ([]map[string]interface{}, err
 			"Type":            wordType.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetArabicPrevNext(id int64) (prevID, nextID int64) {
-	DB.QueryRow(`SELECT id FROM arabic WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
-	DB.QueryRow(`SELECT id FROM arabic WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
+	return GetArabicPrevNextContext(context.Background(), id)
+}
+
+func GetArabicPrevNextContext(ctx context.Context, id int64) (prevID, nextID int64) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT id FROM arabic WHERE id < ? ORDER BY id DESC LIMIT 1`, id).Scan(&prevID)
+	DB.QueryRowContext(ctx, `SELECT id FROM arabic WHERE id > ? ORDER BY id ASC LIMIT 1`, id).Scan(&nextID)
 	return
 }
 
@@ -3594,7 +4121,14 @@ func UpdateProphetImage(slug, imageURL string) {
 }
 
 func GetAllProphets() ([]map[string]interface{}, error) {
-	rows, err := DB.Query(`SELECT slug, name, arabic, title, summary, image_url FROM prophets ORDER BY sort_order`)
+	return GetAllProphetsContext(context.Background())
+}
+
+func GetAllProphetsContext(ctx context.Context) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	rows, err := DB.QueryContext(ctx, `SELECT slug, name, arabic, title, summary, image_url FROM prophets ORDER BY sort_order`)
 	if err != nil {
 		return nil, err
 	}
@@ -3613,14 +4147,21 @@ func GetAllProphets() ([]map[string]interface{}, error) {
 			"ImageURL": imageURL.String,
 		})
 	}
-	return results, nil
+	return results, rows.Err()
 }
 
 func GetProphet(slug string) (map[string]interface{}, error) {
+	return GetProphetContext(context.Background(), slug)
+}
+
+func GetProphetContext(ctx context.Context, slug string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var id int64
 	var name string
 	var arabic, title, summary, versesJSON, imageURL sql.NullString
-	err := DB.QueryRow(`SELECT id, name, arabic, title, summary, verses, image_url FROM prophets WHERE slug = ?`, slug).Scan(
+	err := DB.QueryRowContext(ctx, `SELECT id, name, arabic, title, summary, verses, image_url FROM prophets WHERE slug = ?`, slug).Scan(
 		&id, &name, &arabic, &title, &summary, &versesJSON, &imageURL)
 	if err != nil {
 		return nil, err
@@ -3638,28 +4179,49 @@ func GetProphet(slug string) (map[string]interface{}, error) {
 }
 
 func GetProphetPrevNext(slug string) (prevSlug, nextSlug string) {
+	return GetProphetPrevNextContext(context.Background(), slug)
+}
+
+func GetProphetPrevNextContext(ctx context.Context, slug string) (prevSlug, nextSlug string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var sortOrder int
-	DB.QueryRow(`SELECT sort_order FROM prophets WHERE slug = ?`, slug).Scan(&sortOrder)
+	DB.QueryRowContext(ctx, `SELECT sort_order FROM prophets WHERE slug = ?`, slug).Scan(&sortOrder)
 	var p, n sql.NullString
-	DB.QueryRow(`SELECT slug FROM prophets WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1`, sortOrder).Scan(&p)
-	DB.QueryRow(`SELECT slug FROM prophets WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1`, sortOrder).Scan(&n)
+	DB.QueryRowContext(ctx, `SELECT slug FROM prophets WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1`, sortOrder).Scan(&p)
+	DB.QueryRowContext(ctx, `SELECT slug FROM prophets WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1`, sortOrder).Scan(&n)
 	return p.String, n.String
 }
 
 // Reading progress
 
 func SaveReadingProgress(userID int64, source, path, title string) {
+	SaveReadingProgressContext(context.Background(), userID, source, path, title)
+}
+
+func SaveReadingProgressContext(ctx context.Context, userID int64, source, path, title string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	if userID == 0 {
 		return
 	}
-	DB.Exec(`INSERT INTO reading_progress (user_id, source, path, title, updated_at)
+	DB.ExecContext(ctx, `INSERT INTO reading_progress (user_id, source, path, title, updated_at)
 		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
 		ON CONFLICT(user_id, source) DO UPDATE SET path=?, title=?, updated_at=CURRENT_TIMESTAMP`,
 		userID, source, path, title, path, title)
 }
 
 func GetReadingProgress(userID int64, source string) (path, title string) {
-	DB.QueryRow(`SELECT path, title FROM reading_progress WHERE user_id = ? AND source = ?`,
+	return GetReadingProgressContext(context.Background(), userID, source)
+}
+
+func GetReadingProgressContext(ctx context.Context, userID int64, source string) (path, title string) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	DB.QueryRowContext(ctx, `SELECT path, title FROM reading_progress WHERE user_id = ? AND source = ?`,
 		userID, source).Scan(&path, &title)
 	return
 }

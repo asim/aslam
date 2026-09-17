@@ -48,7 +48,7 @@ func handleKnowledgeSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	results := []map[string]interface{}{}
 	if q != "" {
-		found, err := db.SearchAll(q, -1, false, false)
+		found, err := db.SearchKnowledgeContext(r.Context(), q, collection, limit)
 		if err != nil {
 			jsonError(w, "knowledge search unavailable", 500)
 			return
@@ -89,19 +89,19 @@ func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
 	number := func(s string) int64 { n, _ := strconv.ParseInt(s, 10, 64); return n }
 	switch {
 	case kind == "quran" && len(parts) == 3:
-		item, err = db.GetQuranVerse(int(number(parts[1])), int(number(parts[2])))
+		item, err = db.GetQuranVerseContext(r.Context(), int(number(parts[1])), int(number(parts[2])))
 	case kind == "hadith" && len(parts) == 2:
-		item, err = db.GetHadith(number(parts[1]))
+		item, err = db.GetHadithContext(r.Context(), number(parts[1]))
 	case kind == "names" && len(parts) == 2:
-		item, err = db.GetName(number(parts[1]))
+		item, err = db.GetNameContext(r.Context(), number(parts[1]))
 	case kind == "salihin" && len(parts) == 2:
-		item, err = db.GetRiyad(number(parts[1]))
+		item, err = db.GetRiyadContext(r.Context(), number(parts[1]))
 	case kind == "ghazali" && len(parts) == 2:
-		item, err = db.GetGhazali(parts[1])
+		item, err = db.GetGhazaliContext(r.Context(), parts[1])
 	case kind == "islamqa" && len(parts) == 2:
-		item, err = db.GetIslamQA(parts[1])
+		item, err = db.GetIslamQAContext(r.Context(), parts[1])
 	case kind == "adhkar" && len(parts) == 2:
-		item, err = db.GetAdhkar(parts[1])
+		item, err = db.GetAdhkarContext(r.Context(), parts[1])
 	case kind == "seerah" && len(parts) == 3 && parts[1] == "page":
 		if seerahBook == nil {
 			jsonError(w, "seerah unavailable", 503)

@@ -38,7 +38,7 @@ func optionalAuth(handler http.HandlerFunc) http.HandlerFunc {
 // isLoggedIn reports whether the request carries a session for a valid user.
 func isLoggedIn(r *http.Request) bool {
 	session := getSession(r)
-	return session != nil && db.IsUser(session.Email)
+	return session != nil && db.IsUserContext(r.Context(), session.Email)
 }
 
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
@@ -92,7 +92,7 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
 		}
-		if !db.IsUser(session.Email) {
+		if !db.IsUserContext(r.Context(), session.Email) {
 			http.Error(w, "Unauthorized: your email is not allowed", http.StatusForbidden)
 			return
 		}
@@ -105,7 +105,7 @@ func getSession(r *http.Request) *db.Session {
 	if err != nil {
 		return nil
 	}
-	return db.GetSessionByToken(cookie.Value)
+	return db.GetSessionByTokenContext(r.Context(), cookie.Value)
 }
 
 func createSession(email, name string) string {
@@ -193,7 +193,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.GetUserByEmail(email)
+	user, err := db.GetUserByEmailContext(r.Context(), email)
 	if err != nil || user.PasswordHash == "" {
 		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
 			"Error":         "Invalid email or password",
@@ -212,7 +212,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	// Correct password, but the address was never confirmed. Checked after the
 	// password so this does not reveal which addresses are registered.
-	if !db.IsVerified(email) {
+	if !db.IsVerifiedContext(r.Context(), email) {
 		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
 			"Error":         "Please confirm your email address first — check your inbox for the link we sent.",
 			"GoogleEnabled": googleClientID != "",
@@ -432,7 +432,7 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := ""
-	if u, err := db.GetUserByEmail(email); err == nil {
+	if u, err := db.GetUserByEmailContext(r.Context(), email); err == nil {
 		name = u.Name
 	}
 
@@ -523,7 +523,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(userInfo.Email)
 
 	// Auto-create user if they don't exist (open registration via Google)
-	if !db.IsUser(email) {
+	if !db.IsUserContext(r.Context(), email) {
 		if err := db.AddUser(email, userInfo.Name, "user", "google"); err != nil {
 			log.Printf("Failed to auto-create user %s: %v", email, err)
 			http.Error(w, "Failed to create account", 500)
@@ -578,7 +578,7 @@ func getUserID(r *http.Request) int64 {
 	if session == nil {
 		return 0
 	}
-	return db.GetUserID(session.Email)
+	return db.GetUserIDContext(r.Context(), session.Email)
 }
 
 func isAdminReq(r *http.Request) bool {
@@ -586,7 +586,7 @@ func isAdminReq(r *http.Request) bool {
 	if session == nil {
 		return false
 	}
-	return db.IsAdmin(session.Email)
+	return db.IsAdminContext(r.Context(), session.Email)
 }
 
 // requireAdmin wraps handlers that need admin access
@@ -599,7 +599,7 @@ func requireAdmin(handler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Check if user is admin
-		if !db.IsAdmin(session.Email) {
+		if !db.IsAdminContext(r.Context(), session.Email) {
 			http.Error(w, "Admin access required", http.StatusForbidden)
 			return
 		}

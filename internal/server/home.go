@@ -31,7 +31,7 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 
 	// If user is authenticated, redirect to /home
 	session := getSession(r)
-	if session != nil && db.IsUser(session.Email) {
+	if session != nil && db.IsUserContext(r.Context(), session.Email) {
 		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}

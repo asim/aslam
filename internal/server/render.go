@@ -19,7 +19,7 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, name string, data ma
 	}
 	session := getSession(r)
 	if session != nil {
-		data["IsAdmin"] = db.IsAdmin(session.Email)
+		data["IsAdmin"] = db.IsAdminContext(r.Context(), session.Email)
 	}
 	// Templates branch on this to hide account-only affordances (Save, Chat,
 	// the nav) from anonymous visitors on public content pages.

@@ -2,6 +2,7 @@ package db
 
 import (
 	"aslam/internal/seerah"
+	"context"
 	"fmt"
 )
 
@@ -39,11 +40,22 @@ func IndexSeerah(book *seerah.Book) error {
 }
 
 func SearchSeerah(query string) ([]map[string]interface{}, error) {
+	return SearchSeerahContext(context.Background(), query)
+}
+
+func SearchSeerahContext(ctx context.Context, query string) ([]map[string]interface{}, error) {
+	return searchSeerahContext(ctx, query, 10)
+}
+
+func searchSeerahContext(ctx context.Context, query string, limit int) ([]map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	query = sanitiseFTS(query)
 	if query == "" {
 		return nil, nil
 	}
-	rows, err := DB.Query(`SELECT docid,title,snippet(seerah_fts, '', '', ' … ', 1, 48) FROM seerah_fts WHERE seerah_fts MATCH ? LIMIT 10`, query)
+	rows, err := DB.QueryContext(ctx, `SELECT docid,title,snippet(seerah_fts, '', '', ' … ', 1, 48) FROM seerah_fts WHERE seerah_fts MATCH ? LIMIT ?`, query, limit)
 	if err != nil {
 		return nil, err
 	}

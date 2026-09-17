@@ -46,7 +46,7 @@ func handleProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.GetUserByEmail(session.Email)
+	user, err := db.GetUserByEmailContext(r.Context(), session.Email)
 	if err != nil {
 		http.Error(w, "User not found", 404)
 		return
