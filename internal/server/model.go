@@ -494,6 +494,15 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		}
 	}
 
+	// A stopped scanner may mean cancellation or a failed body read, not a
+	// completed response. Never report partial output as a successful answer.
+	if err := ctx.Err(); err != nil {
+		return nil, fullText.String(), err
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fullText.String(), fmt.Errorf("read model stream: %w", err)
+	}
+
 	return &anthropicResponse{
 		Content:    contentBlocks,
 		StopReason: stopReason,
