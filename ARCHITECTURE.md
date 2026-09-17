@@ -65,7 +65,7 @@ The assistant is a single agent with multiple input/output channels. All channel
 | `internal/discovery/` | Public discovery handlers and their embedded documents |
 | `data/` | Compressed reference datasets and Go embedding declarations |
 | `internal/seerah/` | Seerah archive reader and page navigation |
-| `tools/seerah/` | PDF extraction, reviewed corrections and extraction tests |
+| `scripts/seerah/` | PDF extraction, reviewed corrections and extraction tests |
 | `docs/` | Operational notes and source provenance/review documents |
 | `internal/server/email_worker.go` | Email channel (IMAP polling, sends replies) |
 | `internal/tools/tools.go` | Tool registry and execution |
