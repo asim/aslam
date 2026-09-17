@@ -226,3 +226,7 @@ This is beneficial knowledge, made searchable.
 | `docs/` | Profiling, source provenance and correction reviews |
 
 The runtime database and encryption key live in `~/.aslam/`, outside the repository.
+
+## Traffic and memory bounds
+
+See [request limits and nginx configuration](docs/request-limits.md) for concurrency limits, query cancellation, allowed hosts (`ASLAM_ALLOWED_HOSTS`), and rejecting unrelated domains before proxying.
