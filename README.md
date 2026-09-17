@@ -51,7 +51,7 @@ Public discovery documents are embedded in the Go binary and served without auth
 - `/openapi.json` — OpenAPI 3.1 specification for search and full-resource retrieval.
 - `/llms.txt` — collection guidance, citation rules, and example requests for agents.
 
-All three support GET and HEAD. The catalog uses `application/linkset+json` with the RFC 9727 profile and advertises discovery links in its HTTP headers. They describe the public knowledge API; account and chat actions are outside this catalog. Keep `discovery/openapi.json` and `discovery/llms.txt` in sync when changing the knowledge handlers. Run `go test . -run 'TestDiscoveryRoutes|TestKnowledgeDiscoveryContract'` to check the serving and API contracts.
+All three support GET and HEAD. The catalog uses `application/linkset+json` with the RFC 9727 profile and advertises discovery links in its HTTP headers. They describe the public knowledge API; account and chat actions are outside this catalog. Keep `internal/discovery/openapi.json` and `internal/discovery/llms.txt` in sync when changing the knowledge handlers. Run `go test ./internal/discovery ./internal/server -run 'TestDiscoveryRoutes|TestKnowledgeDiscoveryContract'` to check the serving and API contracts.
 
 ## Knowledge API
 
@@ -189,6 +189,7 @@ sudo systemctl enable --now aslam
 | `data/salihin.zip` | 1,217 Riyad us-Salihin hadiths |
 | `data/arabic.zip` | 21,000+ Quranic Arabic vocabulary |
 | `data/sources.zip` | Quran (6,348), Hadith (7,265), Names of Allah (99) |
+| `data/seerah.zip` | The Sealed Nectar, preserving 316 reading pages and chapter bookmarks |
 
 All datasets are embedded in the binary at build time and loaded into SQLite with FTS indexing on first run. Versioned — bump the version constant to force a reload when data changes.
 
@@ -206,3 +207,22 @@ This is beneficial knowledge, made searchable.
 ---
 
 *An Islamic knowledge base for Muslims.*
+
+## Repository layout
+
+| Path | Responsibility |
+| --- | --- |
+| `main.go` | Entry point; starts the server |
+| `internal/server/` | Startup, routes, handlers, model calls and background workers |
+| `internal/server/html/` | Embedded templates and browser assets |
+| `internal/discovery/` | Discovery handlers, OpenAPI, API catalog and llms.txt |
+| `internal/tools/` | Runtime model tools and external integrations |
+| `internal/seerah/` | Seerah archive reader and page navigation |
+| `db/` | SQLCipher persistence and indexing |
+| `data/` | Embedded reference archives, including seerah.zip |
+| `tools/seerah/` | PDF extraction and reviewed source corrections |
+| `scripts/` | Deployment, systemd and database administration |
+| `cmd/` | Aslam CLI and tax utilities |
+| `docs/` | Profiling, source provenance and correction reviews |
+
+The runtime database and encryption key live in `~/.aslam/`, outside the repository.

@@ -1,7 +1,7 @@
 package db
 
 import (
-	"aslam/seerah"
+	"aslam/internal/seerah"
 	"fmt"
 )
 
