@@ -220,7 +220,7 @@ This is beneficial knowledge, made searchable.
 | `internal/seerah/` | Seerah archive reader and page navigation |
 | `db/` | SQLCipher persistence and indexing |
 | `data/` | Embedded reference archives, including seerah.zip |
-| `tools/seerah/` | PDF extraction and reviewed source corrections |
+| `scripts/seerah/` | PDF extraction and reviewed source corrections |
 | `scripts/` | Deployment, systemd and database administration |
 | `cmd/` | Aslam CLI and tax utilities |
 | `docs/` | Profiling, source provenance and correction reviews |
