@@ -1,6 +1,6 @@
 """Extract the supplied Sealed Nectar PDF with narrowly reviewed source corrections.
 
-Usage: python tools/seerah/extract_seerah.py input.pdf data/seerah.zip [docs/seerah-question-mark-review.md]
+Usage: python scripts/seerah/extract_seerah.py input.pdf data/seerah.zip [docs/seerah-question-mark-review.md]
 Requires PyMuPDF. Only repeated margin text and the PDF-tool advertisement
 are excluded; original PDF page numbers and references are retained.
 """
