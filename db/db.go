@@ -897,9 +897,16 @@ func GetRecentConversations(limit int, userID int64, mineOnly bool, isAdmin bool
 }
 
 func GetConversation(id int64) (*Conversation, error) {
+	return GetConversationContext(context.Background(), id)
+}
+
+func GetConversationContext(ctx context.Context, id int64) (*Conversation, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
 	var c Conversation
 	var pub int
-	err := DB.QueryRow(`
+	err := DB.QueryRowContext(ctx, `
 		SELECT id, title, summary, COALESCE(user_id, 0), COALESCE(public, 0), created_at, updated_at
 		FROM conversations WHERE id = ?
 	`, id).Scan(&c.ID, &c.Title, &c.Summary, &c.UserID, &pub, &c.CreatedAt, &c.UpdatedAt)
@@ -2132,7 +2139,14 @@ func GetUserByEmailContext(ctx context.Context, email string) (*User, error) {
 }
 
 func GetUserByID(id int64) (*User, error) {
-	return scanUser(DB.QueryRow(`SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE id = ?`, id))
+	return GetUserByIDContext(context.Background(), id)
+}
+
+func GetUserByIDContext(ctx context.Context, id int64) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+
+	return scanUser(DB.QueryRowContext(ctx, `SELECT id, email, name, role, added_by, password_hash, picture, latitude, longitude, timezone, COALESCE(verified, 1), created_at FROM users WHERE id = ?`, id))
 }
 
 func SetUserPassword(id int64, hash string) error {

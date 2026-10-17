@@ -140,10 +140,11 @@
             {{end}}
             {{end}}
             {{else}}
-            <p class="muted" id="empty-state">Start the conversation below.</p>
+            <p class="muted" id="empty-state">{{if .CanSend}}Start the conversation below.{{else}}No messages yet.{{end}}</p>
             {{end}}
         </main>
 
+        {{if .CanSend}}
         <footer class="app-footer">
             <form id="chat-form">
                 <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
@@ -152,6 +153,7 @@
                 <button type="submit" id="send-btn">Send</button>
             </form>
         </footer>
+        {{end}}
     </div>
 
     <script>
@@ -159,8 +161,8 @@
         const msgInput = document.getElementById('message-input');
         const messages = document.getElementById('messages');
         const sendBtn = document.getElementById('send-btn');
-        const convId = form.querySelector('input[name="conversation_id"]').value;
-        const userName = '{{.UserName}}';
+        const convId = '{{.Conversation.ID}}';
+        const userName = '{{.ViewerName}}';
 
         // Standalone browsers and on-screen keyboards can have a visible
         // viewport smaller than the CSS layout viewport.
@@ -294,7 +296,7 @@
             const div = document.createElement('div');
             div.className = 'message ' + role + (isTyping ? ' typing' : '');
             div.innerHTML = `
-                <div class="message-role">${role === 'user' ? userName : 'Assistant'} <span class="time">just now</span></div>
+                <div class="message-role">${role === 'user' ? escapeHtml(userName) : 'Assistant'} <span class="time">just now</span></div>
                 <div class="message-content${role === 'assistant' ? ' markdown' : ''}">${escapeHtml(content)}</div>
             `;
             messages.appendChild(div);
@@ -332,204 +334,207 @@
             document.title = short + ' - Aslam';
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const message = msgInput.value.trim();
-            if (!message) return;
-
-            msgInput.disabled = true;
-            sendBtn.disabled = true;
-            msgInput.value = '';
-            msgInput.style.height = 'auto';
-
-            addMessage('user', message);
-            updateTitle(message);
-
-            const responseDiv = addMessage('assistant', 'Working...', true);
-            const contentEl = responseDiv.querySelector('.message-content');
-            const statusEl = document.createElement('div');
-            statusEl.style.cssText = 'font-size:12px; color:#999; margin-top:4px;';
-            responseDiv.appendChild(statusEl);
-
-            try {
-                const resp = await fetch('/api/chat/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ conversation_id: parseInt(convId), message: message })
-                });
-
-                const reader = resp.body.getReader();
-                const decoder = new TextDecoder();
-                let fullText = '';
-                let started = false;
-                let renderPending = false;
-
-                const toolNames = {
-                    search: 'Searching knowledge base',
-                    reminder: 'Searching Quran & Hadith',
-                    islamqa: 'Searching IslamQA',
-                    ghazali: 'Searching Ghazali',
-                    adhkar: 'Searching Adhkar',
-                    salihin: 'Searching Riyad us-Salihin',
-                    web_search: 'Searching the web',
-                    fetch: 'Fetching URL',
-                    note_add: 'Saving note',
-                    note_update: 'Updating note'
-                };
-
-                function render() {
-                    renderPending = false;
-                    const pinned = isNearBottom();
-                    const displayText = fullText.replace(/\n?!tool:\w+\n?/g, '').trim();
-                    if (typeof marked !== 'undefined') {
-                        contentEl.innerHTML = marked.parse(displayText);
-                    } else {
-                        contentEl.textContent = displayText;
-                    }
-                    if (pinned) scrollToBottom();
-                }
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    if (!chunk) continue;
-
-                    if (!started) {
-                        started = true;
-                        responseDiv.classList.remove('typing');
-                        contentEl.textContent = '';
-                    }
-                    fullText += chunk;
-
-                    // Check for tool markers
-                    const toolMatch = chunk.match(/!tool:(\w+)/);
-                    if (toolMatch) {
-                        const name = toolMatch[1];
-                        statusEl.textContent = (toolNames[name] || 'Using ' + name) + '...';
-                    }
-
-                    if (!renderPending) {
-                        renderPending = true;
-                        requestAnimationFrame(render);
-                    }
-                }
-
-                // Final render — clean up
-                statusEl.remove();
-                if (started) {
-                    render();
-                    addMessageActions(responseDiv);
-                } else {
-                    responseDiv.remove();
-                    location.reload();
-                }
-            } catch (err) {
-                // Connection dropped — poll for the saved response
-                statusEl.textContent = 'Reconnecting...';
-                let attempts = 0;
-                const recover = setInterval(async () => {
-                    attempts++;
-                    try {
-                        const r = await fetch('/api/chat/latest?id=' + convId);
-                        const d = await r.json();
-                        if (d.role === 'assistant') {
-                            const pinned = isNearBottom();
-                            clearInterval(recover);
-                            statusEl.remove();
-                            responseDiv.classList.remove('typing');
-                            if (typeof marked !== 'undefined') {
-                                contentEl.innerHTML = marked.parse(d.content);
-                            } else {
-                                contentEl.textContent = d.content;
-                            }
-                            msgInput.disabled = false;
-                            addMessageActions(responseDiv);
-                            if (pinned) scrollToBottom();
-                            sendBtn.disabled = false;
-                        } else if (attempts >= 60) {
-                            clearInterval(recover);
-                            statusEl.remove();
-                            responseDiv.remove();
-                            location.reload();
-                        }
-                    } catch (_) {}
-                }, 2000);
-                return;
-            }
-
-            msgInput.disabled = false;
-            sendBtn.disabled = false;
-        });
-
-        // Auto-grow textarea
-        msgInput.addEventListener('input', () => {
-            msgInput.style.height = 'auto';
-            msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
-        });
-
-        // Submit on Enter (Shift+Enter for newline)
-        msgInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+        if (form) {
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                form.dispatchEvent(new Event('submit'));
-            }
-        });
+            
+                const message = msgInput.value.trim();
+                if (!message) return;
 
-        // Voice input
-        const micBtn = document.getElementById('mic-btn');
-        let recognition = null;
-        
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            recognition.lang = 'en-GB';
-            
-            recognition.onstart = () => {
-                micBtn.textContent = '🔴';
-                micBtn.style.background = '#ff4444';
-            };
-            
-            recognition.onend = () => {
-                micBtn.textContent = '🎤';
-                micBtn.style.background = '';
-            };
-            
-            recognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+                msgInput.disabled = true;
+                sendBtn.disabled = true;
+                msgInput.value = '';
+                msgInput.style.height = 'auto';
+
+                addMessage('user', message);
+                updateTitle(message);
+
+                const responseDiv = addMessage('assistant', 'Working...', true);
+                const contentEl = responseDiv.querySelector('.message-content');
+                const statusEl = document.createElement('div');
+                statusEl.style.cssText = 'font-size:12px; color:#999; margin-top:4px;';
+                responseDiv.appendChild(statusEl);
+
+                try {
+                    const resp = await fetch('/api/chat/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ conversation_id: parseInt(convId), message: message })
+                    });
+
+                    const reader = resp.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullText = '';
+                    let started = false;
+                    let renderPending = false;
+
+                    const toolNames = {
+                        search: 'Searching knowledge base',
+                        reminder: 'Searching Quran & Hadith',
+                        islamqa: 'Searching IslamQA',
+                        ghazali: 'Searching Ghazali',
+                        adhkar: 'Searching Adhkar',
+                        salihin: 'Searching Riyad us-Salihin',
+                        web_search: 'Searching the web',
+                        fetch: 'Fetching URL',
+                        note_add: 'Saving note',
+                        note_update: 'Updating note'
+                    };
+
+                    function render() {
+                        renderPending = false;
+                        const pinned = isNearBottom();
+                        const displayText = fullText.replace(/\n?!tool:\w+\n?/g, '').trim();
+                        if (typeof marked !== 'undefined') {
+                            contentEl.innerHTML = marked.parse(displayText);
+                        } else {
+                            contentEl.textContent = displayText;
+                        }
+                        if (pinned) scrollToBottom();
+                    }
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value, { stream: true });
+                        if (!chunk) continue;
+
+                        if (!started) {
+                            started = true;
+                            responseDiv.classList.remove('typing');
+                            contentEl.textContent = '';
+                        }
+                        fullText += chunk;
+
+                        // Check for tool markers
+                        const toolMatch = chunk.match(/!tool:(\w+)/);
+                        if (toolMatch) {
+                            const name = toolMatch[1];
+                            statusEl.textContent = (toolNames[name] || 'Using ' + name) + '...';
+                        }
+
+                        if (!renderPending) {
+                            renderPending = true;
+                            requestAnimationFrame(render);
+                        }
+                    }
+
+                    // Final render — clean up
+                    statusEl.remove();
+                    if (started) {
+                        render();
+                        addMessageActions(responseDiv);
+                    } else {
+                        responseDiv.remove();
+                        location.reload();
+                    }
+                } catch (err) {
+                    // Connection dropped — poll for the saved response
+                    statusEl.textContent = 'Reconnecting...';
+                    let attempts = 0;
+                    const recover = setInterval(async () => {
+                        attempts++;
+                        try {
+                            const r = await fetch('/api/chat/latest?id=' + convId);
+                            const d = await r.json();
+                            if (d.role === 'assistant') {
+                                const pinned = isNearBottom();
+                                clearInterval(recover);
+                                statusEl.remove();
+                                responseDiv.classList.remove('typing');
+                                if (typeof marked !== 'undefined') {
+                                    contentEl.innerHTML = marked.parse(d.content);
+                                } else {
+                                    contentEl.textContent = d.content;
+                                }
+                                msgInput.disabled = false;
+                                addMessageActions(responseDiv);
+                                if (pinned) scrollToBottom();
+                                sendBtn.disabled = false;
+                            } else if (attempts >= 60) {
+                                clearInterval(recover);
+                                statusEl.remove();
+                                responseDiv.remove();
+                                location.reload();
+                            }
+                        } catch (_) {}
+                    }, 2000);
+                    return;
                 }
-                msgInput.value = transcript;
+
+                msgInput.disabled = false;
+                sendBtn.disabled = false;
+            });
+
+            // Auto-grow textarea
+            msgInput.addEventListener('input', () => {
                 msgInput.style.height = 'auto';
                 msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
-            };
-            
-            micBtn.addEventListener('click', () => {
-                if (micBtn.textContent === '🔴') {
-                    recognition.stop();
-                } else {
-                    recognition.start();
+            });
+
+            // Submit on Enter (Shift+Enter for newline)
+            msgInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
                 }
             });
-        } else {
-            micBtn.style.display = 'none';
-        }
 
-        // If arriving from the home page "Ask Aslam" box, send the pending question.
-        try {
-            const pendingKey = 'aslam_pending_q_' + convId;
-            const pending = sessionStorage.getItem(pendingKey);
-            if (pending) {
-                sessionStorage.removeItem(pendingKey);
-                msgInput.value = pending;
-                // Wait a tick so the UI has rendered, then submit.
-                setTimeout(() => form.dispatchEvent(new Event('submit')), 50);
+            // Voice input
+            const micBtn = document.getElementById('mic-btn');
+            let recognition = null;
+        
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'en-GB';
+            
+                recognition.onstart = () => {
+                    micBtn.textContent = '🔴';
+                    micBtn.style.background = '#ff4444';
+                };
+            
+                recognition.onend = () => {
+                    micBtn.textContent = '🎤';
+                    micBtn.style.background = '';
+                };
+            
+                recognition.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    msgInput.value = transcript;
+                    msgInput.style.height = 'auto';
+                    msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+                };
+            
+                micBtn.addEventListener('click', () => {
+                    if (micBtn.textContent === '🔴') {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                });
+            } else {
+                micBtn.style.display = 'none';
             }
-        } catch (_) {}
+
+            // If arriving from the home page "Ask Aslam" box, send the pending question.
+            try {
+                const pendingKey = 'aslam_pending_q_' + convId;
+                const pending = sessionStorage.getItem(pendingKey);
+                if (pending) {
+                    sessionStorage.removeItem(pendingKey);
+                    msgInput.value = pending;
+                    // Wait a tick so the UI has rendered, then submit.
+                    setTimeout(() => form.dispatchEvent(new Event('submit')), 50);
+                }
+            } catch (_) {}
+
+        }
 
         // Render markdown
         function renderMarkdown() {
@@ -555,7 +560,7 @@
         if (landingMessage) {
             messages.scrollTop += landingMessage.getBoundingClientRect().top -
                 messages.getBoundingClientRect().top - 16;
-        } else {
+        } else if (msgInput) {
             msgInput.focus({preventScroll: true});
         }
     </script>
