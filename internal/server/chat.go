@@ -52,12 +52,19 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 
 	messages, _ := db.GetMessages(id)
 
-	// Get user's first name from session
-	userName := "You"
+	// Saved questions belong to the conversation owner, not the viewer.
+	userName := "User"
+	if conv.UserID != 0 {
+		if owner, err := db.GetUserByID(conv.UserID); err == nil {
+			if parts := strings.Fields(owner.Name); len(parts) > 0 {
+				userName = parts[0]
+			}
+		}
+	}
+	viewerName := "You"
 	if session := getSession(r); session != nil {
-		parts := strings.Fields(session.Name)
-		if len(parts) > 0 {
-			userName = parts[0]
+		if parts := strings.Fields(session.Name); len(parts) > 0 {
+			viewerName = parts[0]
 		}
 	}
 
@@ -66,6 +73,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		"Conversation": conv,
 		"Messages":     messages,
 		"UserName":     userName,
+		"ViewerName":   viewerName,
 		"IsOwner":      isOwner || isAdmin,
 	})
 }
