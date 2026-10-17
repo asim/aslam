@@ -30,7 +30,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conv, err := db.GetConversation(id)
+	conv, err := db.GetConversationContext(r.Context(), id)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -55,7 +55,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 	// Saved questions belong to the conversation owner, not the viewer.
 	userName := "User"
 	if conv.UserID != 0 {
-		if owner, err := db.GetUserByID(conv.UserID); err == nil {
+		if owner, err := db.GetUserByIDContext(r.Context(), conv.UserID); err == nil {
 			if parts := strings.Fields(owner.Name); len(parts) > 0 {
 				userName = parts[0]
 			}
@@ -75,6 +75,7 @@ func handleChatView(w http.ResponseWriter, r *http.Request) {
 		"UserName":     userName,
 		"ViewerName":   viewerName,
 		"IsOwner":      isOwner || isAdmin,
+		"CanSend":      isOwner,
 	})
 }
 
@@ -137,13 +138,16 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Only the owner may append questions, including when the chat is public.
+	if !canSendChatMessage(w, r, convID) {
+		return
+	}
+
 	// Set user context
 	session := getSession(r)
 	if session != nil {
 		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: convID}
 	}
-
-	db.AdoptOrphanConversation(convID, getUserID(r))
 
 	// Save user message
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
@@ -218,13 +222,16 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Only the owner may append questions, including when the chat is public.
+	if !canSendChatMessage(w, r, req.ConversationID) {
+		return
+	}
+
 	// Set user context
 	session := getSession(r)
 	if session != nil {
 		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
-
-	db.AdoptOrphanConversation(req.ConversationID, getUserID(r))
 
 	// Save user message
 	if err := db.AddMessage(req.ConversationID, "user", req.Message); err != nil {
@@ -395,4 +402,20 @@ func handleToggleChatPublic(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// Shared conversations are read-only, even for administrators. Without a
+// per-message author ID, only the owner can add correctly attributed questions.
+func canSendChatMessage(w http.ResponseWriter, r *http.Request, id int64) bool {
+	conv, err := db.GetConversationContext(r.Context(), id)
+	if err != nil {
+		jsonError(w, "Conversation unavailable", http.StatusNotFound)
+		return false
+	}
+	userID := getUserID(r)
+	if userID == 0 || conv.UserID != userID {
+		jsonError(w, "This conversation is read-only", http.StatusForbidden)
+		return false
+	}
+	return true
 }
