@@ -77,7 +77,8 @@
                 </div>
             </div>
 
-            <form class="note-form" action="/notes/add" method="POST">
+            {{if .Error}}<p role="alert">{{.Error}}</p>{{end}}
+            <form data-note-editor class="note-form" action="/notes/add" method="POST">
                 <input type="text" name="title" required placeholder="Title" autofocus>
                 <textarea name="content" placeholder="Write your note..."></textarea>
                 <button type="submit">Save</button>

@@ -43,16 +43,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Save buttons — intercept /notes/add forms, use fetch, show toast
-    document.querySelectorAll('form[action="/notes/add"]').forEach(function(form) {
+    // Source quick-saves stay in place; the note editor submits normally.
+    document.querySelectorAll('form[action="/notes/add"]:not([data-note-editor])').forEach(function(form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             var btn = form.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
             fetch('/notes/add', {
                 method: 'POST',
+                headers: {'Accept': 'application/json'},
                 body: new URLSearchParams(new FormData(form))
-            }).then(function() {
+            }).then(function(response) {
+                if (!response.ok || response.redirected) throw new Error('Save failed');
+                return response.json();
+            }).then(function(result) {
+                if (result.saved !== true) throw new Error('Save failed');
                 showToast('Saved to notes');
             }).catch(function() {
                 showToast('Failed to save');

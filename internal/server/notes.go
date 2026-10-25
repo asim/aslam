@@ -60,6 +60,7 @@ func handleNotes(w http.ResponseWriter, r *http.Request) {
 		"Items":         items,
 		"CurrentUserID": userID,
 		"ShowAll":       showAll,
+		"Error":         r.URL.Query().Get("error"),
 	})
 }
 
@@ -110,17 +111,31 @@ func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if title == "" {
+		if strings.Contains(r.Header.Get("Accept"), "application/json") {
+			jsonError(w, "Title required", 400)
+			return
+		}
 		http.Redirect(w, r, "/notes?error=Title+required", http.StatusSeeOther)
 		return
 	}
 
 	userID := getUserID(r)
-	_, err := db.AddNoteItem(title, content, userID)
+	id, err := db.AddNoteItem(title, content, userID)
 	if err != nil {
+		if strings.Contains(r.Header.Get("Accept"), "application/json") {
+			jsonError(w, "Failed to save note", 500)
+			return
+		}
 		http.Redirect(w, r, "/notes?error=Failed+to+add+item", http.StatusSeeOther)
 		return
 	}
 
+	if strings.Contains(r.Header.Get("Accept"), "application/json") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "id": id})
+		return
+	}
 	referer := r.Header.Get("Referer")
 	if referer == "" {
 		referer = "/notes"
