@@ -242,38 +242,19 @@ func handlePrivacy(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, r, "privacy.html", nil)
 }
 
-// passwordSignupEnabled reports whether self-service email/password
-// registration is open.
-//
-// It is closed by default. The form has no email verification, CAPTCHA or rate
-// limit, so anyone can script it to mint accounts against addresses they do not
-// own — and because db.IsUser doubles as the allowlist for the email channel,
-// each one becomes an authorised sender to the assistant. Google OAuth is the
-// supported way in: it proves the address and is costly to abuse in bulk.
-//
-// Existing password accounts can still log in; only registration is closed.
-// If Google OAuth is not configured there would be no way to register at all,
-// so it stays open in that case.
-//
-// Otherwise it is gated on being able to send a confirmation email: with
-// verification in place an account is useless until its address is proven, so
-// registration is open when SMTP is configured. Without SMTP there is no way to
-// prove an address, so it stays shut rather than reopening the original hole.
-// ALLOW_PASSWORD_SIGNUP=false forces it off regardless.
+// Password registration requires a working sender for verification. An explicit
+// ALLOW_PASSWORD_SIGNUP=false keeps it disabled even when SMTP is configured.
 func passwordSignupEnabled() bool {
-	if googleClientID == "" {
-		return true
+	if !canSendEmail() {
+		return false
 	}
 	if v := os.Getenv("ALLOW_PASSWORD_SIGNUP"); v != "" {
 		return strings.EqualFold(v, "true")
 	}
-	return canSendEmail()
+	return true
 }
 
-// canSendEmail reports whether outbound mail is configured.
-func canSendEmail() bool {
-	return os.Getenv("GMAIL_USER") != "" && os.Getenv("GMAIL_APP_PASSWORD") != ""
-}
+func canSendEmail() bool { return tools.OutboundEmailConfigured() }
 
 // signupPageData is the template data for signup.html.
 func signupPageData(errMsg string) map[string]interface{} {
