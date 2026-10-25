@@ -33,11 +33,11 @@
             margin: 0;
         }
         .qa-answer {
-            line-height: 1.8;
+            line-height: 1.7;
             word-wrap: break-word;
         }
         .qa-answer p, .qa-answer-text {
-            margin-bottom: 1em;
+            margin: 0 0 0.8em;
         }
         .qa-source {
             margin-top: 32px;
@@ -84,7 +84,7 @@ Answer: {{index . "Answer"}}">
             </div>
 
             <div class="qa-section-label">Answer</div>
-            <div class="qa-answer">{{lines (index . "Answer")}}</div>
+            <div class="qa-answer">{{islamQAParagraphs (index . "Answer")}}</div>
 
             <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">

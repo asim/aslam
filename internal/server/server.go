@@ -136,6 +136,7 @@ func Run() {
 			}
 			return template.HTML(out.String())
 		},
+		"islamQAParagraphs": islamQAParagraphs,
 		"lines": func(s string) template.HTML {
 			s = strings.ReplaceAll(s, "\r\n", "\n")
 			var out strings.Builder

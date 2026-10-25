@@ -35,7 +35,7 @@ func TestStaticAssetValidation(t *testing.T) {
 }
 
 func TestReaderTemplates(t *testing.T) {
-	funcs := template.FuncMap{"version": func() string { return "test" }, "hasPrefix": strings.HasPrefix, "formatTime": func(t time.Time) string { return t.Format("2006-01-02") }, "truncate": truncateRunes, "ghazaliParagraphs": ghazaliParagraphs, "paragraphs": ghazaliParagraphs, "lines": ghazaliParagraphs}
+	funcs := template.FuncMap{"version": func() string { return "test" }, "hasPrefix": strings.HasPrefix, "formatTime": func(t time.Time) string { return t.Format("2006-01-02") }, "truncate": truncateRunes, "ghazaliParagraphs": ghazaliParagraphs, "paragraphs": ghazaliParagraphs, "lines": ghazaliParagraphs, "islamQAParagraphs": islamQAParagraphs}
 	tpl, err := template.New("").Funcs(funcs).ParseFS(templates, "html/*.html")
 	if err != nil {
 		t.Fatal(err)

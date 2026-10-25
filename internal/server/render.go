@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -74,5 +75,46 @@ func ghazaliParagraphs(s string) template.HTML {
 		}
 		out.WriteString("<" + tag + ">" + template.HTMLEscapeString(p) + "</" + tag + ">")
 	}
+	return template.HTML(out.String())
+}
+
+// Older exports indent hard-wrapped continuation lines. Only join boundaries
+// with those local wrapping cues; blank lines elsewhere imply nothing.
+var islamQAItem = regexp.MustCompile(`^(?:[0-9]+[.)-]|[-•])(?:\s|$)`)
+
+func islamQAParagraphs(s string) template.HTML {
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+	var out strings.Builder
+	var paragraph []string
+	flush := func() {
+		if len(paragraph) == 0 {
+			return
+		}
+		out.WriteString("<p>" + template.HTMLEscapeString(strings.Join(paragraph, " ")) + "</p>")
+		paragraph = nil
+	}
+	for i, raw := range lines {
+		line := strings.Join(strings.Fields(raw), " ")
+		if line == "" {
+			flush()
+			continue
+		}
+		wrapped := false
+		if i > 0 && len(paragraph) > 0 {
+			prev := lines[i-1]
+			indented := strings.HasPrefix(raw, "\t") || strings.HasPrefix(raw, "  ")
+			// Exported wrapped lines are short and usually retain a trailing space.
+			wrapped = indented && len([]rune(strings.TrimSpace(prev))) <= 120 &&
+				(strings.HasSuffix(prev, " ") || strings.HasPrefix(prev, "\t") || islamQAItem.MatchString(strings.TrimSpace(prev)))
+		}
+		if !wrapped || islamQAItem.MatchString(line) {
+			flush()
+		}
+		paragraph = append(paragraph, line)
+		if strings.HasSuffix(line, ":") || line == "Praise be to Allah." {
+			flush()
+		}
+	}
+	flush()
 	return template.HTML(out.String())
 }
