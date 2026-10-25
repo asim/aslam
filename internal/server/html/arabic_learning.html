@@ -1,0 +1,66 @@
+{{define "arabic-learning-nav"}}
+<nav aria-label="Arabic learning" style="display:flex;gap:16px;flex-wrap:wrap;margin:16px 0;">
+<a href="/arabic" {{if eq . "words"}}aria-current="page"{{end}}>Words</a>
+<a href="/arabic/sentences" {{if eq . "sentences"}}aria-current="page"{{end}}>Sentences</a>
+<a href="/arabic/roots" {{if eq . "roots"}}aria-current="page"{{end}}>Roots</a>
+</nav>
+{{end}}
+{{define "arabic-learning-style"}}
+<style>
+.learning-arabic {font-family:'Uthmanic','Traditional Arabic',serif;font-size:32px;line-height:1.8;overflow-wrap:anywhere;}
+.learning-row {display:block;padding:12px 0;border-bottom:1px solid #eee;color:inherit;text-decoration:none;}
+.learning-row:hover {background:#fafafa;}
+.learning-words {display:flex;flex-wrap:wrap;gap:12px;margin:20px 0;}
+.learning-word {border:1px solid #eee;border-radius:8px;padding:12px;flex:1 1 150px;min-width:0;}
+.learning-actions {display:flex;gap:6px;}
+.learning-actions button {font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#666;cursor:pointer;}
+.learning-pages {display:flex;justify-content:space-between;gap:12px;margin-top:28px;font-size:13px;}
+nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
+</style>
+{{end}}
+{{define "arabic_learning_index.html"}}
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{{.Title}} - Learn Arabic - Aslam</title>{{template "style"}}{{template "arabic-learning-style"}}</head>
+<body><div class="app">{{template "header" .}}<main class="app-content">
+<h2>Learn Arabic</h2>{{template "arabic-learning-nav" .Section}}
+{{if .ContinuePath}}<p>Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></p>{{end}}
+<h3>{{.Title}}</h3>
+{{if eq .Section "sentences"}}
+<p class="muted">Build from short statements to places, questions and actions. Original learning examples in standard Arabic, not Qur’an quotations.</p>
+{{$level := ""}}{{range .Sentences}}{{if ne .Level $level}}<h3>{{.Level}}</h3>{{$level = .Level}}{{end}}
+<a class="learning-row" href="/arabic/sentences/{{.Slug}}"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div>{{.Title}}</div></a>{{end}}
+{{else}}
+<p>Roots connect related words. Learn the letters, recognise patterns, then see the words in sentences.</p>
+<p class="muted">Patterns are clues, not guaranteed definitions. Learn each word’s meaning in context. These are starter families, not a complete root dictionary.</p>
+{{range .Roots}}<a class="learning-row" href="/arabic/roots/{{.Slug}}"><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Slug}}<div>{{.Title}}</div></a>{{end}}
+{{end}}
+</main></div></body></html>{{end}}
+
+{{define "arabic_learning.html"}}
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{{.Title}} - Learn Arabic - Aslam</title>{{template "style"}}{{template "arabic-learning-style"}}</head>
+<body><div class="app">{{template "header" .}}<main class="app-content">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;">
+<a href="/arabic/{{.Section}}">{{if eq .Section "roots"}}Roots{{else}}Sentences{{end}}</a>
+{{if .LoggedIn}}<div class="learning-actions">
+<form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}
+{{.Context}}"><button type="submit">Save</button></form>
+<form method="POST" action="/chat/new"><input type="hidden" name="title" value="Arabic — {{.Title}}"><input type="hidden" name="context" value="{{.Path}}
+{{.Context}}"><button type="submit">Chat</button></form>
+</div>{{else}}<a href="/auth/login">Sign in to save</a>{{end}}</div>
+<h2>{{.Title}}</h2>
+{{with .Sentence}}
+<p class="muted">{{.Level}} · Learning example</p>
+<div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><p><em>{{.Latin}}</em></p><p>{{.English}}</p>
+<h3>Word by word</h3><div class="learning-words">{{range .Words}}<div class="learning-word"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div><em>{{.Latin}}</em></div><div>{{.Meaning}}</div>{{if .Root}}<a href="/arabic/roots/{{.Root}}">Root: {{.Root}}</a>{{end}}</div>{{end}}</div>
+<h3>Notice the pattern</h3><p>{{.Note}}</p>
+<details><summary>Practise</summary><p>Read the Arabic aloud, then cover the translation and explain the sentence. Identify the subject and any action or location.</p></details>
+<p class="muted">Pronunciation shows grammatical endings for study. At a pause, final short vowels and most tanwīn endings are normally not pronounced.</p>
+{{end}}
+{{with .Root}}
+<div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><p>{{.Meaning}}</p>
+<p>In pattern names, f, ʿ and l stand for the three root consonants. Added letters and vowels help form different words.</p>
+<div class="learning-words">{{range .Words}}<div class="learning-word"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div><em>{{.Latin}}</em></div><div>{{.Meaning}}</div><p class="muted">{{.Pattern}}</p><a href="/arabic?q={{.Latin}}">Search vocabulary</a></div>{{end}}</div>
+<p class="muted">Meanings here are common learning glosses. These families include everyday vocabulary as well as words used in the Qur’an; not every word shown occurs in the Qur’an.</p>
+{{end}}
+{{if .Examples}}<h3>Use these words in sentences</h3>{{range .Examples}}<a class="learning-row" href="/arabic/sentences/{{.Slug}}"><span lang="ar" dir="rtl" class="learning-arabic">{{.Arabic}}</span><div>{{.English}}</div></a>{{end}}{{end}}
+<div class="learning-pages">{{if .Prev}}<a href="{{.Prev}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="/arabic/{{.Section}}">All {{.Section}}</a>{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</div>
+</main></div></body></html>{{end}}

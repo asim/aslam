@@ -114,6 +114,7 @@ Appears {{index . "Frequency"}} times in the Quran.">
             <div class="aw-translit">{{index . "Transliteration"}}</div>
             <div class="aw-english-meaning">{{index . "English"}}</div>
 
+            {{with .RootLesson}}<p>Root: <a href="/arabic/roots/{{.Slug}}"><span lang="ar" dir="rtl">{{.Arabic}}</span> — {{.Title}}</a></p>{{end}}
             <div class="aw-detail">
                 <div class="aw-detail-label">Frequency</div>
                 <div class="aw-detail-value">Appears {{index . "Frequency"}} times in the Quran</div>

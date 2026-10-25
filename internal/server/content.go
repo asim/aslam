@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"aslam/db"
+	"aslam/internal/arabiclearning"
 )
 
 func handleAdhkarIndex(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +220,10 @@ func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleArabicView(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/arabic/sentences" || strings.HasPrefix(r.URL.Path, "/arabic/sentences/") || r.URL.Path == "/arabic/roots" || strings.HasPrefix(r.URL.Path, "/arabic/roots/") {
+		handleArabicLearning(w, r)
+		return
+	}
 	idStr := strings.TrimPrefix(r.URL.Path, "/arabic/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -247,6 +252,10 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if b, err := arabiclearning.Load(); err == nil {
+		word, _ := item["Arabic"].(string)
+		item["RootLesson"] = b.RootForWord(word)
+	}
 	translit, _ := item["Transliteration"].(string)
 	db.SaveReadingProgressContext(r.Context(), getUserID(r), "arabic", r.URL.Path, translit)
 	renderTemplate(w, r, "arabic.html", item)
