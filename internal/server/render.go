@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -74,5 +75,44 @@ func ghazaliParagraphs(s string) template.HTML {
 		}
 		out.WriteString("<" + tag + ">" + template.HTMLEscapeString(p) + "</" + tag + ">")
 	}
+	return template.HTML(out.String())
+}
+
+// Older IslamQA exports wrap prose within blank-line-delimited paragraphs.
+// Newer exports use one complete paragraph per line. Keep both conventions.
+var islamQAItem = regexp.MustCompile(`^(?:[0-9]+[.)-]|[-•])(?:\s|$)`)
+
+func islamQAParagraphs(s string) template.HTML {
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+	blankSeparated := false
+	for i, line := range lines {
+		if i > 0 && i < len(lines)-1 && strings.TrimSpace(line) == "" {
+			blankSeparated = true
+		}
+	}
+	var out strings.Builder
+	var paragraph []string
+	flush := func() {
+		if len(paragraph) == 0 {
+			return
+		}
+		out.WriteString("<p>" + template.HTMLEscapeString(strings.Join(paragraph, " ")) + "</p>")
+		paragraph = nil
+	}
+	for _, line := range lines {
+		line = strings.Join(strings.Fields(line), " ")
+		if line == "" {
+			flush()
+			continue
+		}
+		if !blankSeparated || islamQAItem.MatchString(line) {
+			flush()
+		}
+		paragraph = append(paragraph, line)
+		if strings.HasSuffix(line, ":") || line == "Praise be to Allah." {
+			flush()
+		}
+	}
+	flush()
 	return template.HTML(out.String())
 }
