@@ -234,3 +234,32 @@ See [request limits and nginx configuration](docs/request-limits.md) for concurr
 ### Quran chapter metadata
 
 `data/quran_chapters.json` contains the 114 chapter names, Arabic names, English meanings and verse counts from `https://api.quran.com/api/v4/chapters?language=en` (retrieved 2026-10-25). The chapter index decodes this metadata once; reading progress remains specific to the signed-in user.
+
+### Verification email via SMTP relay
+
+Outbound mail is independent of the assistant's Gmail inbox. For Google's
+IP-authorized Workspace relay, configure the service environment:
+
+```sh
+SMTP_HOST=smtp-relay.gmail.com
+SMTP_PORT=587
+SMTP_FROM=noreply@aslam.org
+ALLOW_PASSWORD_SIGNUP=true
+```
+
+In Google Admin, authorize this server's public egress IP, allow senders in your
+domain, and require TLS. Leave `SMTP_USERNAME` and `SMTP_PASSWORD` unset for
+IP authorization. No assistant mailbox or IMAP worker is needed. Restart Aslam
+after updating its environment. Registration remains pending until the email
+link is followed; pending registrations expire after 24 hours.
+
+For a relay requiring authentication, set both `SMTP_USERNAME` and
+`SMTP_PASSWORD`. Port 587 uses required STARTTLS; port 465 uses implicit TLS.
+Sending has a 30-second deadline. Explicit SMTP settings take precedence over
+legacy `GMAIL_USER` / `GMAIL_APP_PASSWORD` sending, which still works when no
+`SMTP_*` settings are present. Inbox credentials retain their existing purpose.
+
+`ALLOW_PASSWORD_SIGNUP=false` keeps registration closed even with sending
+configured. Missing or incomplete sender configuration also keeps it closed.
+Configuring a sender alone otherwise enables verified email signup; keep the
+flag false while preparing deployment if you are not ready to open signup.

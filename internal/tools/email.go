@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net"
-	"net/smtp"
 	"net/textproto"
 	"os"
 	"regexp"
@@ -334,7 +333,7 @@ func readEmailText(r io.Reader) ([]byte, error) {
 	return b, err
 }
 
-// SendEmail sends an email via Gmail SMTP.
+// SendEmail sends an email via the configured outbound SMTP server.
 func SendEmail(to, subject, body string) (string, error) {
 	return SendEmailThreaded(to, subject, body, "", "")
 }
@@ -343,19 +342,18 @@ func SendEmail(to, subject, body string) (string, error) {
 // Message-ID. Claude replies use Markdown, so both alternatives are derived
 // from the same source.
 func SendEmailThreaded(to, subject, body, inReplyTo, references string) (string, error) {
-	user, password, err := getEmailConfig()
+	config, err := outboundSMTPConfig()
 	if err != nil {
 		return "", err
 	}
 
 	msgID := fmt.Sprintf("<%d.%s@aslam.org>", time.Now().UnixNano(), randomString(8))
-	msg, err := buildEmailMessage(user, to, subject, body, msgID, inReplyTo, references)
+	msg, err := buildEmailMessage(config.from, to, subject, body, msgID, inReplyTo, references)
 	if err != nil {
 		return "", err
 	}
 
-	auth := smtp.PlainAuth("", user, password, "smtp.gmail.com")
-	if err := smtp.SendMail("smtp.gmail.com:587", auth, user, []string{to}, msg); err != nil {
+	if err := sendSMTP(config, to, msg); err != nil {
 		return "", fmt.Errorf("failed to send: %w", err)
 	}
 	return msgID, nil
