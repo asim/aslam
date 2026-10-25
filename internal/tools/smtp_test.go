@@ -65,7 +65,7 @@ func TestSMTPRefusesPlaintextRelay(t *testing.T) {
 			done <- err
 			return
 		}
-		if !strings.HasPrefix(line, "EHLO ") {
+		if line != "EHLO example.com\r\n" {
 			done <- fmt.Errorf("unexpected greeting %q", line)
 			return
 		}
@@ -85,4 +85,31 @@ func TestSMTPRefusesPlaintextRelay(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestSMTPReportsGreetingFailure(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		fmt.Fprint(conn, "220 test ESMTP\r\n")
+		reader := bufio.NewReader(conn)
+		reader.ReadString('\n')
+		fmt.Fprint(conn, "421 greeting rejected\r\n")
+	}()
+	host, port, _ := net.SplitHostPort(listener.Addr().String())
+	err = sendSMTP(smtpConfig{host: host, port: port, from: "noreply@example.com"}, "reader@example.com", nil)
+	if err == nil || !strings.Contains(err.Error(), "SMTP greeting failed") {
+		t.Fatalf("lost greeting error: %v", err)
+	}
+	<-done
 }

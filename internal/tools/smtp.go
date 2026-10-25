@@ -69,6 +69,11 @@ func sendSMTP(c smtpConfig, to string, message []byte) error {
 		return err
 	}
 	defer client.Close()
+	// Google relay expects a domain identity rather than Go's default localhost.
+	domain := c.from[strings.LastIndex(c.from, "@")+1:]
+	if err := client.Hello(domain); err != nil {
+		return fmt.Errorf("SMTP greeting failed: %w", err)
+	}
 	if c.port != "465" {
 		if ok, _ := client.Extension("STARTTLS"); !ok {
 			return fmt.Errorf("SMTP server does not support required STARTTLS")
