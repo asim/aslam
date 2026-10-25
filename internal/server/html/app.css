@@ -120,8 +120,8 @@ a:hover { opacity: 0.7; }
 }
 .app-footer textarea:focus { outline: none; border-color: #999; }
 .app-footer button {
-    height: 44px;
-    padding: 0 16px;
+    height: 36px;
+    padding: 0 12px;
     background: #000;
     color: #fff;
     border: none;
@@ -131,7 +131,7 @@ a:hover { opacity: 0.7; }
 }
 .app-footer button:hover { background: #333; }
 .app-footer button:disabled { opacity: 0.5; cursor: not-allowed; }
-.app-footer #mic-btn { padding: 0 12px; font-size: 18px; }
+
 
 /* Messages */
 .message { margin-bottom: 16px; padding: 16px; }
@@ -163,7 +163,7 @@ input:focus { outline: none; border-color: #999; }
 .search-form { display: flex; gap: 10px; margin-bottom: 20px; }
 .search-form input { flex: 1; }
 .search-form button {
-    padding: 10px 16px;
+    padding: 6px 12px;
     background: #000;
     color: #fff;
     border: none;
@@ -191,3 +191,18 @@ input:focus { outline: none; border-color: #999; }
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+/* Shared reader rhythm and compact actions. */
+.app-content > p { margin-bottom: 16px; }
+.app-content > h3 { margin-top: 24px; margin-bottom: 12px; }
+.continue-reading { margin: 16px 0; padding: 10px 14px; background: #f8f8f8; border-radius: 8px; font-size: 13px; }
+.continue-reading a { font-weight: 500; }
+.reader-nav { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0 24px; }
+.reader-nav a { padding: 4px 0; }
+.button, .btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; line-height: 1.4; }
+.button { font: inherit; font-size: 12px; padding: 4px 10px; min-height: 28px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; cursor: pointer; }
+.button-primary { min-height: 36px; padding: 6px 12px; border-color: #000; background: #000; color: #fff; font-size: 14px; }
+.button:hover { opacity: .8; }
+.button:disabled { opacity: .5; cursor: not-allowed; }
+.button:focus-visible, .btn:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
+.reader-pagination { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; }

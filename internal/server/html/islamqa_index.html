@@ -40,7 +40,7 @@
         <main class="app-content">
             <h2>IslamQA</h2>
 {{if .ContinuePath}}
-            <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+            <div class="continue-reading">
                 Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
             </div>
             {{end}}
@@ -64,6 +64,7 @@
             {{else}}
             <p class="muted">No questions found.</p>
             {{end}}
+            <nav class="reader-pagination" aria-label="Question pages">{{if .Previous}}<a href="{{.Previous}}">&larr; Previous</a>{{else}}<span></span>{{end}}{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{end}}</nav>
         </main>
     </div>
 </body>

@@ -61,7 +61,7 @@
                         <input type="hidden" name="content" value="/hadith/{{index . "Number"}}
 
 {{truncate (index . "Text") 200}}">
-                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                        <button type="submit" class="button">Save</button>
                     </form>
                     <form method="POST" action="/chat/new" style="display:inline;">
                         <input type="hidden" name="title" value="{{index . "Book"}} - Hadith {{index . "Number"}}">
@@ -72,7 +72,7 @@
 {{index . "Text"}}{{if index . "Arabic"}}
 
 Arabic: {{index . "Arabic"}}{{end}}">
-                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                        <button type="submit" class="button">Chat</button>
                     </form>
                 </div>
                 {{else}}

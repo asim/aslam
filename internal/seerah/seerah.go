@@ -27,7 +27,17 @@ type Page struct {
 	Chapter int
 	Blocks  []Block
 }
+type ContentsSection struct {
+	Title, ID string
+	Page      int
+}
+type ContentsChapter struct {
+	Title    string
+	Page     int
+	Sections []ContentsSection
+}
 type Book struct {
+	Contents   []ContentsChapter `json:"-"`
 	Title      string
 	Author     string
 	Translator string
@@ -55,6 +65,17 @@ func Load() (*Book, error) {
 	for i, p := range b.Pages {
 		if p.Number != i+8 || p.Chapter < 0 || p.Chapter >= len(b.Chapters) || len(p.Blocks) == 0 {
 			return nil, fmt.Errorf("invalid seerah page %d", p.Number)
+		}
+	}
+	b.Contents = make([]ContentsChapter, len(b.Chapters))
+	for i, ch := range b.Chapters {
+		b.Contents[i] = ContentsChapter{Title: ch.Title, Page: ch.Page}
+	}
+	for _, p := range b.Pages {
+		for _, block := range p.Blocks {
+			if block.Heading {
+				b.Contents[p.Chapter].Sections = append(b.Contents[p.Chapter].Sections, ContentsSection{Title: block.Text, ID: block.ID, Page: p.Number})
+			}
 		}
 	}
 	return &b, nil

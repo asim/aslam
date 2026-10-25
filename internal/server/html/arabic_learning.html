@@ -1,5 +1,5 @@
 {{define "arabic-learning-nav"}}
-<nav aria-label="Arabic learning" style="display:flex;gap:16px;flex-wrap:wrap;margin:16px 0;">
+<nav aria-label="Arabic learning" class="reader-nav">
 <a href="/arabic" {{if eq . "words"}}aria-current="page"{{end}}>Words</a>
 <a href="/arabic/reading" {{if eq . "reading"}}aria-current="page"{{end}}>Phrases &amp; verses</a>
 <a href="/arabic/roots" {{if eq . "roots"}}aria-current="page"{{end}}>Roots</a>
@@ -10,6 +10,8 @@
 .learning-arabic {font-family:'Uthmanic','Traditional Arabic',serif;font-size:28px;line-height:1.8;overflow-wrap:anywhere;}
 .learning-row {display:block;padding:12px 0;border-bottom:1px solid #eee;color:inherit;text-decoration:none;}
 .learning-row:hover {background:#fafafa;}
+.root-letters {display:inline-flex;gap:0.4em;}
+.root-pronunciation {font-size:14px;color:#666;margin-top:2px;}
 .learning-words {display:flex;flex-wrap:wrap;gap:12px;margin:20px 0;}
 .learning-word {border:1px solid #eee;border-radius:8px;padding:12px;flex:1 1 150px;min-width:0;}
 .learning-actions {display:flex;gap:6px;}
@@ -28,18 +30,18 @@ nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
 </div>{{else}}<a href="/auth/login">Sign in to save</a>{{end}}</div>
 {{else}}<h2>Learn Arabic</h2>{{template "arabic-learning-nav" .Section}}{{end}}
 <h2>{{.Title}}</h2>
-{{if .ContinuePath}}<p>Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></p>{{end}}
+{{if .ContinuePath}}<p class="continue-reading">Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></p>{{end}}
 {{if and (eq .Section "roots") (not .Detail)}}
 <p>Explore families of related words from the Qur’an. Open a root, then use Next to keep reading.</p>
-<form method="GET" action="/arabic/roots"><label for="root-search">Find a root</label><div style="display:flex;gap:8px;margin:12px 0;"><input style="min-width:0;flex:1" id="root-search" name="q" value="{{.Query}}" placeholder="كتب or k-t-b"><button type="submit">Search</button></div></form>
-{{range .Roots}}<a class="learning-row" href="/arabic/roots/{{.Code}}"><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</a>{{else}}<p class="muted">No roots found.</p>{{end}}
+<form method="GET" action="/arabic/roots"><label for="root-search">Find a root</label><div style="display:flex;margin:12px 0;"><input type="search" style="min-width:0;flex:1" id="root-search" name="q" value="{{.Query}}" placeholder="كتب or k-t-b"></div></form>
+<div id="root-results" aria-live="polite">{{range .Roots}}<a class="learning-row" href="/arabic/roots/{{.Code}}"><span class="learning-arabic root-letters" lang="ar" dir="rtl">{{range .Letters}}<span>{{.}}</span>{{end}}</span><span class="muted"> · {{.Count}} word forms</span><div class="root-pronunciation" dir="ltr">{{.Pronunciation}}</div></a>{{else}}<p class="muted">No roots found.</p>{{end}}</div>
 {{end}}
-{{with .Root}}<p><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</p><p>One example of each related word is shown below. Open a word for its meaning and example verse.</p>{{end}}
+{{with .Root}}<div><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</p><p>One example of each related word is shown below. Open a word for its meaning and example verse.</p>{{end}}
 {{range .RootWords}}<a class="learning-row" href="/arabic/{{.ID}}"><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> ({{.Transliteration}}) — {{.English}}</a>{{end}}
 {{if or .WordPrev .WordNext}}<div class="learning-pages">{{if .WordPrev}}<a href="{{.WordPrev}}">Earlier words</a>{{end}}{{if .WordNext}}<a href="{{.WordNext}}">More words</a>{{end}}</div>{{end}}
 {{if and (eq .Section "reading") (not .Detail)}}
 <p>Read a passage, explore its words, then use Next to continue. Start with shorter passages; length does not always reflect difficulty.</p>
-<nav aria-label="Passage length" style="display:flex;gap:16px;flex-wrap:wrap;"><a href="/arabic/reading?level=short" {{if eq .Level "short"}}aria-current="page"{{end}}>1–5 words</a><a href="/arabic/reading?level=medium" {{if eq .Level "medium"}}aria-current="page"{{end}}>6–10 words</a><a href="/arabic/reading?level=long" {{if eq .Level "long"}}aria-current="page"{{end}}>11+ words</a></nav>
+<nav aria-label="Passage length" class="reader-nav"><a href="/arabic/reading?level=short" {{if eq .Level "short"}}aria-current="page"{{end}}>1–5 words</a><a href="/arabic/reading?level=medium" {{if eq .Level "medium"}}aria-current="page"{{end}}>6–10 words</a><a href="/arabic/reading?level=long" {{if eq .Level "long"}}aria-current="page"{{end}}>11+ words</a></nav>
 {{range .Passages}}<a class="learning-row" href="/arabic/reading/{{.Chapter}}/{{.Verse}}"><div>{{.Title}}</div><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div>{{.English}}</div></a>{{else}}<p class="muted">No passages found.</p>{{end}}
 {{end}}
 {{with .Passage}}
@@ -48,5 +50,49 @@ nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
 <p><a href="/quran/{{.Chapter}}/{{.Verse}}">Read the full verse and commentary &rarr;</a></p>
 {{end}}
 <details style="margin-top:24px;"><summary>About the sources</summary><p class="muted">Root and lemma annotations: <a href="https://corpus.quran.com">Quranic Arabic Corpus</a> © 2011 Kais Dukes (GPL), based on <a href="https://tanzil.net">Tanzil</a> text. <a href="https://corpus.quran.com/documentation/pos.jsp">Grammar tag guide</a>. Only verified word alignments are annotated; missing roots are not guessed. A verse may be a phrase or span several sentences.</p></details>
-<div class="learning-pages">{{if .Prev}}<a href="{{.Prev}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="{{.IndexURL}}">{{if eq .Section "roots"}}All roots{{else}}All passages{{end}}</a>{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</div>
-</main></div></body></html>{{end}}
+<div id="learning-pages" class="learning-pages">{{if .Prev}}<a href="{{.Prev}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="{{.IndexURL}}">{{if eq .Section "roots"}}All roots{{else}}All passages{{end}}</a>{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</div>
+</main></div>
+{{if and (eq .Section "roots") (not .Detail)}}
+<script>
+(function() {
+    const input = document.getElementById('root-search');
+    const form = input.form;
+    let timer, controller;
+    async function search() {
+        if (controller) controller.abort();
+        controller = new AbortController();
+        const request = controller;
+        const url = new URL(form.action);
+        const query = input.value.trim();
+        if (query) url.searchParams.set('q', query);
+        try {
+            const response = await fetch(url, {signal: request.signal});
+            if (!response.ok) throw new Error('Search failed');
+            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+            if (request !== controller || request.signal.aborted) return;
+            const results = doc.getElementById('root-results');
+            const pages = doc.getElementById('learning-pages');
+            if (!results || !pages) throw new Error('Search failed');
+            document.getElementById('root-results').replaceWith(results);
+            document.getElementById('learning-pages').replaceWith(pages);
+            history.replaceState(null, '', url.pathname + url.search);
+        } catch (error) {
+            if (error.name !== 'AbortError' && request === controller) {
+                document.getElementById('root-results').textContent = 'Search unavailable. Press Enter to retry.';
+            }
+        }
+    }
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        if (controller) controller.abort();
+        timer = setTimeout(search, 300);
+    });
+    // Enter retains the ordinary GET submission as a no-JavaScript/error fallback.
+    form.addEventListener('submit', function() {
+        clearTimeout(timer);
+        if (controller) controller.abort();
+    });
+})();
+</script>
+{{end}}
+</body></html>{{end}}

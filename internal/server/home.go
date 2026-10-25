@@ -1,9 +1,12 @@
 package server
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"aslam/db"
@@ -40,13 +43,16 @@ func handleLanding(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "landing.html", nil)
 }
 
-func getPrayerTimesForUser(userID int64) map[string]string {
+var prayerCacheMu sync.Mutex
+var prayerCache = make(map[string]map[string]string)
+
+func getPrayerTimesForUser(ctx context.Context, userID int64) map[string]string {
 	lat := 51.5074
 	lng := -0.1278
 	tzName := "Europe/London"
 
 	if userID > 0 {
-		if u, err := db.GetUserByID(userID); err == nil {
+		if u, err := db.GetUserByIDContext(ctx, userID); err == nil {
 			if u.Latitude != 0 {
 				lat = u.Latitude
 			}
@@ -82,6 +88,13 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 	moonsighting := &prayer.TwilightConvention{FajrAngle: 18, IshaAngle: 18}
 
 	now := time.Now().In(tz)
+	cacheKey := fmt.Sprintf("%s|%s|%g|%g", now.Format("2006-01-02"), tzName, lat, lng)
+	prayerCacheMu.Lock()
+	cached, ok := prayerCache[cacheKey]
+	prayerCacheMu.Unlock()
+	if ok {
+		return cached
+	}
 	schedules, err := prayer.Calculate(prayer.Config{
 		Latitude:            lat,
 		Longitude:           lng,
@@ -115,7 +128,7 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 		ishaTime = maxIsha
 	}
 
-	return map[string]string{
+	times := map[string]string{
 		"Fajr":    fajrTime.Format("15:04"),
 		"Sunrise": s.Sunrise.Format("15:04"),
 		"Dhuhr":   s.Zuhr.Format("15:04"),
@@ -123,27 +136,51 @@ func getPrayerTimesForUser(userID int64) map[string]string {
 		"Maghrib": s.Maghrib.Format("15:04"),
 		"Isha":    ishaTime.Format("15:04"),
 	}
+	prayerCacheMu.Lock()
+	if len(prayerCache) >= 128 {
+		clear(prayerCache)
+	}
+	prayerCache[cacheKey] = times
+	prayerCacheMu.Unlock()
+	return times
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
-	convs, _ := db.GetRecentConversations(10, userID, true, isAdminReq(r))
+	convs, _ := db.GetRecentConversationsContext(r.Context(), 3, userID, true, isAdminReq(r))
 	dailyContent, _ := db.GetLatestReminderContent()
-	randomQA, _ := db.GetRandomIslamQA()
+	notes, _ := db.GetRecentNotesContext(r.Context(), userID)
+	tzName := os.Getenv("TIMEZONE")
+	if tzName == "" {
+		tzName = "Europe/London"
+	}
 
 	hasLocation := false
 	if userID > 0 {
-		if u, err := db.GetUserByID(userID); err == nil {
+		if u, err := db.GetUserByIDContext(r.Context(), userID); err == nil {
+			if u.Timezone != "" {
+				tzName = u.Timezone
+			}
 			hasLocation = u.Latitude != 0 || u.Longitude != 0
 		}
 	}
 
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		tz = time.UTC
+	}
+	dailyQA, _ := db.GetDailyIslamQAContext(r.Context(), time.Now().In(tz).Format("2006-01-02"))
+	progress := db.GetAllReadingProgress(userID)
+	if len(progress) > 3 {
+		progress = progress[:3]
+	}
 	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations":   convs,
 		"DailyContent":    dailyContent,
-		"RandomQA":        randomQA,
-		"PrayerTimes":     getPrayerTimesForUser(userID),
+		"RandomQA":        dailyQA,
+		"RecentNotes":     notes,
+		"PrayerTimes":     getPrayerTimesForUser(r.Context(), userID),
 		"HasLocation":     hasLocation,
-		"ReadingProgress": db.GetAllReadingProgress(userID),
+		"ReadingProgress": progress,
 	})
 }

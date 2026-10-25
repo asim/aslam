@@ -149,7 +149,6 @@
             <form id="chat-form">
                 <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
                 <textarea name="message" id="message-input" rows="1" placeholder="Type your message..."></textarea>
-                <button type="button" id="mic-btn" title="Voice input">🎤</button>
                 <button type="submit" id="send-btn">Send</button>
             </form>
         </footer>
@@ -479,48 +478,6 @@
                     form.dispatchEvent(new Event('submit'));
                 }
             });
-
-            // Voice input
-            const micBtn = document.getElementById('mic-btn');
-            let recognition = null;
-        
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = true;
-                recognition.lang = 'en-GB';
-            
-                recognition.onstart = () => {
-                    micBtn.textContent = '🔴';
-                    micBtn.style.background = '#ff4444';
-                };
-            
-                recognition.onend = () => {
-                    micBtn.textContent = '🎤';
-                    micBtn.style.background = '';
-                };
-            
-                recognition.onresult = (event) => {
-                    let transcript = '';
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        transcript += event.results[i][0].transcript;
-                    }
-                    msgInput.value = transcript;
-                    msgInput.style.height = 'auto';
-                    msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
-                };
-            
-                micBtn.addEventListener('click', () => {
-                    if (micBtn.textContent === '🔴') {
-                        recognition.stop();
-                    } else {
-                        recognition.start();
-                    }
-                });
-            } else {
-                micBtn.style.display = 'none';
-            }
 
             // If arriving from the home page "Ask Aslam" box, send the pending question.
             try {

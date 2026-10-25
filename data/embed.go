@@ -26,3 +26,6 @@ var Prophets []byte
 
 //go:embed seerah.zip
 var Seerah []byte
+
+//go:embed quran_chapters.json
+var QuranChapters []byte
