@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -50,6 +52,66 @@ func initArabicLearning() error {
 // ImportArabic enriches in place: saved /arabic/{id} URLs must survive upgrades.
 // All data and the version marker commit together, or the previous import remains.
 func ImportArabic(vocab []ArabicVocabulary, passages []ArabicPassage, version string) error {
+	return importArabic(func(visit func(ArabicVocabulary) error) error {
+		for _, v := range vocab {
+			if err := visit(v); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+		func(visit func(ArabicPassage) error) error {
+			for _, p := range passages {
+				if err := visit(p); err != nil {
+					return err
+				}
+			}
+			return nil
+		}, version)
+}
+
+// ImportArabicReaders decodes one record at a time instead of retaining both
+// entire JSON arrays in memory during the initial source upgrade.
+func ImportArabicReaders(vocab, passages io.Reader, version string) error {
+	return importArabic(func(visit func(ArabicVocabulary) error) error { return readArabicArray(vocab, visit) },
+		func(visit func(ArabicPassage) error) error { return readArabicArray(passages, visit) }, version)
+}
+func readArabicArray[T any](reader io.Reader, visit func(T) error) error {
+	dec := json.NewDecoder(reader)
+	token, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if token != json.Delim('[') {
+		return fmt.Errorf("expected Arabic data array")
+	}
+	count := 0
+	for dec.More() {
+		var value T
+		if err = dec.Decode(&value); err != nil {
+			return err
+		}
+		if err = visit(value); err != nil {
+			return err
+		}
+		count++
+	}
+	if _, err = dec.Token(); err != nil {
+		return err
+	}
+	if count == 0 {
+		return fmt.Errorf("empty Arabic data array")
+	}
+	var extra interface{}
+	if err = dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("trailing Arabic data")
+		}
+		return err
+	}
+	return nil
+}
+func importArabic(vocab func(func(ArabicVocabulary) error) error, passages func(func(ArabicPassage) error) error, version string) error {
 	tx, err := DB.Begin()
 	if err != nil {
 		return err
@@ -92,7 +154,7 @@ func ImportArabic(vocab []ArabicVocabulary, passages []ArabicPassage, version st
 		return err
 	}
 	defer rootInsert.Close()
-	for _, v := range vocab {
+	if err = vocab(func(v ArabicVocabulary) error {
 		k := key(v.Arabic, v.Transliteration, v.English, v.ExampleRef)
 		id := ids[k]
 		if id == 0 {
@@ -115,13 +177,16 @@ func ImportArabic(vocab []ArabicVocabulary, passages []ArabicPassage, version st
 				return err
 			}
 		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	passageInsert, err := tx.Prepare(`INSERT INTO arabic_passages(chapter,verse,title,arabic,english,word_count,words) VALUES(?,?,?,?,?,?,?)`)
 	if err != nil {
 		return err
 	}
 	defer passageInsert.Close()
-	for _, p := range passages {
+	if err = passages(func(p ArabicPassage) error {
 		for i := range p.Words {
 			p.Words[i].VocabularyID = forms[p.Words[i].Arabic+"\x00"+p.Words[i].Transliteration]
 		}
@@ -132,6 +197,9 @@ func ImportArabic(vocab []ArabicVocabulary, passages []ArabicPassage, version st
 		if _, err = passageInsert.Exec(p.Chapter, p.Verse, p.Title, p.Arabic, p.English, len(p.Words), string(words)); err != nil {
 			return err
 		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	if _, err = tx.Exec(`INSERT OR REPLACE INTO settings(key,value) VALUES('arabic_version',?)`, version); err != nil {
 		return err
@@ -178,7 +246,12 @@ func ArabicWordRootsContext(ctx context.Context, id int64) ([]ArabicRoot, error)
 func ArabicRootWordsContext(ctx context.Context, code string, offset int) ([]ArabicRootWord, error) {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()
-	rows, err := DB.QueryContext(ctx, `SELECT a.id,a.arabic,COALESCE(a.transliteration,''),COALESCE(a.english,''),r.lemma,r.type FROM arabic_roots r JOIN arabic a ON a.id=r.word_id WHERE r.code=? ORDER BY a.frequency DESC,a.id,r.lemma,r.type LIMIT 51 OFFSET ?`, code, offset)
+	rows, err := DB.QueryContext(ctx, `WITH forms AS (
+ SELECT a.id,a.arabic,COALESCE(a.transliteration,'') AS transliteration,COALESCE(a.english,'') AS english,r.lemma,r.type,a.frequency,
+ ROW_NUMBER() OVER(PARTITION BY r.lemma ORDER BY a.frequency DESC,a.id,r.type) AS rank
+ FROM arabic_roots r JOIN arabic a ON a.id=r.word_id WHERE r.code=?)
+ SELECT id,arabic,transliteration,english,lemma,type FROM forms WHERE rank=1
+ ORDER BY frequency DESC,id,lemma,type LIMIT 51 OFFSET ?`, code, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -224,4 +297,47 @@ func ArabicPassageContext(ctx context.Context, ch, v int) (*ArabicPassage, error
 		return nil, fmt.Errorf("passage words: %w", err)
 	}
 	return &p, nil
+}
+
+// ArabicRootNavigationContext follows the same order as the root index.
+func ArabicRootNavigationContext(ctx context.Context, code string) (prev, next string, offset int, err error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+	err = DB.QueryRowContext(ctx, `WITH roots AS (
+ SELECT code,COUNT(DISTINCT word_id) AS n FROM arabic_roots GROUP BY code
+ ), ordered AS (
+ SELECT code,LAG(code) OVER(ORDER BY n DESC,code) AS prev,
+ LEAD(code) OVER(ORDER BY n DESC,code) AS next,
+ ROW_NUMBER() OVER(ORDER BY n DESC,code)-1 AS position FROM roots)
+ SELECT COALESCE(prev,''),COALESCE(next,''),(position/50)*50 FROM ordered WHERE code=?`, code).Scan(&prev, &next, &offset)
+	return
+}
+
+// ArabicPassageNavigationContext walks the current length band in index order.
+func ArabicPassageNavigationContext(ctx context.Context, p *ArabicPassage) (prev, next string, offset int, err error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+	low, high := 1, 5
+	if len(p.Words) > 10 {
+		low, high = 11, 1000
+	} else if len(p.Words) > 5 {
+		low, high = 6, 10
+	}
+	for _, direction := range []struct {
+		op, order string
+		target    *string
+	}{{"<", "DESC", &prev}, {">", "ASC", &next}} {
+		var ch, v int
+		e := DB.QueryRowContext(ctx, `SELECT chapter,verse FROM arabic_passages
+ WHERE word_count BETWEEN ? AND ? AND (word_count,chapter,verse) `+direction.op+` (?,?,?)
+ ORDER BY word_count `+direction.order+`,chapter `+direction.order+`,verse `+direction.order+` LIMIT 1`, low, high, len(p.Words), p.Chapter, p.Verse).Scan(&ch, &v)
+		if e == nil {
+			*direction.target = fmt.Sprintf("/arabic/reading/%d/%d", ch, v)
+		} else if e != sql.ErrNoRows {
+			err = e
+			return
+		}
+	}
+	err = DB.QueryRowContext(ctx, `SELECT (COUNT(*)/50)*50 FROM arabic_passages WHERE word_count BETWEEN ? AND ? AND (word_count,chapter,verse)<(?,?,?)`, low, high, len(p.Words), p.Chapter, p.Verse).Scan(&offset)
+	return
 }

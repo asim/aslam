@@ -53,3 +53,29 @@ root and passage indexes paginate 50 rows at a time.
 Reading progress shares the existing `arabic` key. Root pagination is included
 in its saved URL. Source pages use the existing Save/Chat forms, word links and
 full-verse links. Existing `/arabic/{id}` URLs continue to work.
+
+## Walking through the content
+
+Root readers show one representative vocabulary form per lemma, chosen by
+frequency and then stable word ID. This keeps inflection variants from crowding
+out other words in the family. Grammar tags and corpus codes remain in the
+underlying source data; the default reader shows Arabic, pronunciation and meaning.
+Previous/Next walks roots in the same order as their index. Separate earlier/more
+word links paginate unusually large families. The index link returns to the root's
+list page.
+
+Passage readers walk in length, chapter and verse order within the current length
+band. Index links retain that band and return to the relevant 50-item page.
+Reading progress continues to save the current root or passage URL.
+
+## Import memory check
+
+The source upgrade streams each vocabulary entry and passage from the ZIP JSON
+arrays into the transaction. It retains lookup maps for stable word IDs but no
+longer retains both decoded archives or their JSON buffers at once.
+
+A local isolated fresh-database import on 2026-10-25, using separately compiled
+Go test subprocesses and Linux child-process peak RSS, measured approximately
+100.0 MiB before streaming and 31.7 MiB after. Post-GC Go heap was 0.5–0.6 MiB;
+elapsed import times were 3.8 and 4.2 seconds. These are one-run local import
+measurements, not estimates of the live server's total RSS or a performance gate.

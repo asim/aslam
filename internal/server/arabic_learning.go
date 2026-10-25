@@ -22,7 +22,7 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid page", 400)
 		return
 	}
-	d := map[string]interface{}{"Section": parts[0], "Path": r.URL.Path, "Offset": offset}
+	d := map[string]interface{}{"Section": parts[0], "Path": r.URL.Path, "Offset": offset, "IndexURL": "/arabic/" + parts[0]}
 	page := func(next bool) {
 		q := r.URL.Query()
 		if offset > 0 {
@@ -80,6 +80,21 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 			words = words[:50]
 		}
 		d["RootWords"] = words
+		d["WordPrev"], d["WordNext"] = d["Prev"], d["Next"]
+		delete(d, "Prev")
+		delete(d, "Next")
+		prev, next, indexOffset, err := db.ArabicRootNavigationContext(r.Context(), root.Code)
+		if fail(err) {
+			return
+		}
+		if prev != "" {
+			d["Prev"] = "/arabic/roots/" + url.PathEscape(prev)
+		}
+		if next != "" {
+			d["Next"] = "/arabic/roots/" + url.PathEscape(next)
+		}
+		d["IndexURL"] = fmt.Sprintf("/arabic/roots?offset=%d", indexOffset)
+
 		context := fmt.Sprintf("Quranic Arabic root %s (%s). Source: https://corpus.quran.com\n", root.Arabic, root.Code)
 		for _, word := range words {
 			context += fmt.Sprintf("%s (%s) — %s; lemma %s; %s\n", word.Arabic, word.Transliteration, word.English, word.Lemma, word.Type)
@@ -123,6 +138,19 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		d["Title"], d["Passage"], d["Detail"] = p.Title, p, true
+		prev, next, indexOffset, err := db.ArabicPassageNavigationContext(r.Context(), p)
+		if fail(err) {
+			return
+		}
+		d["Prev"], d["Next"] = prev, next
+		level := "short"
+		if len(p.Words) > 10 {
+			level = "long"
+		} else if len(p.Words) > 5 {
+			level = "medium"
+		}
+		d["IndexURL"] = fmt.Sprintf("/arabic/reading?level=%s&offset=%d", level, indexOffset)
+
 		context := fmt.Sprintf("Quran %s\n%s\n%s\n", p.Title, p.Arabic, p.English)
 		for _, word := range p.Words {
 			context += fmt.Sprintf("%s (%s) — %s\n", word.Arabic, word.Transliteration, word.English)

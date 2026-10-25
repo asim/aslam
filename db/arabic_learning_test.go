@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -56,6 +57,63 @@ func TestArabicLearningQueriesCancel(t *testing.T) {
 		cancel()
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestArabicReaderOrderAndWordFamilies(t *testing.T) {
+	old := DB
+	t.Setenv("ASLAM_KEY", "reader-order")
+	t.Setenv("ASLAM_DB", filepath.Join(t.TempDir(), "test.db"))
+	if err := Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { DB.Close(); DB = old }()
+	vocab := []ArabicVocabulary{
+		{Arabic: "book", Frequency: 20, Roots: []ArabicRoot{{Code: "ktb", Arabic: "كتب", Lemma: "book"}}},
+		{Arabic: "books", Frequency: 10, Roots: []ArabicRoot{{Code: "ktb", Arabic: "كتب", Lemma: "book"}}},
+		{Arabic: "writer", Frequency: 5, Roots: []ArabicRoot{{Code: "ktb", Arabic: "كتب", Lemma: "writer"}}},
+		{Arabic: "study", Frequency: 8, Roots: []ArabicRoot{{Code: "drs", Arabic: "درس", Lemma: "study"}}},
+	}
+	passages := []ArabicPassage{
+		{Chapter: 1, Verse: 1, Words: make([]ArabicPassageWord, 2)},
+		{Chapter: 2, Verse: 1, Words: make([]ArabicPassageWord, 1)},
+		{Chapter: 3, Verse: 1, Words: make([]ArabicPassageWord, 2)},
+		{Chapter: 1, Verse: 2, Words: make([]ArabicPassageWord, 6)},
+	}
+	if err := ImportArabic(vocab, passages, "test"); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	words, err := ArabicRootWordsContext(ctx, "ktb", 0)
+	if err != nil || len(words) != 2 || words[0].Arabic != "book" || words[1].Arabic != "writer" {
+		t.Fatalf("family: %+v %v", words, err)
+	}
+	prev, next, _, err := ArabicRootNavigationContext(ctx, "ktb")
+	if err != nil || prev != "" || next != "drs" {
+		t.Fatalf("first root: %q %q %v", prev, next, err)
+	}
+	prev, next, _, err = ArabicRootNavigationContext(ctx, "drs")
+	if err != nil || prev != "ktb" || next != "" {
+		t.Fatalf("last root: %q %q %v", prev, next, err)
+	}
+	for _, tc := range []struct {
+		index      int
+		prev, next string
+	}{
+		{1, "", "/arabic/reading/1/1"}, {0, "/arabic/reading/2/1", "/arabic/reading/3/1"}, {2, "/arabic/reading/1/1", ""}, {3, "", ""},
+	} {
+		prev, next, _, err = ArabicPassageNavigationContext(ctx, &passages[tc.index])
+		if err != nil || prev != tc.prev || next != tc.next {
+			t.Fatalf("passage %d: %q %q %v", tc.index, prev, next, err)
+		}
+	}
+}
+
+func TestArabicArrayRejectsIncompleteData(t *testing.T) {
+	for _, input := range []string{`[]`, `{}`, `[{}`, `[{}] {}`, `[{}] junk`} {
+		if err := readArabicArray(strings.NewReader(input), func(ArabicVocabulary) error { return nil }); err == nil {
+			t.Fatalf("accepted %s", input)
 		}
 	}
 }

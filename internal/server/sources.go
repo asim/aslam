@@ -412,35 +412,23 @@ func loadArabic() {
 		log.Printf("Arabic archive: %v", err)
 		return
 	}
-	var vocab []db.ArabicVocabulary
-	var passages []db.ArabicPassage
-	for _, entry := range []struct {
-		name   string
-		target interface{}
-	}{
-		{"arabic_vocab.json", &vocab}, {"arabic_passages.json", &passages},
-	} {
-		f, err := r.Open(entry.name)
-		if err != nil {
-			log.Printf("Arabic data: %v", err)
-			return
-		}
-		err = json.NewDecoder(f).Decode(entry.target)
-		f.Close()
-		if err != nil {
-			log.Printf("Arabic decode: %v", err)
-			return
-		}
-	}
-	if len(vocab) == 0 || len(passages) == 0 {
-		log.Printf("Arabic data is empty")
+	vocab, err := r.Open("arabic_vocab.json")
+	if err != nil {
+		log.Printf("Arabic vocabulary: %v", err)
 		return
 	}
-	if err = db.ImportArabic(vocab, passages, arabicVersion); err != nil {
+	defer vocab.Close()
+	passages, err := r.Open("arabic_passages.json")
+	if err != nil {
+		log.Printf("Arabic passages: %v", err)
+		return
+	}
+	defer passages.Close()
+	if err = db.ImportArabicReaders(vocab, passages, arabicVersion); err != nil {
 		log.Printf("Arabic import: %v", err)
 		return
 	}
-	log.Printf("Loaded Arabic v%s: %d words and %d reading passages", arabicVersion, len(vocab), len(passages))
+	log.Printf("Loaded Arabic v%s", arabicVersion)
 }
 
 const prophetsVersion = "4"
