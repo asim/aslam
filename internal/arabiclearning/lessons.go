@@ -11,7 +11,10 @@ import (
 	"unicode"
 )
 
-type Word struct{ Arabic, Latin, Meaning, Pattern, Root string }
+type Word struct {
+	Arabic, Latin, Meaning, Pattern, Root string
+	VocabularyQuery                       string `json:"vocabularyQuery"`
+}
 type Sentence struct {
 	Slug, Title, Level, Arabic, Latin, English, Note string
 	Words                                            []Word

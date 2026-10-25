@@ -58,7 +58,7 @@ nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
 {{with .Root}}
 <div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><p>{{.Meaning}}</p>
 <p>In pattern names, f, ʿ and l stand for the three root consonants. Added letters and vowels help form different words.</p>
-<div class="learning-words">{{range .Words}}<div class="learning-word"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div><em>{{.Latin}}</em></div><div>{{.Meaning}}</div><p class="muted">{{.Pattern}}</p><a href="/arabic?q={{.Latin}}">Search vocabulary</a></div>{{end}}</div>
+<div class="learning-words">{{range .Words}}<div class="learning-word"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div><em>{{.Latin}}</em></div><div>{{.Meaning}}</div><p class="muted">{{.Pattern}}</p>{{if .VocabularyQuery}}<a href="/arabic?q={{.VocabularyQuery}}">Qur’anic vocabulary</a>{{end}}</div>{{end}}</div>
 <p class="muted">Meanings here are common learning glosses. These families include everyday vocabulary as well as words used in the Qur’an; not every word shown occurs in the Qur’an.</p>
 {{end}}
 {{if .Examples}}<h3>Use these words in sentences</h3>{{range .Examples}}<a class="learning-row" href="/arabic/sentences/{{.Slug}}"><span lang="ar" dir="rtl" class="learning-arabic">{{.Arabic}}</span><div>{{.English}}</div></a>{{end}}{{end}}

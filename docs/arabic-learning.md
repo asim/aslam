@@ -25,3 +25,8 @@ does not guess roots by removing arbitrary prefixes or matching substrings.
 To edit, unzip lessons.json, edit the UTF-8 JSON, and repack using
 `scripts/arabic/pack.py lessons.json`. Keep slugs stable: they are reading-progress
 URLs. Tests check references, root matching, routes, rendering and progress.
+
+Root words optionally specify `vocabularyQuery`: a verified inflected
+transliteration present in arabic.zip (for example kitābun for kitāb).
+Only these entries show a vocabulary link. Do not substitute citation forms
+or guessed prefixes: the existing vocabulary search matches whole FTS tokens.
