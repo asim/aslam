@@ -58,7 +58,11 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 		if len(roots) > 50 {
 			roots = roots[:50]
 		}
-		d["Roots"] = roots
+		displayRoots := make([]arabicRootDisplay, 0, len(roots))
+		for _, root := range roots {
+			displayRoots = append(displayRoots, displayArabicRoot(root))
+		}
+		d["Roots"] = displayRoots
 	case parts[0] == "roots" && len(parts) == 2 && parts[1] != "":
 		roots, err := db.ArabicRootsContext(r.Context(), parts[1], 0)
 		if fail(err) {
@@ -69,8 +73,9 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		root := roots[0]
-		d["Title"] = "Root: " + root.Arabic
-		d["Root"] = root
+		displayRoot := displayArabicRoot(root)
+		d["Title"] = "Root: " + strings.Join(displayRoot.Letters, " ")
+		d["Root"] = displayRoot
 		words, err := db.ArabicRootWordsContext(r.Context(), root.Code, offset)
 		if fail(err) {
 			return
@@ -171,4 +176,34 @@ func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
 		d["ContinuePath"], d["ContinueTitle"] = db.GetReadingProgressContext(r.Context(), userID, "arabic")
 	}
 	renderTemplate(w, r, "arabic_learning.html", d)
+}
+
+type arabicRootDisplay struct {
+	db.ArabicRootSummary
+	Letters       []string
+	Pronunciation string
+}
+
+func displayArabicRoot(root db.ArabicRootSummary) arabicRootDisplay {
+	// Display consonants separately; retain the corpus code for URLs and lookups.
+	sounds := map[rune]string{
+		'ء': "ʾ", 'ا': "ʾ", 'أ': "ʾ", 'إ': "ʾ", 'ؤ': "ʾ", 'ئ': "ʾ",
+		'ب': "b", 'ت': "t", 'ث': "th", 'ج': "j", 'ح': "ḥ", 'خ': "kh",
+		'د': "d", 'ذ': "dh", 'ر': "r", 'ز': "z", 'س': "s", 'ش': "sh",
+		'ص': "ṣ", 'ض': "ḍ", 'ط': "ṭ", 'ظ': "ẓ", 'ع': "ʿ", 'غ': "gh",
+		'ف': "f", 'ق': "q", 'ك': "k", 'ل': "l", 'م': "m", 'ن': "n",
+		'ه': "h", 'و': "w", 'ي': "y", 'ى': "y",
+	}
+	result := arabicRootDisplay{ArabicRootSummary: root}
+	var latin []string
+	for _, letter := range root.Arabic {
+		result.Letters = append(result.Letters, string(letter))
+		sound, ok := sounds[letter]
+		if !ok {
+			sound = string(letter)
+		}
+		latin = append(latin, sound)
+	}
+	result.Pronunciation = strings.Join(latin, "-")
+	return result
 }

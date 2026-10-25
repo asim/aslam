@@ -9,13 +9,11 @@
     <style>
         .chapter-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
             gap: 8px;
         }
         .chapter-grid a {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: block;
             padding: 10px 12px;
             border: 1px solid #eee;
             border-radius: 6px;
@@ -29,7 +27,9 @@
             min-width: 28px;
         }
         .chapter-name { flex: 1; font-size: 14px; }
-        .chapter-count { font-size: 11px; color: #999; }
+        .chapter-arabic { font-family: 'Uthmanic', 'Traditional Arabic', serif; font-size:24px; line-height:1.4; margin:4px 0; text-align:right; }
+ .chapter-meaning {font-size:12px;color:#666;margin-top:2px;}
+ .chapter-count { font-size: 11px; color: #999; }
     </style>
 </head>
 <body>
@@ -38,17 +38,19 @@
         <main class="app-content">
             <h2>Quran</h2>
 {{if .ContinuePath}}
-            <div style="margin-bottom:16px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
+            <div class="continue-reading">
                 Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
             </div>
             {{end}}
-            <p class="muted" style="margin-bottom:20px;">114 chapters &middot; 6,348 verses</p>
+            <p class="muted" style="margin-bottom:20px;">114 chapters &middot; 6,236 numbered verses</p>
             <div class="chapter-grid">
                 {{range .Chapters}}
                 <a href="/quran/{{index . "Chapter"}}">
                     <span class="chapter-num">{{index . "Chapter"}}.</span>
-                    <span class="chapter-name">{{index . "Name"}}</span>
-                    <span class="chapter-count">{{index . "Count"}}</span>
+                    <div class="chapter-arabic" lang="ar" dir="rtl">{{index . "Arabic"}}</div>
+ <div class="chapter-name">{{index . "Name"}}</div>
+ <div class="chapter-meaning">{{index . "Meaning"}}</div>
+                    <span class="chapter-count">{{index . "Count"}} verses</span>
                 </a>
                 {{end}}
             </div>

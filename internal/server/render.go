@@ -1,11 +1,15 @@
 package server
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"aslam/db"
 )
@@ -30,14 +34,20 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, name string, data ma
 }
 
 func handleStatic(name, contentType string) http.HandlerFunc {
+	content, err := templates.ReadFile("html/" + name)
+	etag := fmt.Sprintf("\"%x\"", sha256.Sum256(content))
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := templates.ReadFile("html/" + name)
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Content-Type", contentType)
-		w.Write(data)
+		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
+		if buildVersion != "" && r.URL.Query().Get("v") == buildVersion && name != "sw.js" {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
+		http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(content))
 	}
 }
 

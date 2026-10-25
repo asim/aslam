@@ -859,6 +859,12 @@ func Migrate() error {
 // Conversation functions
 
 func GetRecentConversations(limit int, userID int64, mineOnly bool, isAdmin bool) ([]Conversation, error) {
+	return GetRecentConversationsContext(context.Background(), limit, userID, mineOnly, isAdmin)
+}
+
+func GetRecentConversationsContext(ctx context.Context, limit int, userID int64, mineOnly, isAdmin bool) ([]Conversation, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
 	var query string
 	var args []interface{}
 	switch {
@@ -879,7 +885,7 @@ func GetRecentConversations(limit int, userID int64, mineOnly bool, isAdmin bool
 			FROM conversations WHERE user_id = ? OR public = 1 ORDER BY updated_at DESC LIMIT ?`
 		args = []interface{}{userID, limit}
 	}
-	rows, err := DB.Query(query, args...)
+	rows, err := DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -280,7 +281,11 @@ func handleArabicSearch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleQuranIndex(w http.ResponseWriter, r *http.Request) {
-	chapters, _ := db.GetQuranChaptersContext(r.Context())
+	chapters, err := quranChapters()
+	if err != nil {
+		http.Error(w, "Chapter index unavailable", 503)
+		return
+	}
 	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "quran")
 	renderTemplate(w, r, "quran_index.html", map[string]interface{}{
 		"Chapters":      chapters,
@@ -562,14 +567,29 @@ func handleIslamQAIndex(w http.ResponseWriter, r *http.Request) {
 	categories, _ := db.GetIslamQACategoriesContext(r.Context())
 	data["Categories"] = categories
 
-	if category != "" {
-		questions, _ := db.GetIslamQAByCategoryContext(r.Context(), category)
-		data["Questions"] = questions
-		data["SelectedCategory"] = category
-	} else {
-		questions, _ := db.GetAllIslamQAContext(r.Context())
-		data["Questions"] = questions
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if r.URL.Query().Get("offset") == "" {
+		offset = 0
+		err = nil
 	}
+	if err != nil || offset < 0 || offset > 100000 {
+		http.Error(w, "Invalid page", 400)
+		return
+	}
+	questions, err := db.GetIslamQAPageContext(r.Context(), category, offset)
+	if err != nil {
+		http.Error(w, "Questions unavailable", 503)
+		return
+	}
+	data["SelectedCategory"] = category
+	if offset > 0 {
+		data["Previous"] = fmt.Sprintf("/islamqa?category=%s&offset=%d", url.QueryEscape(category), max(0, offset-50))
+	}
+	if len(questions) > 50 {
+		data["Next"] = fmt.Sprintf("/islamqa?category=%s&offset=%d", url.QueryEscape(category), offset+50)
+		questions = questions[:50]
+	}
+	data["Questions"] = questions
 
 	p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "islamqa")
 	data["ContinuePath"] = p

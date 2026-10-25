@@ -230,3 +230,7 @@ The runtime database and encryption key live in `~/.aslam/`, outside the reposit
 ## Traffic and memory bounds
 
 See [request limits and nginx configuration](docs/request-limits.md) for concurrency limits, query cancellation, allowed hosts (`ASLAM_ALLOWED_HOSTS`), and rejecting unrelated domains before proxying.
+
+### Quran chapter metadata
+
+`data/quran_chapters.json` contains the 114 chapter names, Arabic names, English meanings and verse counts from `https://api.quran.com/api/v4/chapters?language=en` (retrieved 2026-10-25). The chapter index decodes this metadata once; reading progress remains specific to the signed-in user.

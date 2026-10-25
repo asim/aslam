@@ -61,7 +61,7 @@
                         <input type="hidden" name="content" value="/islamqa/{{index . "Slug"}}
 
 {{truncate (index . "Answer") 200}}">
-                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Save</button>
+                        <button type="submit" class="button">Save</button>
                     </form>
                     <form method="POST" action="/chat/new" style="display:inline;">
                         <input type="hidden" name="title" value="{{index . "Question"}}">
@@ -70,7 +70,7 @@
 Question: {{index . "Question"}}
 
 Answer: {{index . "Answer"}}">
-                        <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; cursor:pointer;">Chat</button>
+                        <button type="submit" class="button">Chat</button>
                     </form>
                 </div>
                 {{else}}
