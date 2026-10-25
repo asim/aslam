@@ -78,18 +78,12 @@ func ghazaliParagraphs(s string) template.HTML {
 	return template.HTML(out.String())
 }
 
-// Older IslamQA exports wrap prose within blank-line-delimited paragraphs.
-// Newer exports use one complete paragraph per line. Keep both conventions.
+// Older exports indent hard-wrapped continuation lines. Only join boundaries
+// with those local wrapping cues; blank lines elsewhere imply nothing.
 var islamQAItem = regexp.MustCompile(`^(?:[0-9]+[.)-]|[-•])(?:\s|$)`)
 
 func islamQAParagraphs(s string) template.HTML {
 	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
-	blankSeparated := false
-	for i, line := range lines {
-		if i > 0 && i < len(lines)-1 && strings.TrimSpace(line) == "" {
-			blankSeparated = true
-		}
-	}
 	var out strings.Builder
 	var paragraph []string
 	flush := func() {
@@ -99,13 +93,21 @@ func islamQAParagraphs(s string) template.HTML {
 		out.WriteString("<p>" + template.HTMLEscapeString(strings.Join(paragraph, " ")) + "</p>")
 		paragraph = nil
 	}
-	for _, line := range lines {
-		line = strings.Join(strings.Fields(line), " ")
+	for i, raw := range lines {
+		line := strings.Join(strings.Fields(raw), " ")
 		if line == "" {
 			flush()
 			continue
 		}
-		if !blankSeparated || islamQAItem.MatchString(line) {
+		wrapped := false
+		if i > 0 && len(paragraph) > 0 {
+			prev := lines[i-1]
+			indented := strings.HasPrefix(raw, "\t") || strings.HasPrefix(raw, "  ")
+			// Exported wrapped lines are short and usually retain a trailing space.
+			wrapped = indented && len([]rune(strings.TrimSpace(prev))) <= 120 &&
+				(strings.HasSuffix(prev, " ") || strings.HasPrefix(prev, "\t") || islamQAItem.MatchString(strings.TrimSpace(prev)))
+		}
+		if !wrapped || islamQAItem.MatchString(line) {
 			flush()
 		}
 		paragraph = append(paragraph, line)
