@@ -2,84 +2,145 @@ package server
 
 import (
 	"aslam/db"
-	"aslam/internal/arabiclearning"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
 func handleArabicLearning(w http.ResponseWriter, r *http.Request) {
-	b, err := arabiclearning.Load()
-	if err != nil {
-		http.Error(w, "Lessons unavailable", 500)
+	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/arabic/"), "/")
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if r.URL.Query().Get("offset") == "" {
+		offset = 0
+		err = nil
+	}
+	if err != nil || offset < 0 || offset > 100000 {
+		http.Error(w, "Invalid page", 400)
 		return
 	}
-	path := strings.TrimPrefix(r.URL.Path, "/arabic/")
-	parts := strings.Split(path, "/")
-	if len(parts) > 2 || (parts[0] != "sentences" && parts[0] != "roots") {
-		http.NotFound(w, r)
-		return
+	d := map[string]interface{}{"Section": parts[0], "Path": r.URL.Path, "Offset": offset}
+	page := func(next bool) {
+		q := r.URL.Query()
+		if offset > 0 {
+			q.Set("offset", strconv.Itoa(max(0, offset-50)))
+			d["Prev"] = r.URL.Path + "?" + q.Encode()
+		}
+		if next {
+			q.Set("offset", strconv.Itoa(offset+50))
+			d["Next"] = r.URL.Path + "?" + q.Encode()
+		}
 	}
-	d := map[string]interface{}{"Section": parts[0], "Title": "Sentences", "Roots": b.Roots, "Sentences": b.Sentences}
-	if parts[0] == "roots" {
+	fail := func(err error) bool {
+		if err == nil {
+			return false
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+		} else {
+			http.Error(w, "Arabic content unavailable", 503)
+		}
+		return true
+	}
+	switch {
+	case parts[0] == "roots" && len(parts) == 1:
 		d["Title"] = "Roots"
-	}
-	if len(parts) == 1 {
-		p, t := db.GetReadingProgressContext(r.Context(), getUserID(r), "arabic")
-		d["ContinuePath"], d["ContinueTitle"] = p, t
-		renderTemplate(w, r, "arabic_learning_index.html", d)
-		return
-	}
-	found := false
-	if parts[0] == "sentences" {
-		for i, s := range b.Sentences {
-			if s.Slug != parts[1] {
-				continue
-			}
-			found = true
-			d["Sentence"], d["Title"] = s, s.Title
-			d["Context"] = fmt.Sprintf("Arabic learning example (not a Quran quotation)\n%s\n%s\n%s\n%s", s.Arabic, s.Latin, s.English, s.Note)
-			if i > 0 {
-				d["Prev"] = "/arabic/sentences/" + b.Sentences[i-1].Slug
-			}
-			if i+1 < len(b.Sentences) {
-				d["Next"] = "/arabic/sentences/" + b.Sentences[i+1].Slug
-			}
+		q := r.URL.Query().Get("q")
+		d["Query"] = q
+		roots, err := db.ArabicRootsContext(r.Context(), q, offset)
+		if fail(err) {
+			return
 		}
-	} else {
-		for i, root := range b.Roots {
-			if root.Slug != parts[1] {
-				continue
-			}
-			found = true
-			d["Root"], d["Title"] = root, root.Title
-			context := root.Arabic + " — " + root.Meaning
-			for _, word := range root.Words {
-				context += "\n" + word.Arabic + " (" + word.Latin + ") — " + word.Meaning + "; " + word.Pattern
-			}
-			d["Context"] = context
-			var examples []arabiclearning.Sentence
-			for _, slug := range root.Sentences {
-				for _, s := range b.Sentences {
-					if s.Slug == slug {
-						examples = append(examples, s)
-					}
-				}
-			}
-			d["Examples"] = examples
-			if i > 0 {
-				d["Prev"] = "/arabic/roots/" + b.Roots[i-1].Slug
-			}
-			if i+1 < len(b.Roots) {
-				d["Next"] = "/arabic/roots/" + b.Roots[i+1].Slug
-			}
+		page(len(roots) > 50)
+		if len(roots) > 50 {
+			roots = roots[:50]
 		}
-	}
-	if !found {
+		d["Roots"] = roots
+	case parts[0] == "roots" && len(parts) == 2 && parts[1] != "":
+		roots, err := db.ArabicRootsContext(r.Context(), parts[1], 0)
+		if fail(err) {
+			return
+		}
+		if len(roots) != 1 || roots[0].Code != parts[1] {
+			http.NotFound(w, r)
+			return
+		}
+		root := roots[0]
+		d["Title"] = "Root: " + root.Arabic
+		d["Root"] = root
+		words, err := db.ArabicRootWordsContext(r.Context(), root.Code, offset)
+		if fail(err) {
+			return
+		}
+		page(len(words) > 50)
+		if len(words) > 50 {
+			words = words[:50]
+		}
+		d["RootWords"] = words
+		context := fmt.Sprintf("Quranic Arabic root %s (%s). Source: https://corpus.quran.com\n", root.Arabic, root.Code)
+		for _, word := range words {
+			context += fmt.Sprintf("%s (%s) — %s; lemma %s; %s\n", word.Arabic, word.Transliteration, word.English, word.Lemma, word.Type)
+		}
+		d["Context"] = context
+		d["Detail"] = true
+	case parts[0] == "reading" && len(parts) == 1:
+		level := r.URL.Query().Get("level")
+		minWords, maxWords := 1, 5
+		switch level {
+		case "", "short":
+			level = "short"
+		case "medium":
+			minWords, maxWords = 6, 10
+		case "long":
+			minWords, maxWords = 11, 1000
+		default:
+			http.Error(w, "Invalid length", 400)
+			return
+		}
+		d["Title"] = "Phrases & verses"
+		d["Level"] = level
+		passages, err := db.ArabicPassagesContext(r.Context(), minWords, maxWords, offset)
+		if fail(err) {
+			return
+		}
+		page(len(passages) > 50)
+		if len(passages) > 50 {
+			passages = passages[:50]
+		}
+		d["Passages"] = passages
+	case parts[0] == "reading" && len(parts) == 3:
+		ch, e1 := strconv.Atoi(parts[1])
+		v, e2 := strconv.Atoi(parts[2])
+		if e1 != nil || e2 != nil || ch < 1 || v < 1 {
+			http.NotFound(w, r)
+			return
+		}
+		p, err := db.ArabicPassageContext(r.Context(), ch, v)
+		if fail(err) {
+			return
+		}
+		d["Title"], d["Passage"], d["Detail"] = p.Title, p, true
+		context := fmt.Sprintf("Quran %s\n%s\n%s\n", p.Title, p.Arabic, p.English)
+		for _, word := range p.Words {
+			context += fmt.Sprintf("%s (%s) — %s\n", word.Arabic, word.Transliteration, word.English)
+		}
+		d["Context"] = context
+	default:
 		http.NotFound(w, r)
 		return
 	}
-	d["Path"] = r.URL.Path
-	db.SaveReadingProgressContext(r.Context(), getUserID(r), "arabic", r.URL.Path, d["Title"].(string))
+	userID := getUserID(r)
+	if d["Detail"] == true {
+		path := r.URL.Path
+		if offset > 0 {
+			path += "?offset=" + url.QueryEscape(strconv.Itoa(offset))
+		}
+		db.SaveReadingProgressContext(r.Context(), userID, "arabic", path, d["Title"].(string))
+	} else {
+		d["ContinuePath"], d["ContinueTitle"] = db.GetReadingProgressContext(r.Context(), userID, "arabic")
+	}
 	renderTemplate(w, r, "arabic_learning.html", d)
 }

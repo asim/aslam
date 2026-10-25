@@ -114,7 +114,7 @@ Appears {{index . "Frequency"}} times in the Quran.">
             <div class="aw-translit">{{index . "Transliteration"}}</div>
             <div class="aw-english-meaning">{{index . "English"}}</div>
 
-            {{with .RootLesson}}<p>Root: <a href="/arabic/roots/{{.Slug}}"><span lang="ar" dir="rtl">{{.Arabic}}</span> — {{.Title}}</a></p>{{end}}
+            {{if .Roots}}<div class="aw-detail"><div class="aw-detail-label">Roots and lemmas</div>{{range .Roots}}<p><a href="/arabic/roots/{{.Code}}"><span lang="ar" dir="rtl">{{.Arabic}}</span> ({{.Code}})</a> · <span lang="ar" dir="rtl">{{.Lemma}}</span> · {{.Type}}</p>{{end}}<p class="muted">Annotations: <a href="https://corpus.quran.com">Quranic Arabic Corpus</a></p></div>{{end}}
             <div class="aw-detail">
                 <div class="aw-detail-label">Frequency</div>
                 <div class="aw-detail-value">Appears {{index . "Frequency"}} times in the Quran</div>
@@ -130,7 +130,7 @@ Appears {{index . "Frequency"}} times in the Quran.">
                 <div class="aw-verse-english">{{index (index . "Verse") "Text"}}</div>
                 <div class="aw-verse-link">
                     <a href="{{index . "VerseURL"}}">View full verse &rarr;</a>
-                    {{if index . "VerseWBW"}}<span style="margin-left:12px;"><a href="{{index . "VerseWBW"}}" target="_blank">Word by word &rarr;</a></span>{{end}}
+                    {{if index . "VerseWBW"}}<span style="margin-left:12px;"><a href="{{index . "VerseWBW"}}">Word by word &rarr;</a></span>{{end}}
                 </div>
             </div>
             {{else if index . "ExampleRef"}}

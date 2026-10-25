@@ -853,7 +853,7 @@ func Migrate() error {
 		DELETE FROM arabic_fts WHERE docid = old.id;
 	END`)
 
-	return nil
+	return initArabicLearning()
 }
 
 // Conversation functions

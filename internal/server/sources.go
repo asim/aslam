@@ -401,57 +401,46 @@ func loadRiyad() {
 	log.Printf("Loaded %d Riyad us-Salihin hadiths (v%s)", total, riyadVersion)
 }
 
-const arabicVersion = "1"
+const arabicVersion = "2"
 
 func loadArabic() {
 	if db.GetSetting("arabic_version") == arabicVersion {
-		log.Printf("Arabic vocab v%s already loaded (%d words)", arabicVersion, db.ArabicCount())
 		return
 	}
-
-	log.Printf("Loading Arabic vocab dataset v%s...", arabicVersion)
-	db.ClearArabic()
-
 	r, err := zip.NewReader(bytes.NewReader(data.Arabic), int64(len(data.Arabic)))
 	if err != nil {
-		log.Printf("Failed to open arabic.zip: %v", err)
+		log.Printf("Arabic archive: %v", err)
 		return
 	}
-
-	total := 0
-	for _, f := range r.File {
-		if !strings.HasSuffix(f.Name, ".json") {
-			continue
-		}
-		rc, err := f.Open()
+	var vocab []db.ArabicVocabulary
+	var passages []db.ArabicPassage
+	for _, entry := range []struct {
+		name   string
+		target interface{}
+	}{
+		{"arabic_vocab.json", &vocab}, {"arabic_passages.json", &passages},
+	} {
+		f, err := r.Open(entry.name)
 		if err != nil {
-			continue
+			log.Printf("Arabic data: %v", err)
+			return
 		}
-		var entries []struct {
-			Arabic          string `json:"arabic"`
-			Transliteration string `json:"transliteration"`
-			English         string `json:"english"`
-			Frequency       int    `json:"frequency"`
-			ExampleRef      string `json:"example_ref"`
-			Type            string `json:"type"`
-		}
-		if err := json.NewDecoder(rc).Decode(&entries); err != nil {
-			rc.Close()
-			log.Printf("Failed to decode %s: %v", f.Name, err)
-			continue
-		}
-		rc.Close()
-		for _, e := range entries {
-			if err := db.InsertArabicWord(e.Arabic, e.Transliteration, e.English, e.Frequency, e.ExampleRef, e.Type); err != nil {
-				log.Printf("Failed to insert Arabic word: %v", err)
-			} else {
-				total++
-			}
+		err = json.NewDecoder(f).Decode(entry.target)
+		f.Close()
+		if err != nil {
+			log.Printf("Arabic decode: %v", err)
+			return
 		}
 	}
-
-	db.SetSetting("arabic_version", arabicVersion)
-	log.Printf("Loaded %d Arabic vocab words (v%s)", total, arabicVersion)
+	if len(vocab) == 0 || len(passages) == 0 {
+		log.Printf("Arabic data is empty")
+		return
+	}
+	if err = db.ImportArabic(vocab, passages, arabicVersion); err != nil {
+		log.Printf("Arabic import: %v", err)
+		return
+	}
+	log.Printf("Loaded Arabic v%s: %d words and %d reading passages", arabicVersion, len(vocab), len(passages))
 }
 
 const prophetsVersion = "4"

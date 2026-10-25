@@ -26,6 +26,3 @@ var Prophets []byte
 
 //go:embed seerah.zip
 var Seerah []byte
-
-//go:embed arabic_learning.zip
-var ArabicLearning []byte
