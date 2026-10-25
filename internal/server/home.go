@@ -171,9 +171,6 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 	dailyQA, _ := db.GetDailyIslamQAContext(r.Context(), time.Now().In(tz).Format("2006-01-02"))
 	progress := db.GetAllReadingProgress(userID)
-	if len(progress) > 3 {
-		progress = progress[:3]
-	}
 	renderTemplate(w, r, "home.html", map[string]interface{}{
 		"Conversations":   convs,
 		"DailyContent":    dailyContent,
