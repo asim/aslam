@@ -1,0 +1,52 @@
+{{define "arabic-learning-nav"}}
+<nav aria-label="Arabic learning" style="display:flex;gap:16px;flex-wrap:wrap;margin:16px 0;">
+<a href="/arabic" {{if eq . "words"}}aria-current="page"{{end}}>Words</a>
+<a href="/arabic/reading" {{if eq . "reading"}}aria-current="page"{{end}}>Phrases &amp; verses</a>
+<a href="/arabic/roots" {{if eq . "roots"}}aria-current="page"{{end}}>Roots</a>
+</nav>{{end}}
+{{define "arabic_learning.html"}}
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{{.Title}} - Arabic - Aslam</title>{{template "style"}}
+<style>
+.learning-arabic {font-family:'Uthmanic','Traditional Arabic',serif;font-size:28px;line-height:1.8;overflow-wrap:anywhere;}
+.learning-row {display:block;padding:12px 0;border-bottom:1px solid #eee;color:inherit;text-decoration:none;}
+.learning-row:hover {background:#fafafa;}
+.learning-words {display:flex;flex-wrap:wrap;gap:12px;margin:20px 0;}
+.learning-word {border:1px solid #eee;border-radius:8px;padding:12px;flex:1 1 150px;min-width:0;}
+.learning-actions {display:flex;gap:6px;}
+.learning-actions button {font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#666;cursor:pointer;}
+.learning-pages {display:flex;justify-content:space-between;gap:12px;margin-top:28px;font-size:13px;}
+nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
+</style></head><body><div class="app">{{template "header" .}}<main class="app-content">
+{{if .Detail}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;">
+<a href="{{.IndexURL}}">{{if eq .Section "roots"}}All roots{{else}}All passages{{end}}</a>
+{{if .LoggedIn}}<div class="learning-actions">
+<form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}
+{{.Context}}"><button type="submit">Save</button></form>
+<form method="POST" action="/chat/new"><input type="hidden" name="title" value="Arabic — {{.Title}}"><input type="hidden" name="context" value="{{.Path}}
+{{.Context}}"><button type="submit">Chat</button></form>
+</div>{{else}}<a href="/auth/login">Sign in to save</a>{{end}}</div>
+{{else}}<h2>Learn Arabic</h2>{{template "arabic-learning-nav" .Section}}{{end}}
+<h2>{{.Title}}</h2>
+{{if .ContinuePath}}<p>Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></p>{{end}}
+{{if and (eq .Section "roots") (not .Detail)}}
+<p>Explore families of related words from the Qur’an. Open a root, then use Next to keep reading.</p>
+<form method="GET" action="/arabic/roots"><label for="root-search">Find a root</label><div style="display:flex;gap:8px;margin:12px 0;"><input style="min-width:0;flex:1" id="root-search" name="q" value="{{.Query}}" placeholder="كتب or k-t-b"><button type="submit">Search</button></div></form>
+{{range .Roots}}<a class="learning-row" href="/arabic/roots/{{.Code}}"><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</a>{{else}}<p class="muted">No roots found.</p>{{end}}
+{{end}}
+{{with .Root}}<p><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</p><p>One example of each related word is shown below. Open a word for its meaning and example verse.</p>{{end}}
+{{range .RootWords}}<a class="learning-row" href="/arabic/{{.ID}}"><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> ({{.Transliteration}}) — {{.English}}</a>{{end}}
+{{if or .WordPrev .WordNext}}<div class="learning-pages">{{if .WordPrev}}<a href="{{.WordPrev}}">Earlier words</a>{{end}}{{if .WordNext}}<a href="{{.WordNext}}">More words</a>{{end}}</div>{{end}}
+{{if and (eq .Section "reading") (not .Detail)}}
+<p>Read a passage, explore its words, then use Next to continue. Start with shorter passages; length does not always reflect difficulty.</p>
+<nav aria-label="Passage length" style="display:flex;gap:16px;flex-wrap:wrap;"><a href="/arabic/reading?level=short" {{if eq .Level "short"}}aria-current="page"{{end}}>1–5 words</a><a href="/arabic/reading?level=medium" {{if eq .Level "medium"}}aria-current="page"{{end}}>6–10 words</a><a href="/arabic/reading?level=long" {{if eq .Level "long"}}aria-current="page"{{end}}>11+ words</a></nav>
+{{range .Passages}}<a class="learning-row" href="/arabic/reading/{{.Chapter}}/{{.Verse}}"><div>{{.Title}}</div><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div>{{.English}}</div></a>{{else}}<p class="muted">No passages found.</p>{{end}}
+{{end}}
+{{with .Passage}}
+<div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><p>{{.English}}</p>
+<h3>Word by word</h3><div class="learning-words">{{range .Words}}<div class="learning-word"><div class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</div><div><em>{{.Transliteration}}</em></div><div>{{.English}}</div>{{if .VocabularyID}}<a href="/arabic/{{.VocabularyID}}">Vocabulary</a>{{end}}{{range .Roots}}<div>Root: <a href="/arabic/roots/{{.Code}}"><span lang="ar" dir="rtl">{{.Arabic}}</span></a></div>{{end}}</div>{{end}}</div>
+<p><a href="/quran/{{.Chapter}}/{{.Verse}}">Read the full verse and commentary &rarr;</a></p>
+{{end}}
+<details style="margin-top:24px;"><summary>About the sources</summary><p class="muted">Root and lemma annotations: <a href="https://corpus.quran.com">Quranic Arabic Corpus</a> © 2011 Kais Dukes (GPL), based on <a href="https://tanzil.net">Tanzil</a> text. <a href="https://corpus.quran.com/documentation/pos.jsp">Grammar tag guide</a>. Only verified word alignments are annotated; missing roots are not guessed. A verse may be a phrase or span several sentences.</p></details>
+<div class="learning-pages">{{if .Prev}}<a href="{{.Prev}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="{{.IndexURL}}">{{if eq .Section "roots"}}All roots{{else}}All passages{{end}}</a>{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</div>
+</main></div></body></html>{{end}}

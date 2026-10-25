@@ -219,6 +219,10 @@ func handleArabicIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleArabicView(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/arabic/reading" || strings.HasPrefix(r.URL.Path, "/arabic/reading/") || r.URL.Path == "/arabic/roots" || strings.HasPrefix(r.URL.Path, "/arabic/roots/") {
+		handleArabicLearning(w, r)
+		return
+	}
 	idStr := strings.TrimPrefix(r.URL.Path, "/arabic/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -242,10 +246,12 @@ func handleArabicView(w http.ResponseWriter, r *http.Request) {
 			if verse, err := db.GetQuranVerseContext(r.Context(), ch, v); err == nil {
 				item["Verse"] = verse
 				item["VerseURL"] = fmt.Sprintf("/quran/%d/%d", ch, v)
-				item["VerseWBW"] = fmt.Sprintf("https://reminder.dev/quran/%d?wbw=1#%d", ch, v)
+				item["VerseWBW"] = fmt.Sprintf("/arabic/reading/%d/%d", ch, v)
 			}
 		}
 	}
+
+	item["Roots"], _ = db.ArabicWordRootsContext(r.Context(), id)
 
 	translit, _ := item["Transliteration"].(string)
 	db.SaveReadingProgressContext(r.Context(), getUserID(r), "arabic", r.URL.Path, translit)
