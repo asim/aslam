@@ -103,35 +103,9 @@ a:hover { opacity: 0.7; }
     gap: 10px;
     align-items: flex-end;
 }
-.app-footer textarea {
-    flex: 1;
-    height: 44px;
-    max-height: 120px;
-    padding: 12px;
-    resize: none;
-    font-size: 15px;
-    line-height: 1.4;
-    font-family: inherit;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-    box-sizing: border-box;
-    overflow: hidden;
-}
-.app-footer textarea:focus { outline: none; border-color: #999; }
-.app-footer button {
-    height: 36px;
-    padding: 0 12px;
-    background: #000;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-}
-.app-footer button:hover { background: #333; }
-.app-footer button:disabled { opacity: 0.5; cursor: not-allowed; }
+.app-footer textarea { flex: 1; max-height: 120px; resize: none; overflow: hidden; }
 
+.app-footer button:disabled { opacity: 0.5; }
 
 /* Messages */
 .message { margin-bottom: 16px; padding: 16px; }
@@ -149,27 +123,9 @@ h3 { font-weight: 600; font-size: 16px; }
 ul { list-style: none; }
 li { padding: 14px 0; border-bottom: 1px solid #eee; }
 li:last-child { border-bottom: none; }
-input, button {
-    font-family: inherit;
-    font-size: inherit;
-}
-input {
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-}
-input:focus { outline: none; border-color: #999; }
+
 .search-form { display: flex; gap: 10px; margin-bottom: 20px; }
 .search-form input { flex: 1; }
-.search-form button {
-    padding: 6px 12px;
-    background: #000;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
 
 /* Toast */
 .toast {
@@ -206,3 +162,35 @@ input:focus { outline: none; border-color: #999; }
 .button:disabled { opacity: .5; cursor: not-allowed; }
 .button:focus-visible, .btn:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
 .reader-pagination { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; }
+
+/* Form controls: shared across home, search, editors, account and admin. */
+:root { --control-height: 44px; --control-radius: 8px; }
+.form-control {
+    font-family: inherit; font-size: 16px; font-weight: 400; line-height: 22px;
+    min-width: 0; min-height: var(--control-height); padding: 10px 12px;
+    border: 1px solid #ddd; border-radius: var(--control-radius);
+    background: #fff; color: #1a1a1a; box-sizing: border-box;
+}
+textarea.form-control { resize: vertical; }
+.form-control:focus { outline: 2px solid #0066cc; outline-offset: 1px; border-color: #999; }
+.form-control:disabled { background: #f5f5f5; color: #888; }
+.form-submit, .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: var(--control-height); padding: 10px 16px;
+    font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22px;
+    border: 1px solid #000; border-radius: var(--control-radius);
+    background: #000; color: #fff; cursor: pointer; text-decoration: none;
+    flex-shrink: 0;
+}
+.form-submit:hover, .btn:hover { background: #333; }
+.form-submit:disabled { opacity: .5; cursor: not-allowed; }
+.form-submit:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
+.btn-small { min-height: 28px; padding: 4px 10px; font-size: 12px; line-height: 18px; }
+.btn-danger { background: #dc2626; border-color: #dc2626; }
+.search-form { align-items: flex-end; gap: 8px; }
+.ask-form textarea.form-control, .app-footer textarea.form-control {
+    height: var(--control-height); resize: none; overflow-y: auto;
+}
+
+.form-secondary { background: #fff; color: #555; border-color: #ddd; }
+.form-secondary:hover { background: #f5f5f5; }

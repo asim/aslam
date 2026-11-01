@@ -89,7 +89,7 @@
 <body>
     <div class="app">
         {{template "header" .}}
-        
+
         <div class="chat-toolbar">
           <div class="chat-toolbar-inner">
             <h2 id="chat-title" title="{{.Conversation.Title}}">{{.Conversation.Title}}</h2>
@@ -148,8 +148,8 @@
         <footer class="app-footer">
             <form id="chat-form">
                 <input type="hidden" name="conversation_id" value="{{.Conversation.ID}}">
-                <textarea name="message" id="message-input" rows="1" placeholder="Type your message..."></textarea>
-                <button type="submit" id="send-btn">Send</button>
+                <textarea name="message" id="message-input" rows="1" placeholder="Type your message..." class="form-control"></textarea>
+                <button type="submit" id="send-btn" class="form-submit">Send</button>
             </form>
         </footer>
         {{end}}
@@ -183,7 +183,7 @@
             window.visualViewport.addEventListener('resize', fitChatViewport);
             window.visualViewport.addEventListener('scroll', fitChatViewport);
         }
-        
+
         function timeAgo(date) {
             const now = new Date();
             const seconds = Math.floor((now - date) / 1000);
@@ -196,7 +196,7 @@
             if (days < 7) return days + 'd ago';
             return date.toLocaleDateString();
         }
-        
+
         function updateTimeAgo() {
             document.querySelectorAll('.time[data-time]').forEach(el => {
                 const ts = parseInt(el.dataset.time) * 1000;
@@ -336,7 +336,7 @@
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-            
+
                 const message = msgInput.value.trim();
                 if (!message) return;
 
@@ -468,7 +468,7 @@
             // Auto-grow textarea
             msgInput.addEventListener('input', () => {
                 msgInput.style.height = 'auto';
-                msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+                msgInput.style.height = Math.min(msgInput.scrollHeight + 2, 120) + 'px';
             });
 
             // Submit on Enter (Shift+Enter for newline)
