@@ -26,22 +26,8 @@
             margin: 0 0 12px 0;
             align-items: flex-end;
         }
-        .ask-form textarea {
-            flex: 1;
-            height: 52px;
-            max-height: 200px;
-            padding: 14px;
-            resize: none;
-            font-size: 15px;
-            line-height: 1.4;
-            font-family: inherit;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            background: #fff;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        .ask-form textarea:focus { outline: none; border-color: #999; }
+        .ask-form textarea { flex: 1; max-height: 200px; resize: none; overflow: hidden; }
+
 
         .ask-hint {
             margin: 0 0 28px 0;
@@ -86,8 +72,8 @@
                 <h2>Home</h2>
 
                 <form class="ask-form" id="ask-form">
-                    <textarea id="ask-input" name="message" rows="1" placeholder="Ask a question…" autofocus></textarea>
-                    <button type="submit" class="button button-primary">Ask</button>
+                    <textarea id="ask-input" name="message" rows="1" placeholder="Ask a question…" autofocus class="form-control"></textarea>
+                    <button type="submit" class="form-submit">Ask</button>
                 </form>
                 <div class="ask-hint">
                     Or browse <a href="/quran">quran</a> · <a href="/hadith">hadith</a> · <a href="/names">names</a> · <a href="/stories">stories</a> · <a href="/islamqa">islamqa</a> · <a href="/seerah">seerah</a> · <a href="/ghazali">ghazali</a> · <a href="/adhkar">adhkar</a> · <a href="/salihin">salihin</a> · <a href="/arabic">arabic</a>
@@ -253,7 +239,7 @@
 
         askInput.addEventListener('input', () => {
             askInput.style.height = 'auto';
-            askInput.style.height = Math.min(askInput.scrollHeight, 200) + 'px';
+            askInput.style.height = Math.min(askInput.scrollHeight + 2, 200) + 'px';
         });
         askInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

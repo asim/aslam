@@ -12,15 +12,8 @@
             gap: 8px;
             margin-bottom: 20px;
         }
-        .arabic-search input {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: inherit;
-        }
-        .arabic-search input:focus { outline: none; border-color: #999; }
+        .arabic-search input { width:100%; }
+
         .level-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -87,7 +80,7 @@
             {{end}}
 
             <div class="arabic-search">
-                <input type="text" id="arabic-search-input" placeholder="Search Arabic, transliteration, or English..." value="{{.Query}}">
+                <input type="text" id="arabic-search-input" placeholder="Search Arabic, transliteration, or English..." value="{{.Query}}" class="form-control">
             </div>
 
             <div class="level-grid">

@@ -15,7 +15,7 @@
 .learning-words {display:flex;flex-wrap:wrap;gap:12px;margin:20px 0;}
 .learning-word {border:1px solid #eee;border-radius:8px;padding:12px;flex:1 1 150px;min-width:0;}
 .learning-actions {display:flex;gap:6px;}
-.learning-actions button {font-size:12px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#666;cursor:pointer;}
+
 .learning-pages {display:flex;justify-content:space-between;gap:12px;margin-top:28px;font-size:13px;}
 nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
 </style></head><body><div class="app">{{template "header" .}}<main class="app-content">
@@ -24,16 +24,16 @@ nav [aria-current=page] {font-weight:bold;text-decoration:underline;}
 <a href="{{.IndexURL}}">{{if eq .Section "roots"}}All roots{{else}}All passages{{end}}</a>
 {{if .LoggedIn}}<div class="learning-actions">
 <form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Title}}"><input type="hidden" name="content" value="{{.Path}}
-{{.Context}}"><button type="submit">Save</button></form>
+{{.Context}}"><button type="submit" class="button">Save</button></form>
 <form method="POST" action="/chat/new"><input type="hidden" name="title" value="Arabic — {{.Title}}"><input type="hidden" name="context" value="{{.Path}}
-{{.Context}}"><button type="submit">Chat</button></form>
+{{.Context}}"><button type="submit" class="button">Chat</button></form>
 </div>{{else}}<a href="/auth/login">Sign in to save</a>{{end}}</div>
 {{else}}<h2>Learn Arabic</h2>{{template "arabic-learning-nav" .Section}}{{end}}
 <h2>{{.Title}}</h2>
 {{if .ContinuePath}}<p class="continue-reading">Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></p>{{end}}
 {{if and (eq .Section "roots") (not .Detail)}}
 <p>Explore families of related words from the Qur’an. Open a root, then use Next to keep reading.</p>
-<form method="GET" action="/arabic/roots"><label for="root-search">Find a root</label><div style="display:flex;margin:12px 0;"><input type="search" style="min-width:0;flex:1" id="root-search" name="q" value="{{.Query}}" placeholder="كتب or k-t-b"></div></form>
+<form method="GET" action="/arabic/roots"><label for="root-search">Find a root</label><div style="display:flex;margin:12px 0;"><input type="search" style="min-width:0;flex:1" id="root-search" name="q" value="{{.Query}}" placeholder="كتب or k-t-b" class="form-control"></div></form>
 <div id="root-results" aria-live="polite">{{range .Roots}}<a class="learning-row" href="/arabic/roots/{{.Code}}"><span class="learning-arabic root-letters" lang="ar" dir="rtl">{{range .Letters}}<span>{{.}}</span>{{end}}</span><span class="muted"> · {{.Count}} word forms</span><div class="root-pronunciation" dir="ltr">{{.Pronunciation}}</div></a>{{else}}<p class="muted">No roots found.</p>{{end}}</div>
 {{end}}
 {{with .Root}}<div><span class="learning-arabic" lang="ar" dir="rtl">{{.Arabic}}</span> · {{.Count}} word forms</p><p>One example of each related word is shown below. Open a word for its meaning and example verse.</p>{{end}}

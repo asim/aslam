@@ -34,28 +34,11 @@
             font-size: 13px;
             color: #666;
         }
-        .profile-form input {
-            width: 100%;
-            padding: 10px 14px;
-            margin-top: 4px;
-            border: 1px solid #999;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 14px;
-        }
-        .profile-form input:focus { outline: none; border-color: #333; }
-        .profile-form input[disabled] { background: #f5f5f5; color: #888; }
-        .profile-form button {
-            margin-top: 20px;
-            padding: 10px 24px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .profile-form button:hover { background: #333; }
+        .profile-form input { width: 100%; margin-top: 4px; }
+
+
+        .profile-form button { margin-top: 20px; }
+
         .profile-meta {
             margin-top: 20px;
             font-size: 12px;
@@ -87,15 +70,15 @@
 
                 <form method="POST" action="/profile" enctype="multipart/form-data" class="profile-form">
                     <label>Picture
-                        <input type="file" name="picture" accept="image/*" style="margin-top:4px">
+                        <input type="file" name="picture" accept="image/*" style="margin-top:4px" class="form-control">
                     </label>
                     <label>Name
-                        <input type="text" name="name" value="{{.User.Name}}" placeholder="Your name">
+                        <input type="text" name="name" value="{{.User.Name}}" placeholder="Your name" class="form-control">
                     </label>
                     <label>Email
-                        <input type="email" value="{{.User.Email}}" disabled>
+                        <input type="email" value="{{.User.Email}}" disabled class="form-control">
                     </label>
-                    <button type="submit">Save</button>
+                    <button type="submit" class="form-submit">Save</button>
                 </form>
 
                 <div class="profile-meta">

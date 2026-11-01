@@ -21,29 +21,11 @@
         .item-detail { margin-top: 8px; font-size: 13px; }
         .item-detail label { color: #888; }
         form.inline { display: inline; }
-        input, textarea { 
-            font-family: inherit; 
-            font-size: 14px; 
-            padding: 8px; 
-            border: 1px solid #333; 
-            border-radius: 4px;
-            background: #fff;
-            width: 100%;
-            box-sizing: border-box;
-            margin-bottom: 8px;
-        }
+        input, textarea { width: 100%; margin-bottom: 8px; }
         textarea { min-height: 60px; }
         .form-row { margin-bottom: 12px; }
         .form-row label { display: block; margin-bottom: 4px; font-size: 12px; color: #888; }
-        .btn { 
-            padding: 8px 16px; 
-            background: #000; 
-            color: #fff; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer;
-            font-family: inherit;
-        }
+
         .btn:hover { opacity: 0.8; }
         .btn-danger { background: #dc2626; }
         .btn-small { padding: 4px 8px; font-size: 12px; }
@@ -99,10 +81,10 @@
 <body>
     <div class="app">
         {{template "header" .}}
-        
+
         <main class="app-content">
             <h2>Administration</h2>
-            
+
             {{if .Message}}
             <p class="success">{{.Message}}</p>
             {{end}}
@@ -159,7 +141,7 @@
                     Result: {{if .EmailWorker.LastResult}}{{.EmailWorker.LastResult}}{{else}}waiting for first poll{{end}}
                     {{if .EmailWorker.LastError}}<br><span class="error">Error: {{.EmailWorker.LastError}}</span>{{end}}
                 </div>
-                
+
                 <details>
                     <summary style="cursor: pointer; margin-bottom: 8px;">Recent Emails ({{len .RecentEmails}})</summary>
                     {{if .RecentEmails}}
@@ -179,7 +161,7 @@
                     <p class="muted">No emails yet.</p>
                     {{end}}
                 </details>
-                
+
                 <details style="margin-top: 12px;">
                     <summary style="cursor: pointer; margin-bottom: 8px;">Recent Tasks ({{len .RecentTasks}})</summary>
                     {{if .RecentTasks}}
@@ -237,7 +219,7 @@
             <div class="admin-section">
                 <h3>Integrations</h3>
                 <p class="muted" style="margin-bottom: 16px;">External services the assistant uses. Configured via environment variables. Toggle to enable/disable.</p>
-                
+
                 {{range .Integrations}}
                 <div class="item-card">
                     <div class="item-header">
@@ -273,7 +255,7 @@
             <div class="admin-section">
                 <h3>Tools ({{len .Tools}})</h3>
                 <p class="muted" style="margin-bottom: 16px;">Capabilities available to the assistant.</p>
-                
+
                 {{range .Tools}}
                 <div class="item-card" style="padding: 8px 12px;">
                     <strong>{{.Name}}</strong>
@@ -299,7 +281,7 @@
                         {{if ne .Email $.CurrentUser}}
                         <form class="inline" method="POST" action="/admin/remove-user" onsubmit="return confirm('Remove this user?');">
                             <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn btn-danger btn-small">Remove</button>
+                            <button type="submit" class="form-submit btn btn-danger btn-small">Remove</button>
                         </form>
                         {{end}}
                     </div>
@@ -317,20 +299,20 @@
                     <form method="POST" action="/admin/add-user" style="margin-top: 12px;">
                         <div class="form-row">
                             <label>Email Address</label>
-                            <input type="email" name="email" required placeholder="user@example.com">
+                            <input type="email" name="email" required placeholder="user@example.com" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Name (optional)</label>
-                            <input type="text" name="name" placeholder="Name">
+                            <input type="text" name="name" placeholder="Name" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Role</label>
-                            <select name="role" style="padding: 8px; border: 1px solid #333; border-radius: 4px; font-family: inherit;">
+                            <select name="role" class="form-control">
                                 <option value="user">User</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn">Add User</button>
+                        <button type="submit" class="form-submit btn">Add User</button>
                     </form>
                 </details>
             </div>
@@ -339,14 +321,14 @@
             <div class="admin-section">
                 <h3>Service Accounts & Credentials</h3>
                 <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations).</p>
-                
+
                 {{range .Accounts}}
                 <div class="item-card">
                     <div class="item-header">
                         <span class="item-title">{{.Service}}</span>
                         <form class="inline" method="POST" action="/admin/delete-account" onsubmit="return confirm('Delete this account record?');">
                             <input type="hidden" name="id" value="{{.ID}}">
-                            <button type="submit" class="btn btn-danger btn-small">Delete</button>
+                            <button type="submit" class="form-submit btn btn-danger btn-small">Delete</button>
                         </form>
                     </div>
                     {{if .URL}}<div class="item-detail"><label>URL:</label> <a href="{{.URL}}" target="_blank">{{.URL}}</a></div>{{end}}
@@ -361,43 +343,43 @@
                 {{else}}
                 <p class="muted">No accounts documented yet.</p>
                 {{end}}
-                
+
                 <details style="margin-top: 16px;">
                     <summary style="cursor: pointer;">Add Account</summary>
                     <form method="POST" action="/admin/add-account" style="margin-top: 12px;">
                         <div class="form-row">
                             <label>Service Name *</label>
-                            <input type="text" name="service" required placeholder="e.g., Google Cloud, Anthropic, Brave">
+                            <input type="text" name="service" required placeholder="e.g., Google Cloud, Anthropic, Brave" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>URL</label>
-                            <input type="url" name="url" placeholder="e.g., https://console.cloud.google.com">
+                            <input type="url" name="url" placeholder="e.g., https://console.cloud.google.com" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Username / Email</label>
-                            <input type="text" name="account_id" placeholder="e.g., asim@aslam.org">
+                            <input type="text" name="account_id" placeholder="e.g., asim@aslam.org" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Password</label>
-                            <input type="text" name="password" placeholder="Account password (stored encrypted)">
+                            <input type="text" name="password" placeholder="Account password (stored encrypted)" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>API Key / Secret</label>
-                            <input type="text" name="api_key" placeholder="API key if applicable">
+                            <input type="text" name="api_key" placeholder="API key if applicable" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Environment Variable</label>
-                            <input type="text" name="env_var" placeholder="e.g., ANTHROPIC_API_KEY">
+                            <input type="text" name="env_var" placeholder="e.g., ANTHROPIC_API_KEY" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Purpose / Description</label>
-                            <input type="text" name="description" placeholder="What is this account used for?">
+                            <input type="text" name="description" placeholder="What is this account used for?" class="form-control">
                         </div>
                         <div class="form-row">
                             <label>Additional Notes</label>
-                            <textarea name="notes" placeholder="Any other important information"></textarea>
+                            <textarea name="notes" placeholder="Any other important information" class="form-control"></textarea>
                         </div>
-                        <button type="submit" class="btn">Add Account</button>
+                        <button type="submit" class="form-submit btn">Add Account</button>
                     </form>
                 </details>
             </div>

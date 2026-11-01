@@ -54,21 +54,8 @@
             color: #999;
             margin-top: 4px;
         }
-        .auth-card .btn-submit {
-            width: 100%;
-            padding: 12px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-        .auth-card .btn-submit:hover {
-            background: #333;
-        }
+        .auth-card .btn-submit { width: 100%; margin-top: 4px; }
+
         .divider {
             display: flex;
             align-items: center;
@@ -142,18 +129,18 @@
             <form method="POST" action="/auth/signup">
                 <div class="form-group">
                     <label for="name">Name</label>
-                    <input type="text" id="name" name="name" autofocus>
+                    <input type="text" id="name" name="name" autofocus class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required minlength="8">
+                    <input type="password" id="password" name="password" required minlength="8" class="form-control">
                     <div class="hint">At least 8 characters</div>
                 </div>
-                <button type="submit" class="btn-submit">Create Account</button>
+                <button type="submit" class="form-submit btn-submit">Create Account</button>
             </form>
             {{end}}
 

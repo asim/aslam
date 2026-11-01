@@ -13,14 +13,7 @@
             font-size: 0.9em;
             font-weight: bold;
         }
-        .edit-form input, .edit-form textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            border: 1px solid #999;
-            border-radius: 4px;
-            font-family: inherit;
-        }
+        .edit-form input, .edit-form textarea { width: 100%; margin-top: 4px; }
         .edit-form textarea {
             min-height: 200px;
         }
@@ -29,16 +22,8 @@
             display: flex;
             gap: 12px;
         }
-        .edit-form button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .edit-form button[type="submit"] {
-            background: #000;
-            color: #fff;
-        }
+
+
         .edit-form .delete-btn {
             background: #fee;
             color: #c00;
@@ -73,19 +58,19 @@
 
             <form action="/notes/edit/{{.Item.ID}}" method="POST" class="edit-form">
                 <label>Title
-                    <input type="text" name="title" value="{{.Item.Title}}" required>
+                    <input type="text" name="title" value="{{.Item.Title}}" required class="form-control">
                 </label>
                 <label>Content
-                    <textarea name="content">{{.Item.Content}}</textarea>
+                    <textarea name="content" class="form-control">{{.Item.Content}}</textarea>
                 </label>
                 <div class="buttons">
-                    <button type="submit">Save Changes</button>
-                    <a href="/notes"><button type="button">Cancel</button></a>
+                    <button type="submit" class="form-submit">Save Changes</button>
+                    <a href="/notes" class="form-submit form-secondary">Cancel</a>
                 </div>
             </form>
 
             <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-                <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;" onclick="return confirm('Delete this note permanently?')">Delete</button>
+                <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;" onclick="return confirm('Delete this note permanently?')" class="button">Delete</button>
             </form>
         </main>
     </div>
