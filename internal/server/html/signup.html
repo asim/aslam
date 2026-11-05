@@ -126,6 +126,7 @@
             {{end}}
 
             {{if .PasswordSignup}}
+            <p class="hint">Verify your email, then an admin will review your request. You can log in once approved.</p>
             <form method="POST" action="/auth/signup">
                 <div class="form-group">
                     <label for="name">Name</label>
@@ -140,7 +141,10 @@
                     <input type="password" id="password" name="password" required minlength="8" class="form-control">
                     <div class="hint">At least 8 characters</div>
                 </div>
-                <button type="submit" class="form-submit btn-submit">Create Account</button>
+                <input type="hidden" name="challenge" value="{{.Challenge}}">
+                <div class="form-group"><label for="answer">{{.Question}}</label><input id="answer" name="answer" type="text" inputmode="numeric" autocomplete="off" required class="form-control"></div>
+                <div style="position:absolute;left:-10000px" aria-hidden="true"><label>Leave empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+                <button type="submit" class="form-submit btn-submit">Request account</button>
             </form>
             {{end}}
 

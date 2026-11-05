@@ -53,6 +53,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	session := getSession(r)
 	accounts, _ := db.GetAccounts()
 	users, _ := db.GetUsers()
+	requests, requestError := db.GetSignupRequests(r.Context())
 	toolDefs := tools.GetTools()
 
 	// Build integrations with enable/disable state
@@ -121,20 +122,22 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	errMsg := r.URL.Query().Get("error")
 
 	renderTemplate(w, r, "admin.html", map[string]interface{}{
-		"Accounts":     accounts,
-		"Memory":       captureMemory(),
-		"Users":        users,
-		"Integrations": integrations,
-		"Tools":        toolDefs,
-		"Datasets":     datasets,
-		"TaskStats":    taskStats,
-		"EmailStats":   emailStats,
-		"EmailWorker":  getEmailWorkerStatus(),
-		"RecentEmails": recentEmails,
-		"RecentTasks":  recentTasks,
-		"CurrentUser":  session.Email,
-		"Message":      msg,
-		"Error":        errMsg,
+		"Accounts":            accounts,
+		"Memory":              captureMemory(),
+		"Users":               users,
+		"SignupRequests":      requests,
+		"SignupRequestsError": requestError != nil,
+		"Integrations":        integrations,
+		"Tools":               toolDefs,
+		"Datasets":            datasets,
+		"TaskStats":           taskStats,
+		"EmailStats":          emailStats,
+		"EmailWorker":         getEmailWorkerStatus(),
+		"RecentEmails":        recentEmails,
+		"RecentTasks":         recentTasks,
+		"CurrentUser":         session.Email,
+		"Message":             msg,
+		"Error":               errMsg,
 	})
 }
 

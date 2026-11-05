@@ -216,6 +216,7 @@ func Run() {
 	http.HandleFunc("/names/", optionalAuth(handleNameView))
 	http.HandleFunc("/admin", requireAuth(requireAdmin(handleAdmin)))
 	registerProfilingRoutes(http.DefaultServeMux)
+	http.HandleFunc("/admin/review-signup", requireAuth(requireAdmin(handleReviewSignup)))
 	http.HandleFunc("/admin/add-user", requireAuth(requireAdmin(handleAddUser)))
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))

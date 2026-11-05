@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"strings"
@@ -195,6 +196,10 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	user, err := db.GetUserByEmailContext(r.Context(), email)
 	if err != nil || user.PasswordHash == "" {
+		if hash := db.PendingSignupPassword(r.Context(), email); hash != "" && bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil {
+			tmpl.ExecuteTemplate(w, "verify_sent.html", map[string]interface{}{"AwaitingApproval": true})
+			return
+		}
 		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
 			"Error":         "Invalid email or password",
 			"GoogleEnabled": googleClientID != "",
@@ -291,7 +296,7 @@ func sendVerificationEmail(email, name, token string) error {
 	}
 	body := fmt.Sprintf(`%s,
 
-Confirm your email address to finish setting up your Aslam account:
+Confirm your email address to submit your Aslam account request for admin approval:
 
 %s
 
@@ -327,49 +332,61 @@ func handleSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GET: show signup page
-	tmpl.ExecuteTemplate(w, "signup.html", signupPageData(r.URL.Query().Get("error")))
+	renderSignup(w, r, r.URL.Query().Get("error"))
 }
 
 func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 	if !passwordSignupEnabled() {
-		log.Printf("Rejected password signup attempt for %s (registration is Google-only)",
-			strings.TrimSpace(strings.ToLower(r.FormValue("email"))))
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Please sign up with Google."))
+		log.Print("Rejected password signup attempt: registration disabled")
+		renderSignup(w, r, "Please sign up with Google.")
 		return
 	}
 
+	if !signupGuard.allow(r) {
+		http.Error(w, "Too many signup attempts. Please try again in an hour.", 429)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 8192)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid signup form", 400)
+		return
+	}
+	if !signupGuard.check(r) {
+		renderSignup(w, r, "Please answer the new addition question and try again.")
+		return
+	}
 	name := strings.TrimSpace(r.FormValue("name"))
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	password := r.FormValue("password")
 
 	// Validation
-	if email == "" || !strings.Contains(email, "@") || !strings.Contains(email[strings.Index(email, "@"):], ".") {
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Please enter a valid email address"))
+	if address, err := mail.ParseAddress(email); err != nil || address.Address != email || len(email) > 254 {
+		renderSignup(w, r, "Please enter a valid email address")
 		return
 	}
-	if len(password) < 8 {
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Password must be at least 8 characters"))
+	if len(password) < 8 || len(password) > 72 || len(name) > 120 {
+		renderSignup(w, r, "Use a password of 8–72 bytes and a name of at most 120 bytes")
 		return
 	}
 
 	token, err := newVerifyToken()
 	if err != nil {
 		log.Printf("Failed to generate verification token: %v", err)
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Something went wrong. Please try again."))
+		renderSignup(w, r, "Something went wrong. Please try again.")
 		return
 	}
 
 	// Real accounts are never overwritten by a registration attempt. Pending
 	// submissions live separately and are handled below.
 	if db.UserExists(email) {
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("An account with this email already exists"))
+		renderSignup(w, r, "An account with this email already exists")
 		return
 	}
 
 	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Something went wrong. Please try again."))
+		renderSignup(w, r, "Something went wrong. Please try again.")
 		return
 	}
 
@@ -381,7 +398,7 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 			renderVerifySent(w, email)
 		} else {
 			log.Printf("Failed to save pending signup for %s: %v", email, err)
-			tmpl.ExecuteTemplate(w, "signup.html", signupPageData("Could not create account. Please try again."))
+			renderSignup(w, r, "Could not create account. Please try again.")
 		}
 		return
 	}
@@ -389,7 +406,7 @@ func handleSignupPost(w http.ResponseWriter, r *http.Request) {
 	if err := sendVerificationEmail(email, name, token); err != nil {
 		db.DeletePendingSignup(email)
 		log.Printf("Failed to send verification email to %s: %v", email, err)
-		tmpl.ExecuteTemplate(w, "signup.html", signupPageData("We couldn't send the confirmation email. Please try again shortly."))
+		renderSignup(w, r, "We couldn't send the confirmation email. Please try again shortly.")
 		return
 	}
 
@@ -401,37 +418,18 @@ func renderVerifySent(w http.ResponseWriter, email string) {
 	tmpl.ExecuteTemplate(w, "verify_sent.html", map[string]interface{}{"Email": email})
 }
 
-// handleVerify consumes a verification link and signs the account in.
+// Verification does not create an account or session before approval.
 func handleVerify(w http.ResponseWriter, r *http.Request) {
-	email, err := db.VerifyUserByToken(r.URL.Query().Get("token"))
-	if err != nil {
-		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
-			"Error":         "That confirmation link is invalid or has already been used. Try logging in, or sign up again.",
-			"GoogleEnabled": googleClientID != "",
-		})
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", 405)
 		return
 	}
-
-	name := ""
-	if u, err := db.GetUserByEmailContext(r.Context(), email); err == nil {
-		name = u.Name
+	_, err := db.VerifyUserByToken(r.URL.Query().Get("token"))
+	if err != nil {
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{"Error": "That confirmation link is invalid, expired or already used. If you already verified, your request is awaiting admin approval.", "GoogleEnabled": googleClientID != ""})
+		return
 	}
-
-	token := createSession(email, name)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    token,
-		Path:     "/",
-		Domain:   "aslam.org",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   30 * 24 * 60 * 60,
-		Expires:  time.Now().Add(30 * 24 * time.Hour),
-	})
-
-	log.Printf("Email verified, user activated: %s (%s)", name, email)
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
+	tmpl.ExecuteTemplate(w, "verify_sent.html", map[string]interface{}{"AwaitingApproval": true})
 }
 
 func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {

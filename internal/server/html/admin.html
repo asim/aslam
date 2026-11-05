@@ -264,6 +264,21 @@
                 {{end}}
             </div>
 
+            <section class="admin-section" id="signup-requests">
+                <h3>Email signup requests</h3>
+                <p class="item-meta">Up to 100 current requests. Verified requests appear first. Email verification is required before approval; only approval creates an account.</p>
+                {{if .SignupRequestsError}}<p class="error">Could not load signup requests. Refresh to try again.</p>{{end}}
+                {{range .SignupRequests}}
+                <div class="item-card"><strong>{{.Email}}</strong> {{.Name}}
+                    <div class="item-meta">{{if .Verified}}Awaiting approval — email verified{{else}}Awaiting email verification{{end}} · Expires {{.Expires}}</div>
+                    <form method="POST" action="/admin/review-signup" style="display:flex;gap:8px;margin-top:8px">
+                        <input type="hidden" name="email" value="{{.Email}}"><input type="hidden" name="token" value="{{.Token}}">
+                        {{if .Verified}}<button class="btn btn-small" name="action" value="approve">Approve</button>{{end}}
+                        <button class="btn btn-danger btn-small" name="action" value="reject">Reject</button>
+                    </form>
+                </div>
+                {{else}}<p class="muted">No pending requests.</p>{{end}}
+            </section>
             <!-- Users Section -->
             <div class="admin-section">
                 <h3>Users</h3>

@@ -250,8 +250,10 @@ ALLOW_PASSWORD_SIGNUP=true
 In Google Admin, authorize this server's public egress IP, allow senders in your
 domain, and require TLS. Leave `SMTP_USERNAME` and `SMTP_PASSWORD` unset for
 IP authorization. No assistant mailbox or IMAP worker is needed. Restart Aslam
-after updating its environment. Registration remains pending until the email
-link is followed; pending registrations expire after 24 hours.
+after updating its environment. Registration requires email verification followed by admin approval. Verification
+links expire after 24 hours. Verified requests expire after 30 days. Approve or
+reject requests in Admin → Email signup requests; approval creates the account
+and sends a notification. Existing accounts and Google signup are unchanged.
 
 For a relay requiring authentication, set both `SMTP_USERNAME` and
 `SMTP_PASSWORD`. Port 587 uses required STARTTLS; port 465 uses implicit TLS.
@@ -263,3 +265,20 @@ legacy `GMAIL_USER` / `GMAIL_APP_PASSWORD` sending, which still works when no
 configured. Missing or incomplete sender configuration also keeps it closed.
 Configuring a sender alone otherwise enables verified email signup; keep the
 flag false while preparing deployment if you are not ready to open signup.
+
+Email signup includes an expiring, single-use addition question and hidden bot
+trap. Attempts are limited to 5 per client IP per hour and 60 total per hour.
+These in-memory limits and challenges reset on restart and apply per server
+process. The arithmetic question deters basic scripts; admin approval is the
+access gate. Unverified and verified pending requests cannot log in or use the
+assistant email allowlist.
+
+When using nginx on the same host, set `proxy_set_header X-Real-IP $remote_addr;`
+so signup limits use client addresses. Only loopback peers are trusted to supply
+this header; nginx must overwrite it, not forward a client-provided value. Keep
+Aslam's backend port private. Without this header, local-proxy requests share
+the same limit. Admin review forms require a same-origin POST.
+
+`ALLOW_PASSWORD_SIGNUP=false` stops new email requests; existing verification
+links and admin approval remain usable. Rejected requests are removed and can
+be resubmitted, subject to signup limits. No existing accounts are deleted.
