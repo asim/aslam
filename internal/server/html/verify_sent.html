@@ -49,16 +49,18 @@
 <body>
     <div class="auth-page">
         <div class="auth-card">
+            {{if .AwaitingApproval}}<h1>Awaiting approval</h1><p>Your email is verified. An admin needs to approve your request before you can log in.</p><p>We’ll email you when approved. Requests expire after 30 days.</p>{{else}}
             <h1>Check your email</h1>
             <p>
                 We've sent a confirmation link to
                 <span class="addr">{{.Email}}</span>.
             </p>
-            <p>Click it to activate your account. The link signs you in.</p>
+            <p>Click it to verify your email and submit your request for admin approval. The link expires after 24 hours. If you already verified, your request is awaiting approval.</p>
             <p class="hint">
                 Nothing arrived? Check your spam folder. You can request a new
                 link by signing up again with the same address.
             </p>
+            {{end}}
             <div class="auth-footer">
                 <a href="/auth/login">Back to log in</a>
             </div>

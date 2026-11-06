@@ -355,6 +355,7 @@ func Migrate() error {
 	if err != nil {
 		return err
 	}
+	DB.Exec(`ALTER TABLE pending_signups ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`)
 	DB.Exec(`CREATE INDEX IF NOT EXISTS idx_pending_signups_token ON pending_signups(verify_token)`)
 	DB.Exec(`DELETE FROM pending_signups WHERE expires_at <= CURRENT_TIMESTAMP`)
 
@@ -2042,7 +2043,7 @@ func SavePendingSignup(email, name, passwordHash, token string, minInterval, ttl
 			verify_token = excluded.verify_token,
 			verify_sent_at = excluded.verify_sent_at,
 			expires_at = excluded.expires_at
-		WHERE pending_signups.verify_sent_at <= ?`,
+		WHERE pending_signups.email_verified = 0 AND pending_signups.verify_sent_at <= ?`,
 		email, name, passwordHash, token, now, now.Add(ttl), now.Add(-minInterval))
 	if err != nil {
 		return err
@@ -2057,49 +2058,26 @@ func SavePendingSignup(email, name, passwordHash, token string, minInterval, ttl
 	return nil
 }
 
-// VerifyUserByToken creates the real account only after its mailbox has been
-// proven. The legacy users-table path keeps already-issued links working.
+// VerifyUserByToken proves the email but leaves the request outside users.
+// Existing accounts are unaffected; new password accounts need admin approval.
 func VerifyUserByToken(token string) (string, error) {
 	if strings.TrimSpace(token) == "" {
 		return "", fmt.Errorf("empty token")
 	}
-
 	tx, err := DB.Begin()
 	if err != nil {
 		return "", err
 	}
-	var email, name, passwordHash string
-	err = tx.QueryRow(`SELECT email, COALESCE(name, ''), password_hash FROM pending_signups
-		WHERE verify_token = ? AND expires_at > CURRENT_TIMESTAMP`, token).Scan(&email, &name, &passwordHash)
-	if err == nil {
-		if _, err = tx.Exec(`INSERT INTO users (email, name, password_hash, role, added_by, verified)
-			VALUES (?, ?, ?, 'user', 'signup', 1)`, email, name, passwordHash); err != nil {
-			tx.Rollback()
-			return "", err
-		}
-		if _, err = tx.Exec(`DELETE FROM pending_signups WHERE email = ?`, email); err != nil {
-			tx.Rollback()
-			return "", err
-		}
-		if err = tx.Commit(); err != nil {
-			return "", err
-		}
-		return email, nil
-	}
-	tx.Rollback()
-	if err != sql.ErrNoRows {
-		return "", err
-	}
-
-	// Compatibility for verification links created before pending_signups.
-	err = DB.QueryRow(`SELECT email FROM users WHERE verify_token = ?`, token).Scan(&email)
+	defer tx.Rollback()
+	var email string
+	err = tx.QueryRow(`SELECT email FROM pending_signups WHERE verify_token=? AND email_verified=0 AND expires_at > CURRENT_TIMESTAMP`, token).Scan(&email)
 	if err != nil {
 		return "", fmt.Errorf("invalid, expired, or already used token")
 	}
-	if _, err := DB.Exec(`UPDATE users SET verified = 1, verify_token = NULL WHERE verify_token = ?`, token); err != nil {
+	if _, err = tx.Exec(`UPDATE pending_signups SET email_verified=1, expires_at=datetime('now','+30 days') WHERE email=?`, email); err != nil {
 		return "", err
 	}
-	return email, nil
+	return email, tx.Commit()
 }
 
 func DeletePendingSignup(email string) error {
