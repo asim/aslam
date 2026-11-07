@@ -138,6 +138,11 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(userMessage) > 8<<10 {
+		http.Error(w, "Message exceeds 8 KiB", http.StatusRequestEntityTooLarge)
+		return
+	}
+
 	// Only the owner may append questions, including when the chat is public.
 	if !canSendChatMessage(w, r, convID) {
 		return
@@ -219,6 +224,11 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 
 	if req.ConversationID == 0 || req.Message == "" {
 		jsonError(w, "Missing fields", 400)
+		return
+	}
+
+	if len(req.Message) > 8<<10 {
+		jsonError(w, "Message exceeds 8 KiB", http.StatusRequestEntityTooLarge)
 		return
 	}
 

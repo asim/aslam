@@ -282,3 +282,25 @@ the same limit. Admin review forms require a same-origin POST.
 `ALLOW_PASSWORD_SIGNUP=false` stops new email requests; existing verification
 links and admin approval remain usable. Rejected requests are removed and can
 be resubmitted, subject to signup limits. No existing accounts are deleted.
+
+### AI usage limits
+
+Non-admin accounts can ask five questions per UTC day by default. Admins are exempt
+from both daily limits and do not consume the site allowance; their usage is still tracked. Chat, API and queued
+email/chat share the allowance. Tool follow-ups are included in the question,
+not charged separately; failed initial attempts count. Quotas survive restarts.
+
+Admin shows today's site-wide and per-account question usage and lets admins
+change both limits immediately. The optional site-wide limit defaults to zero
+(unlimited); a zero per-account limit blocks new questions. MODEL_ENABLED=false
+remains an environment emergency stop (restart required).
+
+Each question allows up to five provider calls, each with at most 64 KiB of
+serialized input and 2,048 output tokens. Chat input is limited to 8 KiB and two
+provider calls may run concurrently per process. These are usage limits, not
+currency budgets. Queued budget/size/concurrency denials are not auto-retried.
+A retry of a failed initial attempt counts as another question attempt.
+
+All model requests require a verified conversation owner. API keys cannot bypass
+ownership or quota checks. Public content reading/search and inbox polling do not
+call the model. ANTHROPIC_MODEL selects the model (default claude-sonnet-5).

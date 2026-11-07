@@ -15,6 +15,7 @@ type cancelTransport func(*http.Request) (*http.Response, error)
 func (f cancelTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestModelRequestsHonorCancellation(t *testing.T) {
+	base := modelTestContext(t)
 	old := http.DefaultTransport
 	defer func() { http.DefaultTransport = old }()
 	for _, stream := range []bool{false, true} {
@@ -24,7 +25,7 @@ func TestModelRequestsHonorCancellation(t *testing.T) {
 			<-r.Context().Done()
 			return nil, r.Context().Err()
 		})
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(base)
 		done := make(chan error, 1)
 		go func() {
 			if stream {
@@ -60,6 +61,7 @@ type streamReadFailure struct{ err error }
 func (r streamReadFailure) Read([]byte) (int, error) { return 0, r.err }
 
 func TestModelStreamInterruptedAfterText(t *testing.T) {
+	base := modelTestContext(t)
 	old := http.DefaultTransport
 	defer func() { http.DefaultTransport = old }()
 	prefix := "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"partial answer\"}}\n\n"
@@ -74,7 +76,7 @@ func TestModelStreamInterruptedAfterText(t *testing.T) {
 		{"successful stream", io.EOF, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(base)
 			defer cancel()
 			http.DefaultTransport = cancelTransport(func(r *http.Request) (*http.Response, error) {
 				return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(io.MultiReader(strings.NewReader(prefix), streamReadFailure{tc.readErr}))}, nil
