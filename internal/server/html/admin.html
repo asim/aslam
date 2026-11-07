@@ -23,6 +23,9 @@
         form.inline { display: inline; }
         input, textarea { width: 100%; margin-bottom: 8px; }
         textarea { min-height: 60px; }
+        .ai-limit-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 0 16px; }
+        .ai-usage-table { overflow-x: auto; margin-top: 12px; }
+        .ai-usage-table td:first-child { overflow-wrap: anywhere; }
         .form-row { margin-bottom: 12px; }
         .form-row label { display: block; margin-bottom: 4px; font-size: 12px; color: #888; }
 
@@ -117,26 +120,75 @@
                 <p class="item-meta">Heap downloads run garbage collection first. Capture one now and another after memory grows, before restarting. Refresh afterwards to see post-collection figures. RSS includes memory outside the Go heap, including SQLite.</p>
             </div>
 
+            <div class="admin-section" id="ai-usage">
+                <h3>AI usage</h3>
+                <div class="item-meta">Today (UTC) · AI {{if .ModelEnabled}}enabled{{else}}disabled{{end}} · Resets at midnight UTC</div>
+                <p class="item-meta">Each question counts once, including failed attempts. Tool follow-ups are included. Admin usage is tracked but exempt from both limits.</p>
+
+                <div class="item-card" style="margin-top: 12px;">
+                    <div class="item-title">Daily limits</div>
+                    <form method="POST" action="/admin/model-limits" style="margin-top: 12px;">
+                        <div class="ai-limit-fields">
+                            <div class="form-row">
+                                <label for="ai-user-limit">Questions per account</label>
+                                <input class="form-control" id="ai-user-limit" type="number" name="user_limit" min="0" max="1000000" value="{{.ModelUserLimit}}" aria-describedby="ai-user-limit-help" required>
+                                <div class="item-meta" id="ai-user-limit-help">0 blocks questions for non-admin accounts.</div>
+                            </div>
+                            <div class="form-row">
+                                <label for="ai-site-limit">Site-wide questions</label>
+                                <input class="form-control" id="ai-site-limit" type="number" name="global_limit" min="0" max="1000000" value="{{.ModelDailyLimit}}" aria-describedby="ai-site-limit-help" required>
+                                <div class="item-meta" id="ai-site-limit-help">0 means no shared limit. Admins do not use this allowance.</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="form-submit btn">Save limits</button>
+                        <div class="item-meta">Changes apply immediately.</div>
+                    </form>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-title">Questions today</div>
+                    {{if .ModelUsageError}}
+                    <p class="item-meta">Usage unavailable.</p>
+                    {{else}}
+                    <div class="ai-usage-table">
+                        <table class="status-table">
+                            <thead><tr><th scope="col">Account</th><th scope="col">Questions</th><th scope="col">Initial request bytes</th></tr></thead>
+                            <tbody>
+                                {{range .ModelUsage}}
+                                <tr><td>{{.Email}}</td><td>{{.Calls}}</td><td>{{.Bytes}}</td></tr>
+                                {{else}}
+                                <tr><td colspan="3">No questions today.</td></tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="item-card">
+                    <div class="item-title">Account activity</div>
+                    <div class="item-meta">Last 30 days · Chat, API and email questions · Excludes browsing</div>
+                    {{if .ModelActivityError}}
+                    <p class="item-meta">Activity unavailable.</p>
+                    {{else}}
+                    <div class="ai-usage-table">
+                        <table class="status-table">
+                            <thead><tr><th scope="col">Account</th><th scope="col">Questions</th><th scope="col">Last question (UTC)</th></tr></thead>
+                            <tbody>
+                                {{range .ModelActivity}}
+                                <tr><td>{{.Email}}</td><td>{{.Questions}}</td><td>{{.LastActive}}</td></tr>
+                                {{else}}
+                                <tr><td colspan="3">No activity recorded.</td></tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{end}}
+                    <div class="item-meta">Tracking starts when the usage update is deployed.</div>
+                </div>
+            </div>
+
             <div class="admin-section">
-<h3>AI usage today (UTC)</h3>
-<p>Enabled: {{.ModelEnabled}}. Each initial question counts once; tool follow-ups are included. Failed initial attempts count. Admins are exempt from both daily limits and do not consume the site allowance; their usage remains visible. Usage resets at midnight UTC. Changes apply immediately.</p>
-<form method="post" action="/admin/model-limits">
-<label>Questions per account per day (0 blocks questions)<input type="number" name="user_limit" min="0" max="1000000" value="{{.ModelUserLimit}}" required></label>
-<label>Site-wide questions per day (0 means no shared limit)<input type="number" name="global_limit" min="0" max="1000000" value="{{.ModelDailyLimit}}" required></label>
-<button type="submit" class="btn btn-small">Save limits</button>
-</form>
-{{if .ModelUsageError}}<p>Usage unavailable.</p>{{else}}
-<table class="status-table"><tr><th>Account</th><th>Questions</th><th>Initial request bytes</th></tr>
-{{range .ModelUsage}}<tr><td>{{.Email}}</td><td>{{.Calls}}</td><td>{{.Bytes}}</td></tr>{{else}}<tr><td colspan="3">No questions today.</td></tr>{{end}}</table>
-{{end}}
-<h4>Account AI activity — last 30 days</h4>
-<p>Initial question attempts across chat, API and email. Includes failed attempts; excludes tool follow-ups and browsing. Tracking starts when this update is deployed.</p>
-{{if .ModelActivityError}}<p>Activity unavailable.</p>{{else}}
-<table class="status-table"><tr><th>Account</th><th>Questions</th><th>Last question (UTC)</th></tr>
-{{range .ModelActivity}}<tr><td>{{.Email}}</td><td>{{.Questions}}</td><td>{{.LastActive}}</td></tr>{{else}}<tr><td colspan="3">No activity recorded.</td></tr>{{end}}</table>
-{{end}}
-</div>
-<div class="admin-section">
                 <h3>Status</h3>
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px;">
                     <div class="stat-box">
