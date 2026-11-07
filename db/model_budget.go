@@ -21,6 +21,12 @@ func ReserveModelCall(ctx context.Context, convID int64, model string, size, glo
 		return err
 	}
 	defer tx.Rollback()
+	// BeginTx is deferred in SQLite. Acquire the write reservation before any
+	// SELECT so concurrent requests wait under busy_timeout rather than racing
+	// to upgrade shared read locks. This updates no rows.
+	if _, err := tx.ExecContext(ctx, "UPDATE model_daily_usage SET calls=calls WHERE 0"); err != nil {
+		return err
+	}
 	var userID int64
 	if err := tx.QueryRowContext(ctx, `SELECT u.id FROM conversations c JOIN users u ON u.id=c.user_id WHERE c.id=? AND u.verified=1`, convID).Scan(&userID); err != nil {
 		return fmt.Errorf("AI requires an active account owning the conversation")

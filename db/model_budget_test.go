@@ -57,13 +57,16 @@ func TestConcurrentModelQuota(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if ReserveModelCall(context.Background(), 1, "test", 10, 5, 5) == nil {
+			err := ReserveModelCall(context.Background(), 1, "test", 10, 5, 5)
+			if err == nil {
 				succeeded.Add(1)
+			} else if !errors.Is(err, ErrModelBudget) {
+				t.Errorf("reservation should succeed or exhaust quota, got %v", err)
 			}
 		}()
 	}
 	wg.Wait()
-	if succeeded.Load() > 5 || succeeded.Load() == 0 {
+	if succeeded.Load() != 5 {
 		t.Fatalf("unexpected successes %d", succeeded.Load())
 	}
 	var n int
