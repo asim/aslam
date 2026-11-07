@@ -169,7 +169,7 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 }
 
 func generateResponseWithProgressContext(ctx context.Context, messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
-	ctx = context.WithValue(ctx, modelConversationKey{}, convID)
+	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
@@ -272,7 +272,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 }
 
 func generateResponseStreaming(ctx context.Context, messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
-	ctx = context.WithValue(ctx, modelConversationKey{}, convID)
+	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")

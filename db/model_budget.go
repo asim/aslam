@@ -8,8 +8,8 @@ import (
 
 var ErrModelBudget = errors.New("AI daily limit reached; please try again tomorrow (UTC)")
 
-// ReserveModelCall commits before contacting the provider. Failed and interrupted
-// calls remain charged: the provider may have processed them despite our error.
+// ReserveModelCall reserves one initial question. Follow-up provider calls share
+// the reservation. Failed initial attempts remain counted. A zero global limit is unlimited.
 func ReserveModelCall(ctx context.Context, convID int64, model string, size, globalLimit, userLimit int) error {
 	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()
@@ -29,7 +29,7 @@ func ReserveModelCall(ctx context.Context, convID int64, model string, size, glo
 		id    int64
 		limit int
 	}{{0, globalLimit}, {userID, userLimit}} {
-		result, err := tx.ExecContext(ctx, `INSERT INTO model_daily_usage(day,user_id,calls,request_bytes) SELECT date('now'),?,1,? WHERE ?>0 ON CONFLICT(day,user_id) DO UPDATE SET calls=calls+1,request_bytes=request_bytes+excluded.request_bytes WHERE calls<?`, budget.id, size, budget.limit, budget.limit)
+		result, err := tx.ExecContext(ctx, `INSERT INTO model_daily_usage(day,user_id,calls,request_bytes) SELECT date('now'),?,1,? WHERE (? > 0 OR ? = 0) ON CONFLICT(day,user_id) DO UPDATE SET calls=calls+1,request_bytes=request_bytes+excluded.request_bytes WHERE calls<? OR (? = 0 AND ? = 0)`, budget.id, size, budget.limit, budget.id, budget.limit, budget.id, budget.limit)
 		if err != nil {
 			return err
 		}
@@ -69,4 +69,34 @@ func GetModelUsage(ctx context.Context) ([]ModelUsage, error) {
 		out = append(out, v)
 	}
 	return out, rows.Err()
+}
+
+// ModelActivity reports initial question attempts, not reading or browsing activity.
+// Audit events are retained for 90 days at startup.
+type ModelActivity struct {
+	Email      string
+	Questions  int64
+	LastActive string
+}
+
+func GetModelActivity(ctx context.Context) ([]ModelActivity, error) {
+	ctx, cancel := context.WithTimeout(ctx, queryTimeout)
+	defer cancel()
+	rows, err := DB.QueryContext(ctx, `SELECT COALESCE(u.email,'Deleted account'),count(*),max(m.created_at)
+ FROM model_calls m LEFT JOIN users u ON u.id=m.user_id
+ WHERE m.created_at>=datetime('now','-30 days')
+ GROUP BY m.user_id ORDER BY max(m.created_at) DESC LIMIT 100`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []ModelActivity
+	for rows.Next() {
+		var v ModelActivity
+		if err := rows.Scan(&v.Email, &v.Questions, &v.LastActive); err != nil {
+			return nil, err
+		}
+		result = append(result, v)
+	}
+	return result, rows.Err()
 }

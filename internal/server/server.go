@@ -221,6 +221,7 @@ func Run() {
 	http.HandleFunc("/admin/remove-user", requireAuth(requireAdmin(handleRemoveUser)))
 	http.HandleFunc("/admin/add-account", requireAuth(requireAdmin(handleAddAccount)))
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
+	http.HandleFunc("/admin/model-limits", requireAuth(requireAdmin(handleModelLimits)))
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
 	http.HandleFunc("/profile", requireAuth(handleProfile))
 	http.HandleFunc("/notes", requireAuth(handleNotes))

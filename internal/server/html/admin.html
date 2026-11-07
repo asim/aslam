@@ -119,10 +119,21 @@
 
             <div class="admin-section">
 <h3>AI usage today (UTC)</h3>
-<p>Enabled: {{.ModelEnabled}}. Daily provider call limits: {{.ModelDailyLimit}} site-wide, {{.ModelUserLimit}} per account. Each tool follow-up and failed attempt counts. These are request limits, not billing totals.</p>
+<p>Enabled: {{.ModelEnabled}}. Each initial question counts once; tool follow-ups are included. Failed initial attempts count. Usage resets at midnight UTC. Changes apply immediately.</p>
+<form method="post" action="/admin/model-limits">
+<label>Questions per account per day (0 blocks questions)<input type="number" name="user_limit" min="0" max="1000000" value="{{.ModelUserLimit}}" required></label>
+<label>Site-wide questions per day (0 means no shared limit)<input type="number" name="global_limit" min="0" max="1000000" value="{{.ModelDailyLimit}}" required></label>
+<button type="submit" class="btn btn-small">Save limits</button>
+</form>
 {{if .ModelUsageError}}<p>Usage unavailable.</p>{{else}}
-<table class="status-table"><tr><th>Account</th><th>Provider calls</th><th>Request bytes</th></tr>
-{{range .ModelUsage}}<tr><td>{{.Email}}</td><td>{{.Calls}}</td><td>{{.Bytes}}</td></tr>{{else}}<tr><td colspan="3">No calls today.</td></tr>{{end}}</table>
+<table class="status-table"><tr><th>Account</th><th>Questions</th><th>Initial request bytes</th></tr>
+{{range .ModelUsage}}<tr><td>{{.Email}}</td><td>{{.Calls}}</td><td>{{.Bytes}}</td></tr>{{else}}<tr><td colspan="3">No questions today.</td></tr>{{end}}</table>
+{{end}}
+<h4>Account AI activity — last 30 days</h4>
+<p>Initial question attempts across chat, API and email. Includes failed attempts; excludes tool follow-ups and browsing. Tracking starts when this update is deployed.</p>
+{{if .ModelActivityError}}<p>Activity unavailable.</p>{{else}}
+<table class="status-table"><tr><th>Account</th><th>Questions</th><th>Last question (UTC)</th></tr>
+{{range .ModelActivity}}<tr><td>{{.Email}}</td><td>{{.Questions}}</td><td>{{.LastActive}}</td></tr>{{else}}<tr><td colspan="3">No activity recorded.</td></tr>{{end}}</table>
 {{end}}
 </div>
 <div class="admin-section">

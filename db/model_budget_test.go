@@ -40,7 +40,7 @@ func TestModelQuota(t *testing.T) {
 		t.Fatal("missing owner allowed")
 	}
 	DB.Exec("DELETE FROM model_daily_usage")
-	if err := reserve(1, 0, 100); !errors.Is(err, ErrModelBudget) {
+	if err := reserve(1, 100, 0); !errors.Is(err, ErrModelBudget) {
 		t.Fatal(err)
 	}
 	DB.Exec("INSERT INTO model_daily_usage VALUES('2000-01-01',0,999,10)")

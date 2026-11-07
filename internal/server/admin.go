@@ -119,15 +119,17 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	usage, usageErr := db.GetModelUsage(r.Context())
+	activity, activityErr := db.GetModelActivity(r.Context())
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
 
 	renderTemplate(w, r, "admin.html", map[string]interface{}{
-		"Accounts":   accounts,
-		"Memory":     captureMemory(),
+		"Accounts":      accounts,
+		"Memory":        captureMemory(),
+		"ModelActivity": activity, "ModelActivityError": activityErr != nil,
 		"ModelUsage": usage, "ModelUsageError": usageErr != nil,
-		"ModelDailyLimit":     modelDailyLimit("MODEL_DAILY_CALL_LIMIT", 100),
-		"ModelUserLimit":      modelDailyLimit("MODEL_USER_DAILY_CALL_LIMIT", 20),
+		"ModelDailyLimit":     modelDailyLimit("model_daily_question_limit", 0),
+		"ModelUserLimit":      modelDailyLimit("model_user_daily_question_limit", 5),
 		"ModelEnabled":        os.Getenv("MODEL_ENABLED") != "false",
 		"Users":               users,
 		"SignupRequests":      requests,
@@ -276,4 +278,35 @@ func handleToggleIntegration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin?msg=Integration+updated", http.StatusSeeOther)
+}
+
+// handleModelLimits is protected by requireAuth and requireAdmin.
+func handleModelLimits(w http.ResponseWriter, r *http.Request) {
+	if !sameOriginAdminPost(r) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	global, e1 := strconv.Atoi(r.FormValue("global_limit"))
+	user, e2 := strconv.Atoi(r.FormValue("user_limit"))
+	if e1 != nil || e2 != nil || global < 0 || user < 0 || global > 1000000 || user > 1000000 {
+		http.Error(w, "Limits must be between 0 and 1000000", http.StatusBadRequest)
+		return
+	}
+	tx, err := db.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		http.Error(w, "Unable to save limits", 500)
+		return
+	}
+	defer tx.Rollback()
+	for key, value := range map[string]int{"model_daily_question_limit": global, "model_user_daily_question_limit": user} {
+		if _, err = tx.ExecContext(r.Context(), "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", key, strconv.Itoa(value)); err != nil {
+			http.Error(w, "Unable to save limits", 500)
+			return
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		http.Error(w, "Unable to save limits", 500)
+		return
+	}
+	http.Redirect(w, r, "/admin?msg=AI+limits+saved", http.StatusSeeOther)
 }

@@ -7,15 +7,21 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 )
 
 type modelConversationKey struct{}
+type modelQuery struct {
+	conversationID int64
+	mu             sync.Mutex
+	reserved       bool
+}
 
 var errModelRestricted = errors.New("AI request blocked")
 var modelSlots = make(chan struct{}, 2)
 
 func modelDailyLimit(name string, fallback int) int {
-	value := os.Getenv(name)
+	value := db.GetSetting(name)
 	if value == "" {
 		return fallback
 	}
@@ -35,8 +41,8 @@ func reserveModelRequest(ctx context.Context, size int) (func(), error) {
 	if size > 64<<10 {
 		return nil, fmt.Errorf("%w: conversation or tool results too large; start a shorter chat", errModelRestricted)
 	}
-	convID, _ := ctx.Value(modelConversationKey{}).(int64)
-	if convID <= 0 {
+	query, _ := ctx.Value(modelConversationKey{}).(*modelQuery)
+	if query == nil || query.conversationID <= 0 {
 		return nil, fmt.Errorf("%w: conversation required", errModelRestricted)
 	}
 	select {
@@ -45,9 +51,15 @@ func reserveModelRequest(ctx context.Context, size int) (func(), error) {
 		return nil, fmt.Errorf("%w: AI is busy; try again later", errModelRestricted)
 	}
 	release := func() { <-modelSlots }
-	if err := db.ReserveModelCall(ctx, convID, anthropicModel, size, modelDailyLimit("MODEL_DAILY_CALL_LIMIT", 100), modelDailyLimit("MODEL_USER_DAILY_CALL_LIMIT", 20)); err != nil {
-		release()
-		return nil, err
+	query.mu.Lock()
+	defer query.mu.Unlock()
+	if !query.reserved {
+		if err := db.ReserveModelCall(ctx, query.conversationID, anthropicModel, size, modelDailyLimit("model_daily_question_limit", 0), modelDailyLimit("model_user_daily_question_limit", 5)); err != nil {
+			release()
+			return nil, err
+		}
+		query.reserved = true
 	}
+
 	return release, nil
 }
