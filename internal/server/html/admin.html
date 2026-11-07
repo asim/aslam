@@ -118,6 +118,14 @@
             </div>
 
             <div class="admin-section">
+<h3>AI usage today (UTC)</h3>
+<p>Enabled: {{.ModelEnabled}}. Daily provider call limits: {{.ModelDailyLimit}} site-wide, {{.ModelUserLimit}} per account. Each tool follow-up and failed attempt counts. These are request limits, not billing totals.</p>
+{{if .ModelUsageError}}<p>Usage unavailable.</p>{{else}}
+<table class="status-table"><tr><th>Account</th><th>Provider calls</th><th>Request bytes</th></tr>
+{{range .ModelUsage}}<tr><td>{{.Email}}</td><td>{{.Calls}}</td><td>{{.Bytes}}</td></tr>{{else}}<tr><td colspan="3">No calls today.</td></tr>{{end}}</table>
+{{end}}
+</div>
+<div class="admin-section">
                 <h3>Status</h3>
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px;">
                     <div class="stat-box">

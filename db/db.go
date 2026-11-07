@@ -333,6 +333,14 @@ func Migrate() error {
 	DB.Exec(`ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0`)
 	DB.Exec(`ALTER TABLE users ADD COLUMN timezone TEXT DEFAULT ''`)
 
+	// Persistent reservations share one budget across web, API and workers.
+	if _, err := DB.Exec(`CREATE TABLE IF NOT EXISTS model_daily_usage(day TEXT NOT NULL,user_id INTEGER NOT NULL,calls INTEGER NOT NULL,request_bytes INTEGER NOT NULL,PRIMARY KEY(day,user_id));
+ CREATE TABLE IF NOT EXISTS model_calls(id INTEGER PRIMARY KEY,created_at DATETIME DEFAULT CURRENT_TIMESTAMP,user_id INTEGER NOT NULL,conversation_id INTEGER NOT NULL,model TEXT NOT NULL,request_bytes INTEGER NOT NULL);`); err != nil {
+		return err
+	}
+	DB.Exec(`DELETE FROM model_calls WHERE created_at < datetime('now','-90 days')`)
+	DB.Exec(`DELETE FROM model_daily_usage WHERE day < date('now','-90 days')`)
+
 	// Email verification. Defaults to verified so existing accounts — Google
 	// users, and anyone who signed up before this existed — are not locked out
 	// by the migration. Only new password signups start unverified.

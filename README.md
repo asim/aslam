@@ -282,3 +282,27 @@ the same limit. Admin review forms require a same-origin POST.
 `ALLOW_PASSWORD_SIGNUP=false` stops new email requests; existing verification
 links and admin approval remain usable. Rejected requests are removed and can
 be resubmitted, subject to signup limits. No existing accounts are deleted.
+
+### AI usage limits
+
+Every Anthropic request from web chat, the chat API, queued chat tasks and email
+reserves a persistent quota before contacting the provider. Tool follow-ups and
+failed/interrupted calls count too. Daily limits reset at midnight UTC and survive
+restarts. Requests without a verified conversation owner or an available usage
+database fail closed. Reading/searching content and inbox polling do not call the model.
+
+| Environment variable | Default | Meaning |
+| --- | --- | --- |
+| MODEL_DAILY_CALL_LIMIT | 100 | Site-wide provider calls per UTC day |
+| MODEL_USER_DAILY_CALL_LIMIT | 20 | Provider calls per account per UTC day |
+| MODEL_ENABLED | true | Set false to disable all model requests |
+
+Zero or invalid daily limits block calls. Changes require a restart. Admin shows
+today's global and per-account usage. These are conservative request quotas, not
+exact currency budgets or historical billing attribution. One question may use
+up to five calls. Each request is limited to 64 KiB of serialized input and 2,048
+output tokens; chat inputs are limited to 8 KiB. At most two provider requests run
+concurrently per process. Budget/size/concurrency denials are terminal for queued
+tasks rather than automatically retried. API keys do not bypass conversation
+ownership checks or these limits. The model is selected by ANTHROPIC_MODEL
+(default claude-sonnet-5).

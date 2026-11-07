@@ -118,12 +118,17 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		dataset("Prophets", db.ProphetCount(), 25, db.GetSetting("prophets_version"), prophetsVersion),
 	}
 
+	usage, usageErr := db.GetModelUsage(r.Context())
 	msg := r.URL.Query().Get("msg")
 	errMsg := r.URL.Query().Get("error")
 
 	renderTemplate(w, r, "admin.html", map[string]interface{}{
-		"Accounts":            accounts,
-		"Memory":              captureMemory(),
+		"Accounts":   accounts,
+		"Memory":     captureMemory(),
+		"ModelUsage": usage, "ModelUsageError": usageErr != nil,
+		"ModelDailyLimit":     modelDailyLimit("MODEL_DAILY_CALL_LIMIT", 100),
+		"ModelUserLimit":      modelDailyLimit("MODEL_USER_DAILY_CALL_LIMIT", 20),
+		"ModelEnabled":        os.Getenv("MODEL_ENABLED") != "false",
 		"Users":               users,
 		"SignupRequests":      requests,
 		"SignupRequestsError": requestError != nil,

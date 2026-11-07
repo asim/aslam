@@ -169,6 +169,7 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 }
 
 func generateResponseWithProgressContext(ctx context.Context, messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
+	ctx = context.WithValue(ctx, modelConversationKey{}, convID)
 	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
@@ -189,7 +190,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 	fullSystemPrompt += contextPrompt
 
 	// Tool loop - keep calling until we get a final response
-	for i := 0; i < 10; i++ { // Max 10 tool calls
+	for i := 0; i < 5; i++ { // At most five provider calls, including tool follow-ups
 		result, err := callAnthropic(ctx, apiMessages, fullSystemPrompt)
 		if err != nil {
 			return "", toolsUsed, err
@@ -271,6 +272,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 }
 
 func generateResponseStreaming(ctx context.Context, messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
+	ctx = context.WithValue(ctx, modelConversationKey{}, convID)
 	var toolsUsed []ToolUsage
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
@@ -287,7 +289,7 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 	apiMessages, contextPrompt := buildAPIMessages(messages)
 	fullSystemPrompt += contextPrompt
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		result, textSoFar, err := callAnthropicStream(ctx, apiMessages, fullSystemPrompt, onText)
 		if err != nil {
 			return "", toolsUsed, err
@@ -349,7 +351,7 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, onText func(string)) (*anthropicResponse, string, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
-		"max_tokens": 4096,
+		"max_tokens": 2048,
 		"tools":      tools.GetTools(),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
@@ -357,6 +359,12 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 	}
 
 	jsonBody, _ := json.Marshal(reqBody)
+	release, err := reserveModelRequest(ctx, len(jsonBody))
+	if err != nil {
+		return nil, "", err
+	}
+	defer release()
+
 	req, _ := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", anthropicKey)
@@ -528,13 +536,19 @@ type contentBlock struct {
 func callAnthropic(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string) (*anthropicResponse, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
-		"max_tokens": 4096,
+		"max_tokens": 2048,
 		"tools":      tools.GetTools(),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
 	}
 
 	jsonBody, _ := json.Marshal(reqBody)
+	release, err := reserveModelRequest(ctx, len(jsonBody))
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
 	log.Printf("Sending to Anthropic: system prompt len=%d, messages=%d", len(sysPrompt), len(apiMessages))
 	if len(sysPrompt) > 200 {
 		log.Printf("System prompt starts: %s...", systemPrompt[:200])

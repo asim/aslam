@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"strings"
 	"time"
@@ -72,7 +73,7 @@ func processTask(task db.PendingTask) {
 
 	if err != nil {
 		log.Printf("Task processor: task %d failed: %v", task.ID, err)
-		if task.Attempts+1 >= task.MaxAttempts {
+		if errors.Is(err, db.ErrModelBudget) || errors.Is(err, errModelRestricted) || task.Attempts+1 >= task.MaxAttempts {
 			db.MarkTaskFailed(task.ID, err.Error())
 		} else {
 			db.UpdateTaskStatus(task.ID, "pending", err.Error())
