@@ -20,7 +20,7 @@ func modelTestContext(t *testing.T) context.Context {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	if _, err := db.DB.Exec("INSERT INTO users(id,email,verified) VALUES(1,'test@example.com',1); INSERT INTO conversations(id,title,user_id) VALUES(1,'test',1)"); err != nil {
+	if _, err := db.DB.Exec("INSERT INTO users(id,email,verified,role) VALUES(1,'test@example.com',1,'user'); INSERT INTO conversations(id,title,user_id) VALUES(1,'test',1)"); err != nil {
 		t.Fatal(err)
 	}
 	return context.WithValue(context.Background(), modelConversationKey{}, &modelQuery{conversationID: 1})

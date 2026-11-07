@@ -285,7 +285,8 @@ be resubmitted, subject to signup limits. No existing accounts are deleted.
 
 ### AI usage limits
 
-Accounts can ask five questions per UTC day by default. Chat, API and queued
+Non-admin accounts can ask five questions per UTC day by default. Admins are exempt
+from both daily limits and do not consume the site allowance; their usage is still tracked. Chat, API and queued
 email/chat share the allowance. Tool follow-ups are included in the question,
 not charged separately; failed initial attempts count. Quotas survive restarts.
 

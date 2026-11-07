@@ -10,7 +10,7 @@ import (
 
 func TestModelQuota(t *testing.T) {
 	setupTestDB(t)
-	_, err := DB.Exec("INSERT INTO users(id,email,verified) VALUES(1,'a@example.com',1),(2,'b@example.com',1); INSERT INTO conversations(id,title,user_id) VALUES(1,'a',1),(2,'b',2)")
+	_, err := DB.Exec("INSERT INTO users(id,email,verified,role) VALUES(1,'a@example.com',1,'user'),(2,'b@example.com',1,'user'); INSERT INTO conversations(id,title,user_id) VALUES(1,'a',1),(2,'b',2)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestModelQuota(t *testing.T) {
 }
 func TestConcurrentModelQuota(t *testing.T) {
 	setupTestDB(t)
-	DB.Exec("INSERT INTO users(id,email,verified) VALUES(1,'a@example.com',1); INSERT INTO conversations(id,title,user_id) VALUES(1,'a',1)")
+	DB.Exec("INSERT INTO users(id,email,verified,role) VALUES(1,'a@example.com',1,'user'); INSERT INTO conversations(id,title,user_id) VALUES(1,'a',1)")
 	var wg sync.WaitGroup
 	var succeeded atomic.Int32
 	for i := 0; i < 30; i++ {
@@ -75,5 +75,38 @@ func TestConcurrentModelQuota(t *testing.T) {
 	}
 	if int32(n) != succeeded.Load() {
 		t.Fatalf("accounting mismatch: %d / %d", n, succeeded.Load())
+	}
+}
+
+func TestAdminModelQuotaExemption(t *testing.T) {
+	setupTestDB(t)
+	if _, err := DB.Exec("INSERT INTO users(id,email,verified,role) VALUES(1,'admin@example.com',1,'admin'),(2,'user@example.com',1,'user'); INSERT INTO conversations(id,title,user_id) VALUES(1,'admin',1),(2,'user',2)"); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	// Fill the site-wide allowance, then verify admins ignore it and zero user limits.
+	if err := ReserveModelCall(ctx, 2, "test", 10, 1, 1); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 6; i++ {
+		if err := ReserveModelCall(ctx, 1, "test", 10, 1, 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var count int
+	if err := DB.QueryRow("SELECT calls FROM model_daily_usage WHERE user_id=0").Scan(&count); err != nil || count != 1 {
+		t.Fatalf("admin consumed site quota: %d %v", count, err)
+	}
+	if err := DB.QueryRow("SELECT calls FROM model_daily_usage WHERE user_id=1").Scan(&count); err != nil || count != 6 {
+		t.Fatalf("admin usage missing: %d %v", count, err)
+	}
+	if err := ReserveModelCall(ctx, 2, "test", 10, 1, 10); !errors.Is(err, ErrModelBudget) {
+		t.Fatalf("ordinary account bypass: %v", err)
+	}
+	if _, err := DB.Exec("UPDATE users SET role='user' WHERE id=1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReserveModelCall(ctx, 1, "test", 10, 1, 0); !errors.Is(err, ErrModelBudget) {
+		t.Fatalf("role change ignored: %v", err)
 	}
 }

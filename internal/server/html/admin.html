@@ -119,7 +119,7 @@
 
             <div class="admin-section">
 <h3>AI usage today (UTC)</h3>
-<p>Enabled: {{.ModelEnabled}}. Each initial question counts once; tool follow-ups are included. Failed initial attempts count. Usage resets at midnight UTC. Changes apply immediately.</p>
+<p>Enabled: {{.ModelEnabled}}. Each initial question counts once; tool follow-ups are included. Failed initial attempts count. Admins are exempt from both daily limits and do not consume the site allowance; their usage remains visible. Usage resets at midnight UTC. Changes apply immediately.</p>
 <form method="post" action="/admin/model-limits">
 <label>Questions per account per day (0 blocks questions)<input type="number" name="user_limit" min="0" max="1000000" value="{{.ModelUserLimit}}" required></label>
 <label>Site-wide questions per day (0 means no shared limit)<input type="number" name="global_limit" min="0" max="1000000" value="{{.ModelDailyLimit}}" required></label>
