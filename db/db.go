@@ -121,10 +121,10 @@ func Init() error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Bound native SQLite caches and concurrent query execution.
+	// Keep the bounded pool warm: opening SQLCipher connections repeats costly
+	// key derivation. Do not retire them during normal idle periods.
 	DB.SetMaxOpenConns(4)
-	DB.SetMaxIdleConns(2)
-	DB.SetConnMaxIdleTime(time.Minute)
+	DB.SetMaxIdleConns(4)
 	return Migrate()
 }
 
@@ -862,6 +862,9 @@ func Migrate() error {
 		DELETE FROM arabic_fts WHERE docid = old.id;
 	END`)
 
+	if err := initPageIndexes(); err != nil {
+		return err
+	}
 	if err := initAPIKeys(); err != nil {
 		return err
 	}
