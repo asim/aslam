@@ -131,5 +131,18 @@ func renderSignup(w http.ResponseWriter, r *http.Request, errMsg string) {
 }
 
 func sameOriginAdminPost(r *http.Request) bool {
-	return r.Method == http.MethodPost && (r.Header.Get("Origin") == "https://"+r.Host || (!isHTTPS(r) && r.Header.Get("Origin") == "http://"+r.Host)) && r.Header.Get("Sec-Fetch-Site") != "cross-site" && !strings.ContainsAny(r.Host, "\r\n")
+	if r.Method != http.MethodPost || strings.ContainsAny(r.Host, "\r\n") {
+		return false
+	}
+	// Fetch Metadata is set by the browser and survives a proxy rewriting Host.
+	// Only same-origin is sufficient: same-site can include other subdomains.
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin":
+		return true
+	case "":
+		// Older browsers must provide a matching Origin.
+		return r.Header.Get("Origin") == "https://"+r.Host || (!isHTTPS(r) && r.Header.Get("Origin") == "http://"+r.Host)
+	default:
+		return false
+	}
 }
