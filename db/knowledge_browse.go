@@ -46,6 +46,11 @@ func QueryAPI(ctx context.Context, query string, args ...any) ([]map[string]any,
 func BrowseKnowledge(ctx context.Context, collection, group, q string, offset, limit int) ([]map[string]any, error) {
 	var query, filter, search, order string
 	switch collection {
+	case "tafsir":
+		query = `SELECT ref,chapter,verse,'Tafsir Ibn Kathir — '||ref AS Title,substr(text,1,200) AS Content,'/tafsir/ibn-kathir/'||chapter||'/'||verse AS URL FROM tafsir_passages`
+		filter = "CAST(chapter AS TEXT)"
+		search = "text"
+		order = "chapter,verse"
 	case "quran":
 		query = `SELECT chapter,chapter_name AS Title,verse,arabic,text AS Content,'/quran/'||chapter||'/'||verse AS URL FROM quran`
 		filter = "CAST(chapter AS TEXT)"

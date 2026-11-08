@@ -24,7 +24,7 @@ func limitConcurrency(next http.Handler, slots chan struct{}) http.Handler {
 }
 
 func isPublicContent(path string) bool {
-	for _, root := range []string{"/search", "/api/search", "/api/knowledge", "/api/arabic/search", "/quran", "/hadith", "/names", "/islamqa", "/ghazali", "/adhkar", "/salihin", "/arabic", "/stories", "/seerah"} {
+	for _, root := range []string{"/search", "/api/search", "/api/knowledge", "/api/arabic/search", "/quran", "/hadith", "/names", "/islamqa", "/ghazali", "/adhkar", "/salihin", "/arabic", "/stories", "/seerah", "/tafsir"} {
 		if path == root || strings.HasPrefix(path, root+"/") {
 			return true
 		}

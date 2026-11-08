@@ -29,3 +29,6 @@ var Seerah []byte
 
 //go:embed quran_chapters.json
 var QuranChapters []byte
+
+//go:embed tafsir.zip
+var Tafsir []byte
