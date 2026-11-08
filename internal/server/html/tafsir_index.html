@@ -5,12 +5,12 @@
 {{if .ContinuePath}}<div class="continue-reading">Continue reading: <a href="{{.ContinuePath}}">{{.ContinueTitle}} &rarr;</a></div>{{end}}
 {{if .Chapter}}
 <p><a href="/tafsir">All chapters</a> · <a href="/quran/{{.Chapter}}">Read Quran chapter</a></p>
-<ul style="list-style:none;padding:0">{{range .Passages}}<li style="padding:12px 0;border-bottom:1px solid #eee"><a href="{{.URL}}">{{.Title}}</a><p class="muted">{{.Content}}</p></li>{{else}}<li>No passages on this page.</li>{{end}}</ul>
-<nav style="display:flex;justify-content:space-between;margin-top:20px">{{if .Previous}}<a href="{{.Previous}}">&larr; Previous</a>{{else}}<span></span>{{end}}{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{end}}</nav>
+<ul class="passage-list">{{range .Passages}}<li class="passage-item"><a href="{{.URL}}">{{.Title}}</a><p class="muted">{{.Content}}</p></li>{{else}}<li>No passages on this page.</li>{{end}}</ul>
+<nav class="passage-pagination">{{if .Previous}}<a href="{{.Previous}}">&larr; Previous</a>{{else}}<span></span>{{end}}{{if .Next}}<a href="{{.Next}}">Next &rarr;</a>{{end}}</nav>
 {{else}}
 <p>Read commentary alongside the verses it explains. Some passages cover several verses.</p>
 <p><a class="button" href="/tafsir/ibn-kathir/1/1">Start reading</a></p>
-<ul style="list-style:none;padding:0">{{range .Chapters}}<li style="padding:12px 0;border-bottom:1px solid #eee"><a href="/tafsir/ibn-kathir/{{.Chapter}}">{{.Chapter}}. {{.Name}}</a><span lang="ar" dir="rtl" style="float:right">{{.Arabic}}</span><div class="muted">{{.Meaning}}</div></li>{{end}}</ul>
+<ul class="passage-list">{{range .Chapters}}<li class="passage-item"><a href="/tafsir/ibn-kathir/{{.Chapter}}">{{.Chapter}}. {{.Name}}</a><span lang="ar" dir="rtl" class="float-right">{{.Arabic}}</span><div class="muted">{{.Meaning}}</div></li>{{end}}</ul>
 {{end}}
-<p class="muted" style="margin-top:24px">Source: <a href="{{.SourceURL}}">{{.Source}}</a></p>
+<p class="muted mt-24">Source: <a href="{{.SourceURL}}">{{.Source}}</a></p>
 </main></div></body></html>{{end}}

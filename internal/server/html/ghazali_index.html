@@ -1,38 +1,11 @@
 {{define "ghazali_index.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-ghazali-index">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ghazali - Aslam</title>
     {{template "style"}}
-    <style>
-        .vol-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 20px;
-        }
-        .vol-filters a {
-            font-size: 12px;
-            padding: 3px 10px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            text-decoration: none;
-            color: #444;
-        }
-        .vol-filters a:hover { background: #e0e0e0; }
-        .vol-filters a.active { background: #000; color: #fff; }
-        .ch-list a {
-            text-decoration: none;
-            display: block;
-        }
-        .ch-list a:hover { opacity: 0.7; }
-        .ch-list .ch-vol-tag {
-            font-size: 11px;
-            color: #888;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -41,7 +14,7 @@
             <h2>Ghazali &mdash; Ihya Ulum al-Din</h2>
 {{if .ContinuePath}}
             <div class="continue-reading">
-                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+                Continue reading: <a href="{{.ContinuePath}}" class="text-medium">{{.ContinueTitle}} &rarr;</a>
             </div>
             {{end}}
 

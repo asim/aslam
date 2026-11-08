@@ -1,69 +1,28 @@
 {{define "hadith.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-hadith">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hadith {{index . "Number"}} - Aslam</title>
     {{template "style"}}
-    <style>
-        .hadith-book {
-            display: inline-block;
-            font-size: 12px;
-            background: #f5e8e8;
-            color: #6b1a1a;
-            padding: 2px 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        .hadith-narrator {
-            font-size: 14px;
-            font-style: italic;
-            color: #666;
-            margin-bottom: 16px;
-        }
-        .hadith-text {
-            line-height: 1.8;
-            word-wrap: break-word;
-            margin-bottom: 24px;
-        }
-        .hadith-text p { margin-bottom: 1em; }
-        .hadith-arabic {
-            font-size: 22px;
-            line-height: 2;
-            direction: rtl;
-            text-align: right;
-            font-family: 'Uthmanic', 'Traditional Arabic', serif;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #fafafa;
-            border-radius: 8px;
-        }
-        .hadith-source {
-            margin-top: 32px;
-            padding-top: 16px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #999;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span class="hadith-book" style="margin-bottom:0;">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
+            <div class="content-heading">
+                <span class="hadith-book mb-0">{{index . "Book"}} &mdash; Hadith {{index . "Number"}}</span>
                 {{if .LoggedIn}}
-                <div style="display:flex; gap:6px;">
-                    <form method="POST" action="/notes/add" style="display:inline;">
+                <div class="action-group">
+                    <form method="POST" action="/notes/add" class="inline-form">
                         <input type="hidden" name="title" value="{{index . "Book"}} - {{index . "Narrator"}}">
                         <input type="hidden" name="content" value="/hadith/{{index . "Number"}}
 
 {{truncate (index . "Text") 200}}">
                         <button type="submit" class="button">Save</button>
                     </form>
-                    <form method="POST" action="/chat/new" style="display:inline;">
+                    <form method="POST" action="/chat/new" class="inline-form">
                         <input type="hidden" name="title" value="{{index . "Book"}} - Hadith {{index . "Number"}}">
                         <input type="hidden" name="context" value="{{index . "Book"}} — Hadith {{index . "Number"}} (/hadith/{{index . "Number"}})
 {{if index . "Narrator"}}
@@ -76,7 +35,7 @@ Arabic: {{index . "Arabic"}}{{end}}">
                     </form>
                 </div>
                 {{else}}
-                <a href="/auth/login" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none; white-space:nowrap;">Sign in to save</a>
+                <a href="/auth/login" class="reader-sign-in">Sign in to save</a>
                 {{end}}
             </div>
             <h2>{{index . "Book"}} — Hadith {{index . "Number"}}</h2>
@@ -87,13 +46,13 @@ Arabic: {{index . "Arabic"}}{{end}}">
             {{if index . "Arabic"}}
             <div class="hadith-arabic">{{index . "Arabic"}}</div>
             {{end}}
-            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+            <div class="content-pagination">
                 {{if index . "PrevNumber"}}<a href="/hadith/{{index . "PrevNumber"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/hadith">All Books</a>
                 {{if index . "NextNumber"}}<a href="/hadith/{{index . "NextNumber"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
             <div class="hadith-source">
-                <a href="https://reminder.dev/hadith/{{index . "BookNumber"}}#{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
+                <a href="https://reminder.dev/hadith/{{index . "BookNumber"}}#{{index . "Number"}}" target="_blank" class="text-muted">View on reminder.dev &rarr;</a>
             </div>
         </main>
     </div>

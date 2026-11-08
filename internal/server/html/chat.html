@@ -1,90 +1,12 @@
 {{define "chat.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-chat">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
-    <style>
-        html, body { height: 100%; min-height: 0; overflow: hidden; }
-        /* Reserve separate rows for navigation, messages and the growing composer. */
-        .app { position: fixed; top: var(--chat-top, 0px); left: 0; right: 0; display: grid; grid-template-rows: 50px auto minmax(0, 1fr) auto; height: var(--chat-height, 100%); min-height: 0; padding-top: 0; overflow: hidden; }
-        .app-header { position: relative; top: auto; width: 100%; max-width: none; margin: 0; }
-        .app-content { min-height: 0; min-width: 0; overflow-y: auto; padding-bottom: 24px; scroll-padding-bottom: 24px; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-        .chat-toolbar { flex: 0 0 auto; min-width: 0; padding: 10px 16px; border-bottom: 1px solid #ddd; background: #fff; }
-        .chat-toolbar-inner { display: flex; align-items: center; gap: 12px; }
-        #chat-title { flex: 1; min-width: 0; margin: 0; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .chat-controls { display: flex; flex: 0 0 auto; gap: 6px; }
-        .chat-controls button { height: 28px; line-height: 16px; }
-        .app-footer { position: static; min-width: 0; background: #fff; }
-        .app-footer textarea { min-width: 0; font-size: 16px; }
-        .context-card {
-            border: 1px solid #e5e5e5;
-            background: #fafafa;
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-        .context-card > summary {
-            cursor: pointer;
-            color: #888;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            list-style: none;
-            user-select: none;
-        }
-        .context-card > summary::-webkit-details-marker { display: none; }
-        .context-card > summary::before { content: '📖 '; }
-        .context-card[open] > summary { margin-bottom: 8px; }
-        .context-body {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.6;
-            color: #444;
-            max-height: 240px;
-            overflow-y: auto;
-        }
-        .typing { opacity: 0.6; }
-        .message-actions { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 10px; border-top: 1px solid #ddd; }
-        .message-actions button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; width: 28px; height: 28px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #666; cursor: pointer; }
-        .message-actions button svg { width: 16px; height: 16px; }
-        .message-actions button:focus-visible { outline: 2px solid #0066cc; outline-offset: 2px; }
-        .message-actions button:disabled { opacity: 0.6; cursor: wait; }
-        .message-action-status { font-size: 12px; color: #555; }
-        .typing .message-content::after {
-            content: '...';
-            animation: dots 1.5s infinite;
-        }
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        .markdown { line-height: 1.7; }
-        .markdown > *:first-child { margin-top: 0; }
-        .markdown > *:last-child { margin-bottom: 0; }
-        .markdown h1, .markdown h2, .markdown h3 { margin: 1em 0 0.4em 0; font-weight: 600; }
-        .markdown h1 { font-size: 1.15em; }
-        .markdown h2 { font-size: 1.05em; }
-        .markdown h3 { font-size: 1em; }
-        .markdown p { margin: 0.8em 0; }
-        .markdown ul, .markdown ol { margin: 0.6em 0; padding-left: 1.4em; }
-        .markdown li { margin: 0.3em 0; padding: 0; border: none; }
-        .markdown li > ul, .markdown li > ol { margin: 0.2em 0; }
-        .markdown code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; }
-        .markdown pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 0.8em 0; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; }
-        .markdown pre code { background: none; padding: 0; }
-        .markdown blockquote { border-left: 3px solid #ddd; padding-left: 12px; margin: 0.8em 0; color: #555; }
-        .markdown a { color: #0066cc; }
-        .markdown strong { font-weight: 600; }
-        .markdown hr { border: none; border-top: 1px solid #ddd; margin: 1em 0; }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -95,10 +17,10 @@
             <h2 id="chat-title" title="{{.Conversation.Title}}">{{.Conversation.Title}}</h2>
             {{if .IsOwner}}
             <div class="chat-controls">
-                <button onclick="togglePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Conversation.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Conversation.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
+                <button onclick="togglePublic()" id="public-toggle" class="compact-visibility {{if .Conversation.Public}}is-public{{end}}">
                     {{if .Conversation.Public}}Public{{else}}Private{{end}}
                 </button>
-                <button onclick="deleteChat()" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;">Delete</button>
+                <button onclick="deleteChat()" class="compact-delete">Delete</button>
             </div>
             <script>
             async function togglePublic() {
@@ -217,7 +139,7 @@
             const field = document.createElement('textarea');
             field.value = text;
             field.setAttribute('readonly', '');
-            field.style.cssText = 'position:fixed;left:-9999px;top:0;';
+            field.className = 'clipboard-fallback';
             document.body.appendChild(field);
             try {
                 field.select();
@@ -351,7 +273,7 @@
                 const responseDiv = addMessage('assistant', 'Working...', true);
                 const contentEl = responseDiv.querySelector('.message-content');
                 const statusEl = document.createElement('div');
-                statusEl.style.cssText = 'font-size:12px; color:#999; margin-top:4px;';
+                statusEl.classList.add('chat-status');
                 responseDiv.appendChild(statusEl);
 
                 try {

@@ -1,85 +1,11 @@
 {{define "admin.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-admin">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Aslam</title>
     {{template "style"}}
-    <style>
-        .admin-section { margin-bottom: 32px; }
-        .admin-section h3 { margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        .item-card { 
-            border: 1px solid #333; 
-            padding: 12px; 
-            margin-bottom: 12px; 
-            border-radius: 4px;
-        }
-        .item-header { display: flex; justify-content: space-between; align-items: center; }
-        .item-title { font-weight: bold; }
-        .item-meta { font-size: 12px; color: #888; margin-top: 4px; }
-        .item-detail { margin-top: 8px; font-size: 13px; }
-        .item-detail label { color: #888; }
-        form.inline { display: inline; }
-        input, textarea { width: 100%; margin-bottom: 8px; }
-        textarea { min-height: 60px; }
-        .ai-limit-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 0 16px; }
-        .ai-usage-table { overflow-x: auto; margin-top: 12px; }
-        .ai-usage-table td:first-child { overflow-wrap: anywhere; }
-        .form-row { margin-bottom: 12px; }
-        .form-row label { display: block; margin-bottom: 4px; font-size: 12px; color: #888; }
-
-        .btn:hover { opacity: 0.8; }
-        .btn-danger { background: #dc2626; }
-        .btn-small { padding: 4px 8px; font-size: 12px; }
-        .btn-small:disabled { opacity: 0.5; cursor: not-allowed; }
-        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
-        .status-enabled { background: #22c55e; color: white; cursor: pointer; border: none; }
-        .status-enabled:hover { background: #16a34a; }
-        .status-disabled { background: #ef4444; color: white; cursor: pointer; border: none; }
-        .status-disabled:hover { background: #dc2626; }
-        .status-missing { background: #888; color: white; }
-        .integration-details { font-size: 12px; color: #888; margin-top: 4px; }
-        .stat-box { padding: 12px 16px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px; }
-        .stat-label { font-size: 12px; color: #888; }
-        .stat-value { font-size: 18px; font-weight: bold; }
-        .stat-detail { font-size: 11px; color: #888; }
-        .status-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-        .status-table th, .status-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
-        .status-table th { background: #f5f5f5; }
-        .status-pending { color: #f59e0b; }
-        .status-processing { color: #3b82f6; }
-        .status-completed { color: #22c55e; }
-        .status-processed { color: #22c55e; }
-        .status-failed { color: #ef4444; }
-        .error-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ef4444; font-size: 11px; }
-        .success { color: #16a34a; margin-bottom: 16px; }
-        .error { color: #dc2626; margin-bottom: 16px; }
-        .secret { 
-            filter: blur(4px); 
-            cursor: pointer; 
-            user-select: none;
-            transition: filter 0.2s;
-        }
-        .secret.revealed { 
-            filter: none; 
-            user-select: text;
-        }
-        .secret:hover:not(.revealed)::after {
-            content: ' (click to reveal)';
-            filter: none;
-            font-size: 10px;
-            color: #888;
-        }
-        .warning-box {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -103,14 +29,14 @@
             <div class="admin-section" id="memory">
                 <h3>Memory</h3>
                 <div class="item-meta">{{.Memory.CapturedAt}} · Uptime {{.Memory.Uptime}} · Model {{.Memory.Model}}</div>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0;">
+                <div class="admin-actions">
                     <div class="stat-box"><div class="stat-label">Resident memory (RSS)</div><div class="stat-value">{{.Memory.RSS}}</div></div>
                     <div class="stat-box"><div class="stat-label">Go heap allocated</div><div class="stat-value">{{.Memory.HeapAllocated}}</div><div class="stat-detail">Includes garbage not yet collected</div></div>
                     <div class="stat-box"><div class="stat-label">Goroutines</div><div class="stat-value">{{.Memory.Goroutines}}</div></div>
                 </div>
                 <p class="item-meta">Heap in use {{.Memory.HeapInUse}} · Idle heap {{.Memory.HeapIdle}} · Released to OS {{.Memory.HeapReleased}} · GC cycles {{.Memory.GCCount}}</p>
                 <p class="item-meta">Database connections: {{.Memory.Database.OpenConnections}} open, {{.Memory.Database.InUse}} in use, {{.Memory.Database.Idle}} idle.</p>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0;">
+                <div class="admin-actions-tight">
                     <a class="btn btn-small" href="/admin#memory">Refresh</a>
                     <a class="btn btn-small" href="/admin/profile?kind=heap">Download heap</a>
                     <a class="btn btn-small" href="/admin/profile?kind=allocs">Download allocations</a>
@@ -125,9 +51,9 @@
                 <div class="item-meta">Today (UTC) · AI {{if .ModelEnabled}}enabled{{else}}disabled{{end}} · Resets at midnight UTC</div>
                 <p class="item-meta">Each question counts once, including failed attempts. Tool follow-ups are included. Admin usage is tracked but exempt from both limits.</p>
 
-                <div class="item-card" style="margin-top: 12px;">
+                <div class="item-card mt-12">
                     <div class="item-title">Daily limits</div>
-                    <form method="POST" action="/admin/model-limits" style="margin-top: 12px;">
+                    <form method="POST" action="/admin/model-limits" class="mt-12">
                         <div class="ai-limit-fields">
                             <div class="form-row">
                                 <label for="ai-user-limit">Questions per account</label>
@@ -190,7 +116,7 @@
 
             <div class="admin-section">
                 <h3>Status</h3>
-                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 16px;">
+                <div class="admin-stats">
                     <div class="stat-box">
                         <div class="stat-label">Tasks</div>
                         <div class="stat-value">{{.TaskStats.Pending}} pending</div>
@@ -203,7 +129,7 @@
                     </div>
                 </div>
 
-                <div class="warning-box" style="background: #f8fafc; border-color: #cbd5e1;">
+                <div class="warning-box warning-neutral">
                     <strong>Inbox worker</strong><br>
                     Configured: {{if .EmailWorker.Configured}}yes{{else}}no{{end}} ·
                     Enabled: {{if .EmailWorker.Enabled}}yes{{else}}no{{end}} ·
@@ -214,7 +140,7 @@
                 </div>
 
                 <details>
-                    <summary style="cursor: pointer; margin-bottom: 8px;">Recent Emails ({{len .RecentEmails}})</summary>
+                    <summary class="details-summary">Recent Emails ({{len .RecentEmails}})</summary>
                     {{if .RecentEmails}}
                     <table class="status-table">
                         <tr><th>Time</th><th>Dir</th><th>From/To</th><th>Subject</th><th>Status</th></tr>
@@ -233,8 +159,8 @@
                     {{end}}
                 </details>
 
-                <details style="margin-top: 12px;">
-                    <summary style="cursor: pointer; margin-bottom: 8px;">Recent Tasks ({{len .RecentTasks}})</summary>
+                <details class="mt-12">
+                    <summary class="details-summary">Recent Tasks ({{len .RecentTasks}})</summary>
                     {{if .RecentTasks}}
                     <table class="status-table">
                         <tr><th>Time</th><th>Channel</th><th>Conv</th><th>Status</th><th>Attempts</th><th>Error</th></tr>
@@ -258,27 +184,27 @@
             <!-- Datasets Section -->
             <div class="admin-section">
                 <h3>Datasets</h3>
-                <p class="muted" style="margin-bottom: 16px;">Embedded datasets loaded into SQLite on startup. Counts shown are actual / expected. Stale rows reload in the background.</p>
-                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <p class="muted mb-16">Embedded datasets loaded into SQLite on startup. Counts shown are actual / expected. Stale rows reload in the background.</p>
+                <table class="dataset-table">
                     <thead>
-                        <tr style="text-align:left; border-bottom:1px solid #eee;">
-                            <th style="padding:6px 8px;">Source</th>
-                            <th style="padding:6px 8px; text-align:right;">Loaded</th>
-                            <th style="padding:6px 8px; text-align:right;">Expected</th>
-                            <th style="padding:6px 8px;">Version</th>
-                            <th style="padding:6px 8px;">Status</th>
+                        <tr class="dataset-heading">
+                            <th class="dataset-cell">Source</th>
+                            <th class="dataset-cell-right">Loaded</th>
+                            <th class="dataset-cell-right">Expected</th>
+                            <th class="dataset-cell">Version</th>
+                            <th class="dataset-cell">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{range .Datasets}}
-                        <tr style="border-bottom:1px solid #f5f5f5;">
-                            <td style="padding:6px 8px;">{{.Name}}</td>
-                            <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">{{.Count}}</td>
-                            <td style="padding:6px 8px; text-align:right; color:#888; font-variant-numeric:tabular-nums;">{{.Expected}}</td>
-                            <td style="padding:6px 8px; color:#888;">{{if .LoadedVersion}}v{{.LoadedVersion}}{{else}}—{{end}}{{if ne .LoadedVersion .WantVersion}} → v{{.WantVersion}}{{end}}</td>
-                            <td style="padding:6px 8px;">
-                                {{if .OK}}<span style="color:#16a34a;">&#10003; ok</span>
-                                {{else}}<span style="color:#c00;">{{.Status}}</span>{{end}}
+                        <tr class="dataset-row">
+                            <td class="dataset-cell">{{.Name}}</td>
+                            <td class="dataset-count">{{.Count}}</td>
+                            <td class="dataset-count-muted">{{.Expected}}</td>
+                            <td class="dataset-cell-muted">{{if .LoadedVersion}}v{{.LoadedVersion}}{{else}}—{{end}}{{if ne .LoadedVersion .WantVersion}} → v{{.WantVersion}}{{end}}</td>
+                            <td class="dataset-cell">
+                                {{if .OK}}<span class="text-success">&#10003; ok</span>
+                                {{else}}<span class="text-danger">{{.Status}}</span>{{end}}
                             </td>
                         </tr>
                         {{end}}
@@ -289,7 +215,7 @@
             <!-- Integrations Section -->
             <div class="admin-section">
                 <h3>Integrations</h3>
-                <p class="muted" style="margin-bottom: 16px;">External services the assistant uses. Configured via environment variables. Toggle to enable/disable.</p>
+                <p class="muted mb-16">External services the assistant uses. Configured via environment variables. Toggle to enable/disable.</p>
 
                 {{range .Integrations}}
                 <div class="item-card">
@@ -325,12 +251,12 @@
             <!-- Tools Section -->
             <div class="admin-section">
                 <h3>Tools ({{len .Tools}})</h3>
-                <p class="muted" style="margin-bottom: 16px;">Capabilities available to the assistant.</p>
+                <p class="muted mb-16">Capabilities available to the assistant.</p>
 
                 {{range .Tools}}
-                <div class="item-card" style="padding: 8px 12px;">
+                <div class="item-card admin-setting-control">
                     <strong>{{.Name}}</strong>
-                    <p class="muted" style="font-size: 12px; margin-top: 4px;">{{.Description}}</p>
+                    <p class="muted field-help">{{.Description}}</p>
                 </div>
                 {{end}}
             </div>
@@ -342,7 +268,7 @@
                 {{range .SignupRequests}}
                 <div class="item-card"><strong>{{.Email}}</strong> {{.Name}}
                     <div class="item-meta">{{if .Verified}}Awaiting approval — email verified{{else}}Awaiting email verification{{end}} · Expires {{.Expires}}</div>
-                    <form method="POST" action="/admin/review-signup" style="display:flex;gap:8px;margin-top:8px">
+                    <form method="POST" action="/admin/review-signup" class="review-actions">
                         <input type="hidden" name="email" value="{{.Email}}"><input type="hidden" name="token" value="{{.Token}}">
                         {{if .Verified}}<button class="btn btn-small" name="action" value="approve">Approve</button>{{end}}
                         <button class="btn btn-danger btn-small" name="action" value="reject">Reject</button>
@@ -353,7 +279,7 @@
             <!-- Users Section -->
             <div class="admin-section">
                 <h3>Users</h3>
-                <p class="muted" style="margin-bottom: 16px;">People who can access the system.</p>
+                <p class="muted mb-16">People who can access the system.</p>
 
                 {{range .Users}}
                 <div class="item-card">
@@ -362,7 +288,7 @@
                             <span class="item-title">{{.Email}}</span>
                             {{if .Name}}<span class="muted"> ({{.Name}})</span>{{end}}
                             <span class="muted"> [{{.Role}}]</span>
-                            {{if not .Verified}}<span style="font-size:11px; padding:1px 7px; margin-left:6px; border-radius:4px; background:#fdf0d5; color:#8a5a00; white-space:nowrap;">Unverified</span>{{end}}
+                            {{if not .Verified}}<span class="pending-badge">Unverified</span>{{end}}
                         </div>
                         {{if ne .Email $.CurrentUser}}
                         <form class="inline" method="POST" action="/admin/remove-user" onsubmit="return confirm('Remove this user?');">
@@ -380,9 +306,9 @@
                 <p class="muted">No users configured.</p>
                 {{end}}
 
-                <details style="margin-top: 16px;">
-                    <summary style="cursor: pointer;">Add User</summary>
-                    <form method="POST" action="/admin/add-user" style="margin-top: 12px;">
+                <details class="mt-16">
+                    <summary class="cursor-pointer">Add User</summary>
+                    <form method="POST" action="/admin/add-user" class="mt-12">
                         <div class="form-row">
                             <label>Email Address</label>
                             <input type="email" name="email" required placeholder="user@example.com" class="form-control">
@@ -406,7 +332,7 @@
             <!-- Accounts Section -->
             <div class="admin-section">
                 <h3>Service Accounts & Credentials</h3>
-                <p class="muted" style="margin-bottom: 16px;">Credentials for services that power Aslam (API keys, integrations).</p>
+                <p class="muted mb-16">Credentials for services that power Aslam (API keys, integrations).</p>
 
                 {{range .Accounts}}
                 <div class="item-card">
@@ -430,9 +356,9 @@
                 <p class="muted">No accounts documented yet.</p>
                 {{end}}
 
-                <details style="margin-top: 16px;">
-                    <summary style="cursor: pointer;">Add Account</summary>
-                    <form method="POST" action="/admin/add-account" style="margin-top: 12px;">
+                <details class="mt-16">
+                    <summary class="cursor-pointer">Add Account</summary>
+                    <form method="POST" action="/admin/add-account" class="mt-12">
                         <div class="form-row">
                             <label>Service Name *</label>
                             <input type="text" name="service" required placeholder="e.g., Google Cloud, Anthropic, Brave" class="form-control">
