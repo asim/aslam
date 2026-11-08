@@ -59,7 +59,7 @@ func requestLimits(next http.Handler) http.Handler {
 			return
 		}
 		switch r.URL.Path {
-		case "/search", "/api/search", "/api/knowledge/search", "/api/arabic/search":
+		case "/mcp", "/search", "/api/search", "/api/knowledge/search", "/api/arabic/search":
 			if len(r.URL.Query().Get("q")) > 1000 {
 				http.Error(w, "Query is too long", http.StatusBadRequest)
 				return

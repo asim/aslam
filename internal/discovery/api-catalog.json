@@ -5,11 +5,83 @@
       "item": [
         {
           "href": "https://aslam.org/api/knowledge/search",
-          "title": "Search public Islamic references"
+          "title": "Search published reference collections"
         },
         {
           "href": "https://aslam.org/api/knowledge/resource",
-          "title": "Retrieve a full reference passage"
+          "title": "Read a complete reference resource"
+        },
+        {
+          "href": "https://aslam.org/api/knowledge/collections",
+          "title": "List collections"
+        },
+        {
+          "href": "https://aslam.org/api/knowledge/browse",
+          "title": "Browse entries in source order"
+        },
+        {
+          "href": "https://aslam.org/api/knowledge/contents",
+          "title": "List chapters, books or categories"
+        },
+        {
+          "href": "https://aslam.org/api/search",
+          "title": "Account-aware application search"
+        },
+        {
+          "href": "https://aslam.org/api/arabic/search",
+          "title": "Search Arabic vocabulary"
+        },
+        {
+          "href": "https://aslam.org/api/profile",
+          "title": "Read your profile"
+        },
+        {
+          "href": "https://aslam.org/api/location",
+          "title": "Update your location"
+        },
+        {
+          "href": "https://aslam.org/api/chats",
+          "title": "List your chats"
+        },
+        {
+          "href": "https://aslam.org/api/chat/new",
+          "title": "Create your chat"
+        },
+        {
+          "href": "https://aslam.org/api/chat/messages",
+          "title": "Read chat history"
+        },
+        {
+          "href": "https://aslam.org/api/chat/latest",
+          "title": "Read latest chat message"
+        },
+        {
+          "href": "https://aslam.org/api/chat/send",
+          "title": "Ask a question in your chat"
+        },
+        {
+          "href": "https://aslam.org/api/chat/delete",
+          "title": "Delete a chat"
+        },
+        {
+          "href": "https://aslam.org/api/chat/toggle-public",
+          "title": "Set chat visibility"
+        },
+        {
+          "href": "https://aslam.org/api/notes",
+          "title": "List your saved notes"
+        },
+        {
+          "href": "https://aslam.org/api/notes/toggle-public",
+          "title": "Set note visibility"
+        },
+        {
+          "href": "https://aslam.org/api/reading-progress",
+          "title": "Read your saved reading positions"
+        },
+        {
+          "href": "https://aslam.org/mcp",
+          "title": "MCP knowledge tools"
         }
       ]
     },
@@ -36,6 +108,15 @@
           "type": "application/json"
         }
       ],
+      "service-doc": [
+        {
+          "href": "https://aslam.org/llms.txt",
+          "type": "text/plain"
+        }
+      ]
+    },
+    {
+      "anchor": "https://aslam.org/mcp",
       "service-doc": [
         {
           "href": "https://aslam.org/llms.txt",

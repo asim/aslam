@@ -1,16 +1,20 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Aslam Public Knowledge API",
-    "version": "1.0.0",
-    "description": "Read-only retrieval of published Islamic reference collections. No API key or session is required. Excludes user content and cached AI answers. Read full passages before quoting and retain source attribution. Account and chat APIs are outside this description."
+    "title": "Aslam API",
+    "version": "2.0.0",
+    "description": "Knowledge browsing, retrieval and account APIs. Create an account key in Settings \u2192 API keys; send Authorization: Bearer YOUR_KEY. Search stays public. Existing signed-in browser sessions also work on HTTP account endpoints. MCP requires a key. Keys inherit the account permissions and question limits. Administrative and sign-in operations are not integration APIs."
   },
   "servers": [
     {
       "url": "https://aslam.org"
     }
   ],
-  "security": [],
+  "security": [
+    {
+      "AccountKey": []
+    }
+  ],
   "externalDocs": {
     "description": "Agent guide",
     "url": "https://aslam.org/llms.txt"
@@ -108,14 +112,15 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/knowledge/resource": {
       "get": {
         "operationId": "getKnowledgeResource",
         "summary": "Read a complete reference resource",
-        "description": "Use the relative URL path from a search result, URL-encoded as path. Supported shapes: /quran/{chapter}/{verse}, /hadith/{number}, /names/{number}, /salihin/{number}, /ghazali/{slug}, /islamqa/{slug}, /adhkar/{slug}, /seerah/page/{page}. Seerah pages range from 8 to 323. Do not pass a full URL, query string or fragment. Resource keys vary by collection.",
+        "description": "Read a full source by reader path. Also supports /stories/{slug}, /arabic/{id}, /arabic/roots/{code}, /arabic/reading/{chapter}/{verse}. Roots return up to 50 forms and a next URL (offset parameter). Requires an account key or session.",
         "parameters": [
           {
             "name": "path",
@@ -126,6 +131,15 @@
               "type": "string"
             },
             "example": "/quran/2/153"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Root forms only; increments of 50, maximum 100000.",
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -191,6 +205,1102 @@
           }
         }
       }
+    },
+    "/api/knowledge/collections": {
+      "get": {
+        "summary": "List collections",
+        "description": "Returns collections: [{id,title,browse}].",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/knowledge/browse": {
+      "get": {
+        "summary": "Browse entries in source order",
+        "description": "Returns results and next (relative URL or empty string). Listings include reader URL and source attribution. Follow next until empty.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "query",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "description": "Quran/reading: chapter number; hadith: book number; salihin: book title; ghazali: volume; islamqa/adhkar: category; seerah: 1-based chapter; arabic: word type; roots: root code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/knowledge/contents": {
+      "get": {
+        "summary": "List chapters, books or categories",
+        "description": "Returns contents for grouped collections, or a browse URL for flat collections. Seerah includes chapter start pages and section IDs.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "query",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/search": {
+      "get": {
+        "summary": "Account-aware application search",
+        "description": "Public search is available without a key. An account key additionally identifies whose accessible chats and notes to include. Returns results.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": []
+      }
+    },
+    "/api/arabic/search": {
+      "get": {
+        "summary": "Search Arabic vocabulary",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "summary": "Read your profile",
+        "description": "Returns id, email, name, role, latitude, longitude and timezone; no credentials.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/location": {
+      "post": {
+        "summary": "Update your location",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  },
+                  "timezone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "latitude",
+                  "longitude",
+                  "timezone"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chats": {
+      "get": {
+        "summary": "List your chats",
+        "description": "Returns conversations: [{id,title,updated_at}]. Most recent 50.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/chat/new": {
+      "post": {
+        "summary": "Create your chat",
+        "description": "Returns id. No body required.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/chat/messages": {
+      "get": {
+        "summary": "Read chat history",
+        "description": "Returns results and next. Owner, public chat or admin access required.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/chat/latest": {
+      "get": {
+        "summary": "Read latest chat message",
+        "description": "Returns role and content. Owner, public chat or admin access required.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/chat/send": {
+      "post": {
+        "summary": "Ask a question in your chat",
+        "description": "Owner only, including for admins. Streams plain text. Uses the account daily question allowance; tool follow-ups are included. Admins are quota-exempt. Quota/model errors may arrive after the stream has started.",
+        "responses": {
+          "200": {
+            "description": "Chunked plain text answer with sources footer. Errors after headers are emitted as Error: text.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conversation_id": {
+                    "type": "integer"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Up to 8192 UTF-8 bytes"
+                  }
+                },
+                "required": [
+                  "conversation_id",
+                  "message"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat/delete": {
+      "post": {
+        "summary": "Delete a chat",
+        "description": "Owner or admin.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat/toggle-public": {
+      "post": {
+        "summary": "Set chat visibility",
+        "description": "Owner or admin.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "public": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "public"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes": {
+      "get": {
+        "summary": "List your saved notes",
+        "description": "Returns results and next; includes saved links as note content.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a note",
+        "description": "Returns id. Private unless public is true. Limits are UTF-8 bytes.",
+        "responses": {
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          },
+          "201": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "public": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes/{id}": {
+      "get": {
+        "summary": "Read your note",
+        "description": "Owner only. PUT replaces title/content/visibility; omitted public defaults to false.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "Replace your note",
+        "description": "Owner only. PUT replaces title/content/visibility; omitted public defaults to false.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "public": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete your note",
+        "description": "Owner only. PUT replaces title/content/visibility; omitted public defaults to false.",
+        "responses": {
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          },
+          "204": {
+            "description": "Deleted"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/notes/toggle-public": {
+      "post": {
+        "summary": "Set note visibility",
+        "description": "Existing app action; owner or admin.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "public": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "public"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reading-progress": {
+      "get": {
+        "summary": "Read your saved reading positions",
+        "description": "Returns results with source, path, title, updated_at.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Save your reading position",
+        "description": "Upserts one position per source for your account. Path must be a local knowledge reader path.",
+        "responses": {
+          "200": {
+            "description": "Success; JSON response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Missing or invalid account key/session"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Not found or not accessible"
+          },
+          "503": {
+            "description": "Busy or temporarily unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "quran",
+                      "hadith",
+                      "names",
+                      "seerah",
+                      "ghazali",
+                      "islamqa",
+                      "adhkar",
+                      "salihin",
+                      "arabic",
+                      "roots",
+                      "reading",
+                      "stories"
+                    ]
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "source",
+                  "path"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -205,7 +1315,11 @@
           "ghazali",
           "islamqa",
           "adhkar",
-          "salihin"
+          "salihin",
+          "arabic",
+          "roots",
+          "reading",
+          "stories"
         ]
       },
       "Error": {
@@ -291,6 +1405,13 @@
             "description": "Full collection-specific record. Fields and casing vary. Preserve Arabic, translation, commentary and attribution where present; Seerah includes Title, Content, Page, Author and Translator."
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "AccountKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Account key generated at /profile/api-keys. Raw key shown once; revoke in settings."
       }
     }
   }

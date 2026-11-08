@@ -304,3 +304,7 @@ A retry of a failed initial attempt counts as another question attempt.
 All model requests require a verified conversation owner. API keys cannot bypass
 ownership or quota checks. Public content reading/search and inbox polling do not
 call the model. ANTHROPIC_MODEL selects the model (default claude-sonnet-5).
+
+API integrations: create a key in [Settings → API keys](https://aslam.org/profile/api-keys).
+Use it with the [HTTP API](https://aslam.org/api/docs) or Streamable HTTP MCP at
+`https://aslam.org/mcp`. Public search needs no key. See [OpenAPI](https://aslam.org/openapi.json).
