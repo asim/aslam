@@ -804,3 +804,8 @@ li.passage-item { padding:12px 0; border-bottom:1px solid #eee; }
 .compact-visibility.is-public, .item-visibility.is-public { background: #22c55e; color: #fff; }
 .clipboard-fallback { position: fixed; left: -9999px; top: 0; }
 .chat-status { font-size: 12px; color: #999; margin-top: 4px; }
+
+/* API key creation: keep controls separated at every viewport width. */
+.api-key-form { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-width: 500px; margin: 24px 0; }
+.api-key-form .form-control, .api-key-token { width: 100%; max-width: 500px; }
+.api-key-item form { margin-top: 12px; }
