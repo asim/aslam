@@ -4,7 +4,11 @@
 <h2>API keys</h2><p><a href="/profile">Settings</a> · <a href="/api/docs">API documentation</a></p>
 <p>Use a separate key for each integration. Keys access your account, including private notes and chats. Keep them secret and revoke any you no longer use.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
-{{if .Token}}<p>Copy this key now. It will not be shown again.</p><input class="form-control" aria-label="New API key" readonly value="{{.Token}}" onclick="this.select()">{{end}}
-<form method="post" action="/profile/api-keys"><label for="key-name">Key name</label><input id="key-name" class="form-control" name="name" maxlength="80" required placeholder="My agent"><button class="form-submit btn" type="submit">Create key</button></form>
+{{if .Token}}<p>Copy this key now. It will not be shown again.</p><input class="form-control api-key-token" aria-label="New API key" readonly value="{{.Token}}" onclick="this.select()">{{end}}
+<form method="post" action="/profile/api-keys" class="api-key-form">
+    <label for="key-name">Key name</label>
+    <input id="key-name" class="form-control" name="name" maxlength="80" required placeholder="My agent">
+    <button class="form-submit" type="submit">Create key</button>
+</form>
 {{range .Keys}}<div class="api-key-item"><strong>{{.Name}}</strong><p class="muted">{{.Prefix}}… · Created {{.CreatedAt}} UTC</p><form method="post" action="/profile/api-keys"><input type="hidden" name="action" value="revoke"><input type="hidden" name="id" value="{{.ID}}"><button class="btn" type="submit">Revoke</button></form></div>{{else}}<p>No API keys.</p>{{end}}
 </main></div></body></html>{{end}}
