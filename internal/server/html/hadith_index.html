@@ -1,39 +1,18 @@
 {{define "hadith_index.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-hadith-index">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sahih al-Bukhari - Aslam</title>
     {{template "style"}}
-    <style>
-        .book-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 8px;
-        }
-        .book-grid a {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            text-decoration: none;
-            color: #222;
-        }
-        .book-grid a:hover { background: #fafafa; }
-        .book-num { font-size: 12px; color: #888; min-width: 28px; }
-        .book-name { flex: 1; font-size: 14px; }
-        .book-count { font-size: 11px; color: #999; }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
             <h2>Sahih al-Bukhari</h2>
-            <p class="muted" style="margin-bottom:20px;">{{len .Books}} books &middot; 7,265 hadiths</p>
+            <p class="muted mb-20">{{len .Books}} books &middot; 7,265 hadiths</p>
             <div class="book-grid">
                 {{range .Books}}
                 <a href="/hadith/book/{{index . "BookNumber"}}">

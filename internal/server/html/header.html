@@ -1,6 +1,6 @@
 {{define "header"}}
 <header class="app-header{{if not .LoggedIn}} app-header-public{{end}}">
-    <h1><a href="{{if .LoggedIn}}/home{{else}}/{{end}}" style="text-decoration:none;color:inherit">Aslam</a></h1>
+    <h1><a href="{{if .LoggedIn}}/home{{else}}/{{end}}" class="brand-link">Aslam</a></h1>
     {{if .LoggedIn}}
     <nav class="nav-desktop">
         <a href="/home">home</a>

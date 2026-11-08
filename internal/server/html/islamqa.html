@@ -1,69 +1,28 @@
 {{define "islamqa.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-islamqa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{index . "Question"}} - Aslam</title>
     {{template "style"}}
-    <style>
-        .qa-category {
-            display: inline-block;
-            font-size: 12px;
-            background: #f0f0f0;
-            padding: 2px 10px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-        }
-        .qa-section-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-        .qa-question-box {
-            background: #f8f8f8;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 28px;
-        }
-        .qa-question-box h2 {
-            line-height: 1.5;
-            margin: 0;
-        }
-        .qa-answer {
-            line-height: 1.7;
-            word-wrap: break-word;
-        }
-        .qa-answer p, .qa-answer-text {
-            margin: 0 0 0.8em;
-        }
-        .qa-source {
-            margin-top: 32px;
-            padding-top: 16px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #999;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span class="qa-category" style="margin-bottom:0;">{{index . "Category"}}</span>
+            <div class="content-heading">
+                <span class="qa-category mb-0">{{index . "Category"}}</span>
                 {{if .LoggedIn}}
-                <div style="display:flex; gap:6px;">
-                    <form method="POST" action="/notes/add" style="display:inline;">
+                <div class="action-group">
+                    <form method="POST" action="/notes/add" class="inline-form">
                         <input type="hidden" name="title" value="{{index . "Question"}}">
                         <input type="hidden" name="content" value="/islamqa/{{index . "Slug"}}
 
 {{truncate (index . "Answer") 200}}">
                         <button type="submit" class="button">Save</button>
                     </form>
-                    <form method="POST" action="/chat/new" style="display:inline;">
+                    <form method="POST" action="/chat/new" class="inline-form">
                         <input type="hidden" name="title" value="{{index . "Question"}}">
                         <input type="hidden" name="context" value="IslamQA — {{index . "Category"}} (/islamqa/{{index . "Slug"}})
 
@@ -74,7 +33,7 @@ Answer: {{index . "Answer"}}">
                     </form>
                 </div>
                 {{else}}
-                <a href="/auth/login" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none; white-space:nowrap;">Sign in to save</a>
+                <a href="/auth/login" class="reader-sign-in">Sign in to save</a>
                 {{end}}
             </div>
 
@@ -87,7 +46,7 @@ Answer: {{index . "Answer"}}">
             <div class="qa-answer">{{islamQAParagraphs (index . "Answer")}}</div>
 
             <div class="qa-source">Source: IslamQA (Sheikh Muhammed Salih Al-Munajjid)</div>
-            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+            <div class="content-pagination">
                 {{if index . "PrevSlug"}}<a href="/islamqa/{{index . "PrevSlug"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/islamqa">All Questions</a>
                 {{if index . "NextSlug"}}<a href="/islamqa/{{index . "NextSlug"}}">Next &rarr;</a>{{else}}<span></span>{{end}}

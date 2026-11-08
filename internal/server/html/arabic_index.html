@@ -1,69 +1,11 @@
 {{define "arabic_index.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-arabic-index">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learn Arabic - Aslam</title>
     {{template "style"}}
-    <style>
-        .arabic-search {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        .arabic-search input { width:100%; }
-
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-        .level-card {
-            display: block;
-            padding: 12px;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #222;
-        }
-        .level-card:hover { background: #fafafa; }
-        .level-card.active { background: #000; color: #fff; }
-        .level-card.active .level-desc { color: #ccc; }
-        .level-label { font-size: 14px; font-weight: 500; }
-        .level-desc { font-size: 11px; color: #888; margin-top: 2px; }
-        .arabic-word-card {
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-            text-decoration: none;
-            color: inherit;
-        }
-        .arabic-word-card:hover { background: #fafafa; }
-        .arabic-word-card .aw-arabic {
-            font-family: 'Uthmanic', 'Traditional Arabic', serif;
-            font-size: 22px;
-            direction: rtl;
-            color: #222;
-            min-width: 80px;
-        }
-        .arabic-word-card .aw-translit {
-            font-style: italic;
-            color: #666;
-            font-size: 14px;
-        }
-        .arabic-word-card .aw-english {
-            color: #333;
-            font-size: 14px;
-        }
-        .arabic-word-card .aw-freq {
-            font-size: 12px;
-            color: #aaa;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -71,11 +13,11 @@
         <main class="app-content">
             <h2>Learn Arabic</h2>
  {{template "arabic-learning-nav" "words"}}
-            <p class="muted" style="margin-bottom:16px;">Quranic vocabulary by frequency &mdash; learn the most common words first</p>
+            <p class="muted mb-16">Quranic vocabulary by frequency &mdash; learn the most common words first</p>
 
             {{if .ContinuePath}}
             <div class="continue-reading">
-                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+                Continue reading: <a href="{{.ContinuePath}}" class="text-medium">{{.ContinueTitle}} &rarr;</a>
             </div>
             {{end}}
 

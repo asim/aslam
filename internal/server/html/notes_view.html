@@ -1,46 +1,20 @@
 {{define "notes_view.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-notes-view">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Item.Title}} - Aslam</title>
     {{template "style"}}
-    <style>
-        .note-content {
-            line-height: 1.8;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin-top: 16px;
-        }
-        .note-content a.source-link {
-            display: inline-block;
-            font-size: 12px;
-            padding: 2px 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            color: #0066cc;
-            text-decoration: none;
-            margin-bottom: 4px;
-        }
-        .note-content a.source-link:hover { background: #e0e0e0; }
-        .note-meta {
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #999;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h2 style="margin-bottom:0;">{{.Item.Title}}</h2>
+            <div class="content-heading">
+                <h2 class="mb-0">{{.Item.Title}}</h2>
                 {{if .IsOwner}}
-                <a href="/notes/edit/{{.Item.ID}}" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none;">Edit</a>
+                <a href="/notes/edit/{{.Item.ID}}" class="compact-edit">Edit</a>
                 {{end}}
             </div>
 
@@ -48,7 +22,7 @@
 
             <div class="note-meta">
                 <span data-time="{{.Item.UpdatedAt.Unix}}"></span>
-                {{if .Item.Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{end}}
+                {{if .Item.Public}}<span class="public-badge">public</span>{{end}}
             </div>
         </main>
     </div>

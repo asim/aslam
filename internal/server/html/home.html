@@ -1,68 +1,11 @@
 {{define "home.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-home">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Aslam</title>
     {{template "style"}}
-    <style>
-        .ask-hero {
-            padding: 0;
-        }
-        .ask-hero h2 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        .ask-hero p {
-            color: #888;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-        .ask-form {
-            display: flex;
-            gap: 8px;
-            margin: 0 0 12px 0;
-            align-items: flex-end;
-        }
-        .ask-form textarea { flex: 1; max-height: 200px; resize: none; overflow: hidden; }
-
-
-        .ask-hint {
-            margin: 0 0 28px 0;
-            color: #888;
-            font-size: 12px;
-        }
-        .ask-hint a { color: #666; }
-        .daily-card {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 14px;
-            margin-bottom: 10px;
-        }
-        .daily-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #888;
-            margin-bottom: 6px;
-        }
-        .daily-text {
-            line-height: 1.7;
-            margin-bottom: 8px;
-            white-space: pre-wrap;
-        }
-        .daily-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .home-section {margin:24px 0;padding-top:20px;border-top:1px solid #ddd;}
-        .home-section-heading {display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px;}
-        .home-section-heading a {font-size:12px;}
-        .home-section h3 {font-size:16px;color:#222;}
-    </style>
 </head>
 <body>
     <div class="app">
@@ -82,11 +25,11 @@
 
             {{if .ReadingProgress}}
             <section class="home-section">
-                <h3 style="margin-bottom: 12px">Continue Reading</h3>
+                <h3 class="mb-12">Continue Reading</h3>
                 {{range .ReadingProgress}}
-                <div style="margin-bottom:8px; padding:10px 14px; background:#f8f8f8; border-radius:8px; font-size:13px;">
-                    <a href="{{index . "Path"}}" style="font-weight:500;">{{index . "Title"}} &rarr;</a>
-                    <span style="color:#999; margin-left:6px;">{{index . "Source"}}</span>
+                <div class="recent-chat">
+                    <a href="{{index . "Path"}}" class="text-medium">{{index . "Title"}} &rarr;</a>
+                    <span class="recent-chat-time">{{index . "Source"}}</span>
                 </div>
                 {{end}}
             </section>
@@ -100,7 +43,7 @@
                 {{range .Conversations}}
                 <li>
                     <a href="/chat/{{.ID}}">{{.Title}}</a>
-                    {{if .Public}}<span style="font-size:11px; padding:1px 6px; background:#22c55e; color:#fff; border-radius:3px; margin-left:6px;">public</span>{{else}}<span style="font-size:11px; padding:1px 6px; background:#f0f0f0; color:#999; border-radius:3px; margin-left:6px;">private</span>{{end}}
+                    {{if .Public}}<span class="public-badge">public</span>{{else}}<span class="private-badge">private</span>{{end}}
                     <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
                 </li>
                 {{end}}
@@ -117,18 +60,18 @@
 
             {{if or .PrayerTimes .DailyContent}}
             <section class="home-section">
-                <h3 style="margin-bottom: 12px">Today's Reminder</h3>
+                <h3 class="mb-12">Today's Reminder</h3>
 
                 {{if .PrayerTimes}}
                 <div class="daily-card">
                     <div class="daily-label">Prayer Times</div>
-                    <div style="display:flex; gap:16px; font-size:13px; overflow-x:auto;">
-                        <span><span style="color:#999; font-size:11px;">Fajr</span> {{index .PrayerTimes "Fajr"}}</span>
-                        <span><span style="color:#999; font-size:11px;">Sunrise</span> {{index .PrayerTimes "Sunrise"}}</span>
-                        <span><span style="color:#999; font-size:11px;">Dhuhr</span> {{index .PrayerTimes "Dhuhr"}}</span>
-                        <span><span style="color:#999; font-size:11px;">Asr</span> {{index .PrayerTimes "Asr"}}</span>
-                        <span><span style="color:#999; font-size:11px;">Maghrib</span> {{index .PrayerTimes "Maghrib"}}</span>
-                        <span><span style="color:#999; font-size:11px;">Isha</span> {{index .PrayerTimes "Isha"}}</span>
+                    <div class="prayer-times">
+                        <span><span class="prayer-label">Fajr</span> {{index .PrayerTimes "Fajr"}}</span>
+                        <span><span class="prayer-label">Sunrise</span> {{index .PrayerTimes "Sunrise"}}</span>
+                        <span><span class="prayer-label">Dhuhr</span> {{index .PrayerTimes "Dhuhr"}}</span>
+                        <span><span class="prayer-label">Asr</span> {{index .PrayerTimes "Asr"}}</span>
+                        <span><span class="prayer-label">Maghrib</span> {{index .PrayerTimes "Maghrib"}}</span>
+                        <span><span class="prayer-label">Isha</span> {{index .PrayerTimes "Isha"}}</span>
                     </div>
                 </div>
                 {{end}}
@@ -138,13 +81,13 @@
                     <div class="daily-label">Quran</div>
                     <div class="daily-text">{{index .DailyContent "Verse"}}</div>
                     <div class="daily-actions">
-                        <a href="{{index .DailyContent "VerseLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
-                        <form method="POST" action="/notes/add" style="display:inline;">
+                        <a href="{{index .DailyContent "VerseLink"}}" target="_blank" class="small-muted-link">View on Reminder</a>
+                        <form method="POST" action="/notes/add" class="inline-form">
                             <input type="hidden" name="title" value="Quran Verse">
                             <input type="hidden" name="content" value="{{index .DailyContent "Verse"}}">
                             <button type="submit" class="button">Save</button>
                         </form>
-                        <form method="POST" action="/chat/new" style="display:inline;">
+                        <form method="POST" action="/chat/new" class="inline-form">
                             <input type="hidden" name="title" value="Quran Verse">
                             <input type="hidden" name="context" value="Quran verse: {{index .DailyContent "Verse"}}">
                             <button type="submit" class="button">Chat</button>
@@ -158,13 +101,13 @@
                     <div class="daily-label">Hadith</div>
                     <div class="daily-text">{{index .DailyContent "Hadith"}}</div>
                     <div class="daily-actions">
-                        <a href="{{index .DailyContent "HadithLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
-                        <form method="POST" action="/notes/add" style="display:inline;">
+                        <a href="{{index .DailyContent "HadithLink"}}" target="_blank" class="small-muted-link">View on Reminder</a>
+                        <form method="POST" action="/notes/add" class="inline-form">
                             <input type="hidden" name="title" value="Hadith">
                             <input type="hidden" name="content" value="{{index .DailyContent "Hadith"}}">
                             <button type="submit" class="button">Save</button>
                         </form>
-                        <form method="POST" action="/chat/new" style="display:inline;">
+                        <form method="POST" action="/chat/new" class="inline-form">
                             <input type="hidden" name="title" value="Hadith">
                             <input type="hidden" name="context" value="Hadith: {{index .DailyContent "Hadith"}}">
                             <button type="submit" class="button">Chat</button>
@@ -178,13 +121,13 @@
                     <div class="daily-label">Name of Allah</div>
                     <div class="daily-text">{{index .DailyContent "NameOfAllah"}}</div>
                     <div class="daily-actions">
-                        <a href="{{index .DailyContent "NameLink"}}" target="_blank" style="font-size:12px; color:#888;">View on Reminder</a>
-                        <form method="POST" action="/notes/add" style="display:inline;">
+                        <a href="{{index .DailyContent "NameLink"}}" target="_blank" class="small-muted-link">View on Reminder</a>
+                        <form method="POST" action="/notes/add" class="inline-form">
                             <input type="hidden" name="title" value="Name of Allah">
                             <input type="hidden" name="content" value="{{index .DailyContent "NameOfAllah"}}">
                             <button type="submit" class="button">Save</button>
                         </form>
-                        <form method="POST" action="/chat/new" style="display:inline;">
+                        <form method="POST" action="/chat/new" class="inline-form">
                             <input type="hidden" name="title" value="Name of Allah">
                             <input type="hidden" name="context" value="Name of Allah: {{index .DailyContent "NameOfAllah"}}">
                             <button type="submit" class="button">Chat</button>
@@ -204,12 +147,12 @@
 
             {{if .RandomQA}}
             <section class="home-section">
-                <h3 style="margin-bottom: 12px">Question of the Day</h3>
+                <h3 class="mb-12">Question of the Day</h3>
                 <div class="daily-card">
                     <div class="daily-label">IslamQA</div>
-                    <div style="font-weight:500; line-height:1.6;">{{index .RandomQA "Question"}}</div>
+                    <div class="question-title">{{index .RandomQA "Question"}}</div>
                     <div class="daily-actions">
-                        <a href="/islamqa/{{index .RandomQA "Slug"}}" style="font-size:12px; color:#0066cc;">Read Answer</a>
+                        <a href="/islamqa/{{index .RandomQA "Slug"}}" class="answer-link">Read Answer</a>
                     </div>
                 </div>
             </section>

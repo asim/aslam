@@ -11,15 +11,15 @@
     <div class="container">
         {{template "header" .}}
         <p class="muted">[{{index . "Type"}}] <span class="time">{{formatTime (index . "CreatedAt")}}</span></p>
-        <h2 style="margin: 10px 0">{{index . "Title"}}</h2>
+        <h2 class="entry-title">{{index . "Title"}}</h2>
 
-        <div class="message" style="margin-top: 20px">
+        <div class="message mt-20">
             <div class="message-content">{{index . "Content"}}</div>
         </div>
 
         {{if index . "Metadata"}}
-        <p class="muted" style="margin-top: 20px">Metadata:</p>
-        <pre style="color: #666">{{index . "Metadata"}}</pre>
+        <p class="muted mt-20">Metadata:</p>
+        <pre class="text-secondary">{{index . "Metadata"}}</pre>
         {{end}}
     </div>
 </body>

@@ -11,33 +11,33 @@
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h2 style="margin-bottom:0;">Chats</h2>
-                <div style="font-size:13px;">
-                    <a href="/chat" style="{{if not .ShowAll}}font-weight:600;{{end}} text-decoration:none; margin-right:8px;">Mine</a>
-                    <a href="/chat?show=all" style="{{if .ShowAll}}font-weight:600;{{end}} text-decoration:none;">All</a>
+            <div class="content-heading">
+                <h2 class="mb-0">Chats</h2>
+                <div class="text-small">
+                    <a href="/chat" class="filter-link filter-link-first {{if not .ShowAll}}is-active{{end}}">Mine</a>
+                    <a href="/chat?show=all" class="filter-link {{if .ShowAll}}is-active{{end}}">All</a>
                 </div>
             </div>
 
-            <form action="/chat/new" method="POST" style="margin-bottom: 20px">
+            <form action="/chat/new" method="POST" class="mb-20">
                 <button type="submit" class="form-submit">+ New Chat</button>
             </form>
 
             {{if .Conversations}}
             <ul>
                 {{range .Conversations}}
-                <li style="display: flex; justify-content: space-between; align-items: center;">
+                <li class="list-row">
                     <div>
                         <a href="/chat/{{.ID}}">{{.Title}}</a>
                         <div class="time" data-time="{{.UpdatedAt.Unix}}"></div>
                     </div>
                     {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
-                    <div style="display:flex; gap:6px; flex-shrink:0; margin-left:8px;">
-                        <button onclick="togglePublic({{.ID}}, {{.Public}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:{{if .Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Public}}#fff{{else}}#999{{end}}; cursor:pointer;">{{if .Public}}Public{{else}}Private{{end}}</button>
-                        <button onclick="deleteChat({{.ID}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;">Delete</button>
+                    <div class="item-actions">
+                        <button onclick="togglePublic({{.ID}}, {{.Public}})" class="item-visibility {{if .Public}}is-public{{end}}">{{if .Public}}Public{{else}}Private{{end}}</button>
+                        <button onclick="deleteChat({{.ID}})" class="item-delete">Delete</button>
                     </div>
                     {{else}}
-                    {{if .Public}}<span style="font-size:11px; padding:2px 8px; color:#22c55e;">Public</span>{{end}}
+                    {{if .Public}}<span class="public-label">Public</span>{{end}}
                     {{end}}
                 </li>
                 {{end}}

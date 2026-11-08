@@ -1,84 +1,28 @@
 {{define "name.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-name">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{index . "English"}} - Names of Allah - Aslam</title>
     {{template "style"}}
-    <style>
-        .name-number {
-            display: inline-block;
-            font-size: 12px;
-            background: #e8e8f5;
-            color: #1a1a6b;
-            padding: 2px 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-        .name-arabic {
-            font-size: 36px;
-            line-height: 1.8;
-            direction: rtl;
-            text-align: center;
-            font-family: 'Uthmanic', 'Traditional Arabic', serif;
-            margin: 16px 0;
-            padding: 16px;
-            background: #fafafa;
-            border-radius: 8px;
-        }
-        .name-english {
-            font-size: 20px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 4px;
-        }
-        .name-meaning {
-            font-size: 16px;
-            color: #666;
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .name-description {
-            line-height: 1.8;
-            word-wrap: break-word;
-            margin-bottom: 24px;
-        }
-        .name-description p { margin-bottom: 1em; }
-        .name-summary {
-            line-height: 1.8;
-            word-wrap: break-word;
-            padding: 16px;
-            background: #f8f6f0;
-            border-radius: 8px;
-            border-left: 3px solid #8080c0;
-            font-size: 14px;
-        }
-        .name-source {
-            margin-top: 32px;
-            padding-top: 16px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #999;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span class="name-number" style="margin-bottom:0;">#{{index . "Number"}}</span>
+            <div class="content-heading">
+                <span class="name-number mb-0">#{{index . "Number"}}</span>
                 {{if .LoggedIn}}
-                <div style="display:flex; gap:6px;">
-                    <form method="POST" action="/notes/add" style="display:inline;">
+                <div class="action-group">
+                    <form method="POST" action="/notes/add" class="inline-form">
                         <input type="hidden" name="title" value="{{index . "English"}} — {{index . "Meaning"}}">
                         <input type="hidden" name="content" value="/names/{{index . "Number"}}
 
 {{index . "Description"}}">
                         <button type="submit" class="button">Save</button>
                     </form>
-                    <form method="POST" action="/chat/new" style="display:inline;">
+                    <form method="POST" action="/chat/new" class="inline-form">
                         <input type="hidden" name="title" value="Name of Allah — {{index . "English"}}">
                         <input type="hidden" name="context" value="Name of Allah #{{index . "Number"}} (/names/{{index . "Number"}})
 {{if index . "Arabic"}}
@@ -92,7 +36,7 @@
                     </form>
                 </div>
                 {{else}}
-                <a href="/auth/login" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#666; text-decoration:none; white-space:nowrap;">Sign in to save</a>
+                <a href="/auth/login" class="reader-sign-in">Sign in to save</a>
                 {{end}}
             </div>
             {{if index . "Arabic"}}
@@ -108,13 +52,13 @@
             {{if index . "Summary"}}
             <div class="name-summary">{{paragraphs (index . "Summary")}}</div>
             {{end}}
-            <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+            <div class="content-pagination">
                 {{if index . "PrevNumber"}}<a href="/names/{{index . "PrevNumber"}}">&larr; Previous</a>{{else}}<span></span>{{end}}
                 <a href="/names">All Names</a>
                 {{if index . "NextNumber"}}<a href="/names/{{index . "NextNumber"}}">Next &rarr;</a>{{else}}<span></span>{{end}}
             </div>
             <div class="name-source">
-                <a href="https://reminder.dev/names/{{index . "Number"}}" target="_blank" style="color:#888;">View on reminder.dev &rarr;</a>
+                <a href="https://reminder.dev/names/{{index . "Number"}}" target="_blank" class="text-muted">View on reminder.dev &rarr;</a>
             </div>
         </main>
     </div>

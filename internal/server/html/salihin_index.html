@@ -1,40 +1,11 @@
 {{define "salihin_index.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-salihin-index">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riyad us-Salihin - Aslam</title>
     {{template "style"}}
-    <style>
-        .cat-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 20px;
-        }
-        .cat-filters a {
-            font-size: 12px;
-            padding: 3px 10px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            text-decoration: none;
-            color: #444;
-        }
-        .cat-filters a:hover { background: #e0e0e0; }
-        .cat-filters a.active { background: #000; color: #fff; }
-        .riyad-list a {
-            text-decoration: none;
-            display: block;
-        }
-        .riyad-list a:hover { opacity: 0.7; }
-        .riyad-narrator {
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-            margin-top: 2px;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -43,7 +14,7 @@
             <h2>Riyad us-Salihin</h2>
 {{if .ContinuePath}}
             <div class="continue-reading">
-                Continue reading: <a href="{{.ContinuePath}}" style="font-weight:500;">{{.ContinueTitle}} &rarr;</a>
+                Continue reading: <a href="{{.ContinuePath}}" class="text-medium">{{.ContinueTitle}} &rarr;</a>
             </div>
             {{end}}
 

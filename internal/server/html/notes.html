@@ -1,54 +1,21 @@
 {{define "notes.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-notes">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes - Aslam</title>
     {{template "style"}}
-    <style>
-        .note-form {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-
-        .note-form textarea { min-height: 80px; max-height: 300px; resize: vertical; }
-
-        .note-form button { align-self: flex-end; }
-
-        .notes-grid { display: grid; gap: 12px; }
-        .note-item {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 14px;
-        }
-        .note-item h3 { margin: 0 0 4px 0; font-size: 15px; }
-        .note-item .description { color: #666; font-size: 13px; margin-bottom: 6px; line-height: 1.6; }
-        .note-item .description a.source-link {
-            display: inline-block;
-            font-size: 12px;
-            padding: 2px 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            color: #0066cc;
-            text-decoration: none;
-            margin-bottom: 4px;
-        }
-        .note-item .description a.source-link:hover { background: #e0e0e0; }
-        .note-item .meta { font-size: 12px; color: #999; margin-top: 8px; }
-    </style>
 </head>
 <body>
     <div class="app">
         {{template "header" .}}
         <main class="app-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h2 style="margin-bottom:0;">Notes</h2>
-                <div style="font-size:13px;">
-                    <a href="/notes" style="{{if not .ShowAll}}font-weight:600;{{end}} text-decoration:none; margin-right:8px;">Mine</a>
-                    <a href="/notes?show=all" style="{{if .ShowAll}}font-weight:600;{{end}} text-decoration:none;">All</a>
+            <div class="content-heading">
+                <h2 class="mb-0">Notes</h2>
+                <div class="text-small">
+                    <a href="/notes" class="filter-link filter-link-first {{if not .ShowAll}}is-active{{end}}">Mine</a>
+                    <a href="/notes?show=all" class="filter-link {{if .ShowAll}}is-active{{end}}">All</a>
                 </div>
             </div>
 
@@ -63,19 +30,19 @@
             <div class="notes-grid">
                 {{range .Items}}
                 <div class="note-item">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <h3><a href="/notes/{{.ID}}" style="text-decoration:none;">{{.Title}}</a></h3>
+                    <div class="note-heading">
+                        <h3><a href="/notes/{{.ID}}" class="link-plain">{{.Title}}</a></h3>
                         {{if or (eq .UserID $.CurrentUserID) (eq .UserID 0)}}
-                        <div style="display:flex; gap:6px; flex-shrink:0; margin-left:8px;">
-                            <button onclick="toggleNotePublic({{.ID}}, {{.Public}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:{{if .Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Public}}#fff{{else}}#999{{end}}; cursor:pointer;">{{if .Public}}Public{{else}}Private{{end}}</button>
-                            <button onclick="deleteNote({{.ID}})" style="font-size:11px; padding:2px 8px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;">Delete</button>
+                        <div class="item-actions">
+                            <button onclick="toggleNotePublic({{.ID}}, {{.Public}})" class="item-visibility {{if .Public}}is-public{{end}}">{{if .Public}}Public{{else}}Private{{end}}</button>
+                            <button onclick="deleteNote({{.ID}})" class="item-delete">Delete</button>
                         </div>
                         {{else}}
-                        {{if .Public}}<span style="font-size:11px; padding:2px 8px; color:#22c55e;">Public</span>{{end}}
+                        {{if .Public}}<span class="public-label">Public</span>{{end}}
                         {{end}}
                     </div>
                     {{if .Content}}<div class="description linkify">{{truncate .Content 200}}</div>
-                    {{if gt (len .Content) 200}}<a href="/notes/{{.ID}}" style="font-size:12px; color:#888;">Read more &rarr;</a>{{end}}
+                    {{if gt (len .Content) 200}}<a href="/notes/{{.ID}}" class="small-muted-link">Read more &rarr;</a>{{end}}
                     {{end}}
                     <div class="meta">
                         <span data-time="{{.UpdatedAt.Unix}}"></span>

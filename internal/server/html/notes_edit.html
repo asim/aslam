@@ -1,34 +1,11 @@
 {{define "notes_edit.html"}}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-notes-edit">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Note - Aslam</title>
     {{template "style"}}
-    <style>
-        .edit-form label {
-            display: block;
-            margin-top: 16px;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-        .edit-form input, .edit-form textarea { width: 100%; margin-top: 4px; }
-        .edit-form textarea {
-            min-height: 200px;
-        }
-        .edit-form .buttons {
-            margin-top: 24px;
-            display: flex;
-            gap: 12px;
-        }
-
-
-        .edit-form .delete-btn {
-            background: #fee;
-            color: #c00;
-        }
-    </style>
 </head>
 <body>
     <div class="app">
@@ -36,8 +13,8 @@
         <main class="app-content">
             <h2>Edit: {{.Item.Title}}</h2>
             {{if .IsOwner}}
-            <div style="margin: -4px 0 12px 0;">
-                <button onclick="toggleNotePublic()" id="public-toggle" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:{{if .Item.Public}}#22c55e{{else}}#fff{{end}}; color:{{if .Item.Public}}#fff{{else}}#666{{end}}; cursor:pointer;">
+            <div class="editor-help">
+                <button onclick="toggleNotePublic()" id="public-toggle" class="compact-visibility {{if .Item.Public}}is-public{{end}}">
                     {{if .Item.Public}}Public{{else}}Private{{end}}
                 </button>
             </div>
@@ -54,7 +31,7 @@
             }
             </script>
             {{end}}
-            <p class="muted" style="margin-bottom: 20px"><a href="/notes">&larr; back to notes</a></p>
+            <p class="muted mb-20"><a href="/notes">&larr; back to notes</a></p>
 
             <form action="/notes/edit/{{.Item.ID}}" method="POST" class="edit-form">
                 <label>Title
@@ -69,8 +46,8 @@
                 </div>
             </form>
 
-            <form action="/notes/delete/{{.Item.ID}}" method="POST" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-                <button type="submit" style="font-size:12px; padding:4px 10px; border:1px solid #ddd; border-radius:4px; background:#fff; color:#c00; cursor:pointer;" onclick="return confirm('Delete this note permanently?')" class="button">Delete</button>
+            <form action="/notes/delete/{{.Item.ID}}" method="POST" class="editor-danger-zone">
+                <button type="submit" onclick="return confirm('Delete this note permanently?')" class="button compact-delete">Delete</button>
             </form>
         </main>
     </div>

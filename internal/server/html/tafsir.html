@@ -1,16 +1,15 @@
 {{define "tafsir.html"}}
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Passage.Title}} — Aslam</title>{{template "style"}}
-<style>.tafsir-content{line-height:1.8;overflow-wrap:anywhere}.tafsir-content p{margin:0 0 1em}.tafsir-content h2,.tafsir-content h3,.tafsir-content h4{margin:1.5em 0 .75em;line-height:1.5}.tafsir-content [lang=ar]{font-size:1.35em;line-height:2}.tafsir-content ul,.tafsir-content ol{padding-inline-start:24px}.tafsir-ayahs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}</style>
+<!doctype html><html lang="en" class="page-tafsir"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Passage.Title}} — Aslam</title>{{template "style"}}
 </head><body><div class="app">{{template "header" .}}<main class="app-content">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px">
+<div class="tafsir-heading">
 <a href="/tafsir">Tafsir Ibn Kathir</a>
-{{if .LoggedIn}}<div style="display:flex;gap:6px">
+{{if .LoggedIn}}<div class="action-group">
 <form method="POST" action="/notes/add"><input type="hidden" name="title" value="{{.Passage.Title}}"><input type="hidden" name="content" value="{{.Passage.URL}}"><button type="submit" class="button">Save</button></form>
 <form method="POST" action="/chat/new"><input type="hidden" name="title" value="{{.Passage.Title}}"><input type="hidden" name="context" value="{{.ChatContext}}"><button type="submit" class="button">Chat</button></form>
 </div>{{else}}<a class="button" href="/auth/login">Sign in to save</a>{{end}}</div>
 <h2>{{.Passage.Title}}</h2><p class="muted">English commentary · {{.ChapterName}}</p>
 <div class="tafsir-ayahs"><span>Verses covered:</span>{{range .Ayahs}}<a href="{{.URL}}">{{.Ref}}</a>{{end}}</div>
 <div class="tafsir-content">{{.HTML}}</div>
-<p class="muted" style="margin-top:24px;padding-top:16px;border-top:1px solid #eee">Source: <a href="{{.SourceURL}}">{{.Source}}</a>. Commentary is presented separately from the Quran translation.</p>
-<nav style="display:flex;justify-content:space-between;gap:12px;margin-top:20px;font-size:13px">{{if .Passage.Previous}}<a href="{{.Passage.Previous}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="/tafsir/ibn-kathir/{{.Chapter}}">Chapter passages</a>{{if .Passage.Next}}<a href="{{.Passage.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</nav>
+<p class="muted source-credit">Source: <a href="{{.SourceURL}}">{{.Source}}</a>. Commentary is presented separately from the Quran translation.</p>
+<nav class="tafsir-pagination">{{if .Passage.Previous}}<a href="{{.Passage.Previous}}">&larr; Previous</a>{{else}}<span></span>{{end}}<a href="/tafsir/ibn-kathir/{{.Chapter}}">Chapter passages</a>{{if .Passage.Next}}<a href="{{.Passage.Next}}">Next &rarr;</a>{{else}}<span></span>{{end}}</nav>
 </main></div></body></html>{{end}}
