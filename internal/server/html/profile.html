@@ -39,6 +39,21 @@
 
         .profile-form button { margin-top: 20px; }
 
+        .profile-developers {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #ddd;
+        }
+        .profile-developers h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+        .profile-developer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+        }
+
         .profile-meta {
             margin-top: 20px;
             font-size: 12px;
@@ -81,8 +96,15 @@
                     <button type="submit" class="form-submit">Save</button>
                 </form>
 
-                <p><a class="btn" href="/profile/api-keys">API keys</a> <a href="/api/docs">API documentation</a></p>
- <div class="profile-meta">
+                <section class="profile-developers" aria-labelledby="developers-heading">
+                    <h3 id="developers-heading">Developers</h3>
+                    <div class="profile-developer-links">
+                        <a href="/profile/api-keys">API keys</a>
+                        <a href="/api/docs">API documentation</a>
+                    </div>
+                </section>
+
+                <div class="profile-meta">
                     Member since {{.User.CreatedAt.Format "January 2006"}}
                 </div>
             </div>
