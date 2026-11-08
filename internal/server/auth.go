@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"aslam/db"
@@ -109,10 +110,24 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+type requestSessionKey struct{}
+type requestSession struct {
+	once    sync.Once
+	session *db.Session
+}
+
 func getSession(r *http.Request) *db.Session {
 	if session, ok := r.Context().Value(apiSessionKey{}).(*db.Session); ok {
 		return session
 	}
+	if cached, ok := r.Context().Value(requestSessionKey{}).(*requestSession); ok {
+		cached.once.Do(func() { cached.session = browserSession(r) })
+		return cached.session
+	}
+	return browserSession(r)
+}
+
+func browserSession(r *http.Request) *db.Session {
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		return nil

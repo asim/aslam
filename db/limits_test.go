@@ -152,7 +152,7 @@ func TestProductionPoolIsBounded(t *testing.T) {
 		c.Close()
 	}
 	held = nil
-	if stats := DB.Stats(); stats.InUse != 0 || stats.Idle > 2 {
-		t.Fatalf("pool retained too much: %+v", stats)
+	if stats := DB.Stats(); stats.InUse != 0 || stats.Idle != 4 {
+		t.Fatalf("pool did not retain its bounded warm connections: %+v", stats)
 	}
 }

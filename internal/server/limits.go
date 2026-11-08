@@ -46,7 +46,7 @@ func requestLimits(next http.Handler) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), timeout)
 		defer cancel()
-		r = r.WithContext(ctx)
+		r = r.WithContext(context.WithValue(ctx, requestSessionKey{}, &requestSession{}))
 		// Set a finite socket deadline without wrapping the writer: streaming retains
 		// http.Flusher support. Chat receives a longer, still bounded deadline.
 		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(timeout))

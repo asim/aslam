@@ -29,7 +29,7 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, name string, data ma
 	// Templates branch on this to hide account-only affordances (Save, Chat,
 	// the nav) from anonymous visitors on public content pages.
 	if _, set := data["LoggedIn"]; !set {
-		data["LoggedIn"] = isLoggedIn(r)
+		data["LoggedIn"] = session != nil && db.IsUserContext(r.Context(), session.Email)
 	}
 	tmpl.ExecuteTemplate(w, name, data)
 }
