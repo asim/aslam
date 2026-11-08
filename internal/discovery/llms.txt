@@ -49,7 +49,9 @@ Use returned paths/slugs rather than constructing them. Resolve relative URLs ag
 ## Account API
 
 HTTP endpoints cover chats/history/questions, note CRUD (including saved links), note/chat visibility,
-reading progress, profile reading and location updates. See OpenAPI for method/body details.
+reading progress, profile reading and location updates. Reading progress sources roots and reading
+normalize to arabic, sharing the website Continue reading position; GET returns arabic.
+See OpenAPI for method/body details.
 /api/chat/send streams plain text, not SSE. A question uses the same daily allowance as the website;
 tool follow-ups are included and admins are exempt. MCP does not expose account actions.
 The older /api/search is account-aware app search; use /api/knowledge/search for source-only retrieval.

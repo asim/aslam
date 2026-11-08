@@ -170,3 +170,54 @@ func TestExpandedKnowledgeResources(t *testing.T) {
 		}
 	}
 }
+
+func TestArabicAPIProgressMatchesBrowser(t *testing.T) {
+	ctx := modelTestContext(t)
+	key, err := db.CreateAPIKey(ctx, 1, "reading")
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := func(method, body string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(method, "/api/reading-progress", strings.NewReader(body))
+		r.Header.Set("Authorization", "Bearer "+key)
+		w := httptest.NewRecorder()
+		requireAuth(handleAPIReadingProgress)(w, r)
+		return w
+	}
+	for _, tc := range []struct{ source, path string }{
+		{"roots", "/arabic/roots/ktb?offset=50"},
+		{"reading", "/arabic/reading/1/1"},
+		{"arabic", "/arabic/1"},
+	} {
+		body, _ := json.Marshal(map[string]string{"source": tc.source, "path": tc.path, "title": "Arabic"})
+		w := request("POST", string(body))
+		if w.Code != 200 {
+			t.Fatal(w.Code, w.Body.String())
+		}
+		path, title := db.GetReadingProgressContext(ctx, 1, "arabic")
+		if path != tc.path || title != "Arabic" {
+			t.Fatalf("browser position: %q %q", path, title)
+		}
+		// A subsequent browser read must update the same row seen by API clients.
+		db.SaveReadingProgressContext(ctx, 1, "arabic", "/arabic/reading/2/1", "Browser position")
+		w = request("GET", "")
+		var result struct {
+			Results []struct{ Source, Path, Title string }
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+			t.Fatal(err)
+		}
+		if len(result.Results) != 1 || result.Results[0].Source != "arabic" || result.Results[0].Path != "/arabic/reading/2/1" {
+			t.Fatal(w.Body.String())
+		}
+	}
+	if w := request("POST", `{"source":"roots","path":"/quran/1/1"}`); w.Code != 400 {
+		t.Fatal("mismatched source accepted", w.Code)
+	}
+	if w := request("POST", `{"source":"quran","path":"/quran/1/1","title":"Quran"}`); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if path, _ := db.GetReadingProgressContext(ctx, 1, "quran"); path != "/quran/1/1" {
+		t.Fatal("unrelated source changed")
+	}
+}

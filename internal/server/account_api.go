@@ -146,8 +146,13 @@ func handleAPIReadingProgress(w http.ResponseWriter, r *http.Request) {
 			jsonError(w, "Invalid reading progress", 400)
 			return
 		}
+		// The browser shares one Continue reading position across vocabulary,
+		// roots and passages. Collection names are aliases of that namespace.
+		if in.Source == "roots" || in.Source == "reading" {
+			in.Source = "arabic"
+		}
 		root := strings.Split(strings.TrimPrefix(in.Path, "/"), "/")[0]
-		if knowledgeCollections[root] == "" {
+		if knowledgeCollections[root] == "" || root != in.Source {
 			jsonError(w, "Invalid resource path", 400)
 			return
 		}

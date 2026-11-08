@@ -1233,7 +1233,7 @@
       },
       "post": {
         "summary": "Save your reading position",
-        "description": "Upserts one position per source for your account. Path must be a local knowledge reader path.",
+        "description": "Upserts one position per source for your account. roots and reading normalize to arabic, matching the website Continue reading position. GET returns the canonical source arabic. Path must be a local reader path matching the normalized source.",
         "responses": {
           "200": {
             "description": "Success; JSON response",
