@@ -23,7 +23,7 @@ Stateless JSON responses; no legacy SSE endpoint. Request bodies are capped at 1
 
 ## Knowledge
 
-Collections: quran, hadith (Bukhari), names, seerah (The Sealed Nectar), ghazali,
+Collections: tafsir (English Ibn Kathir commentary), quran, hadith (Bukhari), names, seerah (The Sealed Nectar), ghazali,
 islamqa, adhkar, salihin (Riyad us-Salihin), arabic (words, including multi-word entries),
 roots, reading (Arabic passages), stories (prophets).
 
@@ -42,7 +42,7 @@ Search uses q (up to 1000 UTF-8 bytes), optional collection and limit (1–50). 
 no results. Search result field names include Kind, Title, Content, Source and URL. Resource
 responses contain kind, source, url and resource, whose fields depend on the collection.
 Reader paths include /quran/{chapter}/{verse}, /hadith/{number}, /names/{number},
-/salihin/{number}, /ghazali/{slug}, /islamqa/{slug}, /adhkar/{slug}, /seerah/page/{page},
+/tafsir/ibn-kathir/{chapter}/{verse}, /salihin/{number}, /ghazali/{slug}, /islamqa/{slug}, /adhkar/{slug}, /seerah/page/{page},
 /arabic/{id}, /arabic/roots/{code}, /arabic/reading/{chapter}/{verse}, /stories/{slug}.
 Use returned paths/slugs rather than constructing them. Resolve relative URLs against https://aslam.org.
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"aslam/data"
 	"aslam/db"
 	"aslam/internal/discovery"
 	"aslam/internal/seerah"
@@ -78,6 +79,9 @@ func Run() {
 		log.Fatal("Seerah index: ", err)
 	}
 
+	if err := db.ImportTafsir(data.Tafsir); err != nil {
+		log.Fatal("Tafsir import: ", err)
+	}
 	seedUsers()
 
 	go func() {
@@ -213,6 +217,8 @@ func Run() {
 	http.HandleFunc("/islamqa/", optionalAuth(handleIslamQAView))
 	http.HandleFunc("/seerah", optionalAuth(handleSeerahIndex))
 	http.HandleFunc("/seerah/page/", optionalAuth(handleSeerahPage))
+	http.HandleFunc("/tafsir", optionalAuth(handleTafsir))
+	http.HandleFunc("/tafsir/", optionalAuth(handleTafsir))
 	http.HandleFunc("/ghazali", optionalAuth(handleGhazaliIndex))
 	http.HandleFunc("/ghazali/", optionalAuth(handleGhazaliView))
 	http.HandleFunc("/adhkar", optionalAuth(handleAdhkarIndex))

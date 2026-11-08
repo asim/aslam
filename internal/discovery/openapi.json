@@ -49,6 +49,7 @@
                 "hadith",
                 "names",
                 "seerah",
+          "tafsir",
                 "ghazali",
                 "islamqa",
                 "adhkar",
@@ -284,7 +285,7 @@
             "name": "group",
             "in": "query",
             "required": false,
-            "description": "Quran/reading: chapter number; hadith: book number; salihin: book title; ghazali: volume; islamqa/adhkar: category; seerah: 1-based chapter; arabic: word type; roots: root code.",
+            "description": "Quran/reading/tafsir: chapter number; hadith: book number; salihin: book title; ghazali: volume; islamqa/adhkar: category; seerah: 1-based chapter; arabic: word type; roots: root code.",
             "schema": {
               "type": "string"
             }
@@ -1275,6 +1276,7 @@
                       "hadith",
                       "names",
                       "seerah",
+          "tafsir",
                       "ghazali",
                       "islamqa",
                       "adhkar",
@@ -1312,6 +1314,7 @@
           "hadith",
           "names",
           "seerah",
+          "tafsir",
           "ghazali",
           "islamqa",
           "adhkar",

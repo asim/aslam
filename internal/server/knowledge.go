@@ -16,7 +16,7 @@ import (
 )
 
 var knowledgeCollections = map[string]string{
-	"quran": "Quran", "hadith": "Sahih al-Bukhari", "names": "Names of Allah",
+	"tafsir": db.TafsirSource, "quran": "Quran", "hadith": "Sahih al-Bukhari", "names": "Names of Allah",
 	"seerah":  "The Sealed Nectar — Safiur Rahman al-Mubarakpuri; translation by Issam Diab",
 	"ghazali": "Ihya Ulum al-Din — Al-Ghazali", "islamqa": "IslamQA scholarly answers",
 	"adhkar": "Duas and dhikr", "salihin": "Riyad us-Salihin",
@@ -117,6 +117,13 @@ func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
 	var err error
 	number := func(s string) int64 { n, _ := strconv.ParseInt(s, 10, 64); return n }
 	switch {
+	case kind == "tafsir" && len(parts) == 4 && parts[1] == db.TafsirEdition:
+		var passage *db.TafsirPassage
+		passage, err = db.GetTafsir(r.Context(), int(number(parts[2])), int(number(parts[3])))
+		if err == nil {
+			item = map[string]interface{}{"Title": passage.Title, "Content": passage.Text, "HTML": passage.HTML, "Ayahs": passage.Ayahs, "Edition": db.TafsirEdition, "SourceURL": passage.SourceURL, "Previous": passage.Previous, "Next": passage.Next}
+			path = passage.URL
+		}
 	case kind == "stories" && len(parts) == 2:
 		item, err = db.GetProphetContext(r.Context(), parts[1])
 	case kind == "arabic" && len(parts) == 2:
@@ -284,6 +291,8 @@ func handleKnowledgeContents(w http.ResponseWriter, r *http.Request) {
 	var items []map[string]interface{}
 	var err error
 	switch kind {
+	case "tafsir":
+		items, err = db.TafsirChapters(r.Context())
 	case "quran":
 		items, err = db.GetQuranChaptersContext(r.Context())
 	case "hadith":

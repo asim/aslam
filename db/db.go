@@ -865,6 +865,9 @@ func Migrate() error {
 	if err := initAPIKeys(); err != nil {
 		return err
 	}
+	if err := initTafsir(); err != nil {
+		return err
+	}
 	return initArabicLearning()
 }
 
@@ -1303,6 +1306,16 @@ func searchAllContext(ctx context.Context, query string, userID int64, isAdmin, 
 		return results[:limit], nil
 	}
 
+	if collection == "" || collection == "tafsir" {
+		found, err := SearchTafsir(ctx, query, searchResultLimit(limit, len(results)))
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, found...)
+	}
+	if limit > 0 && len(results) >= limit {
+		return results[:limit], nil
+	}
 	// Ghazali results (Ihya Ulum al-Din — Revival of the Islamic Sciences)
 	if collection == "" || collection == "ghazali" {
 		if gResults, err := searchGhazaliContext(ctx, query, searchResultLimit(limit, len(results))); err == nil {
