@@ -187,23 +187,28 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAPIChatLatest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		jsonError(w, "Method not allowed", 405)
+		return
+	}
 	convID, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
 	if convID == 0 {
 		jsonError(w, "Missing id", 400)
 		return
 	}
-	messages, _ := db.GetMessages(convID)
-	if len(messages) == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"role": "", "content": ""})
+	if !canReadAPIChat(w, r, convID) {
 		return
 	}
-	last := messages[len(messages)-1]
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"role":    last.Role,
-		"content": last.Content,
-	})
+	items, err := db.QueryAPI(r.Context(), "SELECT role,content FROM messages WHERE conversation_id=? ORDER BY id DESC LIMIT 1", convID)
+	if err != nil {
+		jsonError(w, "Messages unavailable", 503)
+		return
+	}
+	if len(items) == 0 {
+		apiJSON(w, map[string]string{"role": "", "content": ""})
+		return
+	}
+	apiJSON(w, items[0])
 }
 
 func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {

@@ -862,6 +862,9 @@ func Migrate() error {
 		DELETE FROM arabic_fts WHERE docid = old.id;
 	END`)
 
+	if err := initAPIKeys(); err != nil {
+		return err
+	}
 	return initArabicLearning()
 }
 

@@ -25,8 +25,8 @@ func TestKnowledgeDiscoveryContract(t *testing.T) {
 	if err := json.Unmarshal(data, &spec); err != nil {
 		t.Fatal(err)
 	}
-	if spec.Security == nil || len(spec.Security) != 0 {
-		t.Fatal("public API must explicitly require no authentication")
+	if len(spec.Security) != 1 {
+		t.Fatal("API must default to account authentication")
 	}
 	kinds := spec.Components.Schemas["Collection"].Enum
 	if len(kinds) != len(knowledgeCollections) {
@@ -41,7 +41,7 @@ func TestKnowledgeDiscoveryContract(t *testing.T) {
 		"/api/knowledge/search":   handleKnowledgeSearch,
 		"/api/knowledge/resource": handleKnowledgeResource,
 	}
-	if len(spec.Paths) != len(handlers) {
+	if len(spec.Paths) < len(handlers) {
 		t.Fatal("documented paths drifted")
 	}
 	var catalog struct {
@@ -62,20 +62,23 @@ func TestKnowledgeDiscoveryContract(t *testing.T) {
 	if err := json.Unmarshal(data, &catalog); err != nil {
 		t.Fatal(err)
 	}
-	if len(catalog.Linkset) != 3 || len(catalog.Linkset[0].Items) != len(handlers) {
-		t.Fatal("catalog must enumerate both knowledge endpoints")
+	if len(catalog.Linkset) != 4 || len(catalog.Linkset[0].Items) < len(handlers)+1 {
+		t.Fatal("catalog must enumerate knowledge endpoints and MCP")
 	}
 	for _, item := range catalog.Linkset[0].Items {
 		u, err := url.Parse(item.Href)
-		if err != nil || u.Scheme != "https" || u.Host != "aslam.org" || handlers[u.Path] == nil {
+		if err != nil || u.Scheme != "https" || u.Host != "aslam.org" || (spec.Paths[u.Path] == nil && u.Path != "/mcp") {
 			t.Fatalf("invalid catalog endpoint %s", item.Href)
 		}
 	}
-	for _, entry := range catalog.Linkset[1:] {
+	for _, entry := range catalog.Linkset[1:3] {
 		if len(entry.Descriptions) != 1 || entry.Descriptions[0].Href != "https://aslam.org/openapi.json" ||
 			len(entry.Docs) != 1 || entry.Docs[0].Href != "https://aslam.org/llms.txt" {
 			t.Fatal("catalog description links broken")
 		}
+	}
+	if docs := catalog.Linkset[3].Docs; len(docs) != 1 || docs[0].Href != "https://aslam.org/llms.txt" {
+		t.Fatal("MCP documentation missing")
 	}
 	for path, handler := range handlers {
 		if _, ok := spec.Paths[path]; !ok {

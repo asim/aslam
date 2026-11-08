@@ -174,6 +174,14 @@ func Run() {
 
 	// Public landing page
 	discovery.RegisterRoutes(http.DefaultServeMux)
+	http.HandleFunc("/api/docs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", 405)
+			return
+		}
+		renderTemplate(w, r, "api_docs.html", nil)
+	})
+	http.Handle("/mcp", accountAPI(newMCPHandler(), true))
 	http.HandleFunc("/", handleLanding)
 
 	// Protected routes
@@ -183,13 +191,21 @@ func Run() {
 	http.HandleFunc("/chat/new", requireAuth(handleNewChat))
 	http.HandleFunc("/chat/send", requireAuth(handleSendMessage))
 	http.HandleFunc("/api/chat/send", requireAuth(handleAPISendMessage))
+	http.HandleFunc("/api/chat/messages", requireAuth(handleAPIChatMessages))
+	http.HandleFunc("/api/notes", requireAuth(handleAPINotes))
+	http.HandleFunc("/api/notes/", requireAuth(handleAPINotes))
+	http.HandleFunc("/api/reading-progress", requireAuth(handleAPIReadingProgress))
+	http.HandleFunc("/api/profile", requireAuth(handleAPIProfile))
 	http.HandleFunc("/api/chat/latest", requireAuth(handleAPIChatLatest))
 	http.HandleFunc("/api/chat/new", requireAuth(handleAPINewChat))
 	http.HandleFunc("/api/chat/delete", requireAuth(handleAPIDeleteChat))
 	http.HandleFunc("/api/chats", requireAuth(handleAPIChats))
 	http.HandleFunc("/api/search", optionalAuth(handleAPISearch))
 	http.HandleFunc("/api/knowledge/search", handleKnowledgeSearch)
-	http.HandleFunc("/api/knowledge/resource", handleKnowledgeResource)
+	http.HandleFunc("/api/knowledge/resource", requireAuth(handleKnowledgeResource))
+	http.HandleFunc("/api/knowledge/collections", requireAuth(handleKnowledgeCollections))
+	http.HandleFunc("/api/knowledge/browse", requireAuth(handleKnowledgeBrowse))
+	http.HandleFunc("/api/knowledge/contents", requireAuth(handleKnowledgeContents))
 	http.HandleFunc("/search", optionalAuth(handleSearch))
 	http.HandleFunc("/entries", requireAuth(handleEntries))
 	http.HandleFunc("/entries/", requireAuth(handleEntryView))
@@ -223,6 +239,7 @@ func Run() {
 	http.HandleFunc("/admin/delete-account", requireAuth(requireAdmin(handleDeleteAccount)))
 	http.HandleFunc("/admin/model-limits", requireAuth(requireAdmin(handleModelLimits)))
 	http.HandleFunc("/admin/toggle-integration", requireAuth(requireAdmin(handleToggleIntegration)))
+	http.HandleFunc("/profile/api-keys", handleAPIKeys)
 	http.HandleFunc("/profile", requireAuth(handleProfile))
 	http.HandleFunc("/notes", requireAuth(handleNotes))
 	http.HandleFunc("/notes/", requireAuth(handleNoteView))

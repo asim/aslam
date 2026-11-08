@@ -28,6 +28,10 @@ import (
 // credits, stays behind requireAuth.
 func optionalAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") && r.Header.Get("Authorization") != "" {
+			accountAPI(handler, false).ServeHTTP(w, r)
+			return
+		}
 		if r.Host == "www.aslam.org" {
 			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
 			return
@@ -44,6 +48,10 @@ func isLoggedIn(r *http.Request) bool {
 
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			accountAPI(handler, false).ServeHTTP(w, r)
+			return
+		}
 		// Redirect www to non-www
 		if r.Host == "www.aslam.org" {
 			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
@@ -102,6 +110,9 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 }
 
 func getSession(r *http.Request) *db.Session {
+	if session, ok := r.Context().Value(apiSessionKey{}).(*db.Session); ok {
+		return session
+	}
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		return nil
