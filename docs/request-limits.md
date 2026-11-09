@@ -5,7 +5,7 @@ Aslam rejects excess work rather than queueing another unbounded set of handlers
 - 8 concurrent public reader/resource requests, with a shared sublimit of 2 searches (including Arabic search).
 - A separate 16-request pool for other routes, so public crawling does not consume every admin/chat slot. This is not a dedicated admin reservation against traffic to other routes.
 - Excess requests receive HTTP 503 and `Retry-After: 5` immediately.
-- 4 SQLite connections maximum, 2 idle maximum, idle connections retired after one minute. SQLite's busy timeout is explicitly 1 second per connection; journal mode is unchanged.
+- 4 SQLite connections maximum, retaining up to 4 idle connections without a timed idle expiry. Keeping the bounded pool warm avoids repeating SQLCipher key derivation. SQLite's busy timeout is explicitly 1 second per connection; journal mode is unchanged.
 - Reader/search queries use the request context and a 5-second database deadline, including waiting for a pooled connection. General search shares one deadline across its collections. SQLite cancellation while waiting for a native lock may take up to the busy timeout to be observed.
 - Search text is limited to 1,000 bytes. Knowledge search filters collections before querying and passes the remaining result limit into SQL (still at most 10 per collection).
 - HTTP headers have a 5-second timeout and 32 KiB cap; request reads have a 15-second timeout and bodies a 1 MiB cap. Idle connections expire after 30 seconds.

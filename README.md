@@ -1,310 +1,32 @@
 # Aslam
 
-An Islamic knowledge base for Muslims
+An Islamic knowledge base for Muslims. [Use Aslam](https://aslam.org).
 
-## What is this?
+Read and search the Quran, Hadith, Tafsir Ibn Kathir, Seerah, scholarly Q&A, classical works and adhkar. Learn Quranic Arabic, save notes and bookmarks, and ask questions grounded in the sources.
 
-Aslam is an **archive for Islamic knowledge**. It connects you to authentic sources — Quran, Hadith, scholarly Q&A, classical works, daily adhkar, and Quranic Arabic vocabulary. Save notes, share reflections, and build a searchable library of everything you learn. Ask the AI questions grounded in true facts and data.
+- Browse reference texts with citations and reading progress.
+- Keep chats and notes private, or choose to share them.
+- See prayer times and a daily reminder.
+- Install the website as a PWA.
+- Connect other applications through the [HTTP API](https://aslam.org/api/docs) or [MCP](docs/api.md).
 
-AI works in the background to help find, organise, and connect information across sources — but the sources themselves are authentic, cited, and browsable.
+## Run locally
 
-## Islamic Sources
+Install Go and a C compiler, then follow the [installation guide](docs/installation.md) to create the database encryption key and configure your environment.
 
-| Source | Records | Description |
-|--------|---------|-------------|
-| **Quran** | 6,348 verses | Arabic, English translation, word-by-word breakdown, commentary |
-| **Hadith** | 7,265 narrations | Sahih al-Bukhari with Arabic and English |
-| **Riyad us-Salihin** | 1,896 hadiths | Gardens of the Righteous (Imam An-Nawawi) — 20 books including the Book of Miscellany |
-| **Names of Allah** | 99 names | Arabic, English, meaning, description, and summary |
-| **IslamQA** | 4,200+ Q&As | Scholarly answers across faith, fiqh, family, history |
-| **Ghazali** | 1,437 sections | Ihya Ulum al-Din (Revival of the Islamic Sciences) — 4 volumes, 37 chapters |
-| **Adhkar** | 97 duas/dhikr | Morning, evening, after salah, daily, and selected supplications |
-| **Arabic** | 21,000+ words | Quranic vocabulary — Arabic, transliteration, English, frequency |
-| **Stories** | 25 prophets | Stories of the Prophets told through Quran verses — narrative prose with citations |
-| **Reminder** | Hourly feed | Verse, hadith, name of Allah + message from reminder.dev |
-
-~41,000 indexed records of Islamic knowledge, all searchable.
-
-## Features
-
-- **Search** — one box across Quran, Hadith, Names, IslamQA, Ghazali, Adhkar, Riyad us-Salihin, chats, and notes
-- **Prayer times** — Moonsighting Committee method, auto-detected location
-- **Daily reminder** — hourly verse, hadith, name of Allah, and message
-- **Question of the day** — random IslamQA question on the home page
-- **Stories of the Prophets** — 25 prophets, narrative prose with Quran verse citations
-- **Browse** — index pages for Quran, Hadith, Names, IslamQA, Ghazali, Adhkar, Riyad us-Salihin (with prev/next navigation)
-- **Arabic vocabulary** — search 21,000+ Quranic words by English or Arabic, with transliteration and frequency
-- **Chats** — ask questions, AI searches authentic sources with query reformulation
-- **Notes** — save reflections, bookmarks from any content page
-- **Save anything** — every content page has a Save button that creates a note with a link back
-- **Chat about anything** — every content page also has a Chat button that opens a new conversation pre-loaded with what you're reading, so you can ask questions without copying text
-- **Public/private** — content is private by default, share with a toggle
-- **PWA** — installable on mobile/desktop
-- **User accounts** — email/password or Google OAuth, admin/user roles
-- **Auto-deploy** — cron checks GitHub every 5 minutes, rebuilds on changes
-
-## Agent discovery
-
-Public discovery documents are embedded in the Go binary and served without authentication:
-
-- `/.well-known/api-catalog` — RFC 9727 Linkset linking to the public knowledge endpoints and their descriptions.
-- `/openapi.json` — OpenAPI 3.1 specification for search and full-resource retrieval.
-- `/llms.txt` — collection guidance, citation rules, and example requests for agents.
-
-All three support GET and HEAD. The catalog uses `application/linkset+json` with the RFC 9727 profile and advertises discovery links in its HTTP headers. They describe the public knowledge API; account and chat actions are outside this catalog. Keep `internal/discovery/openapi.json` and `internal/discovery/llms.txt` in sync when changing the knowledge handlers. Run `go test ./internal/discovery ./internal/server -run 'TestDiscoveryRoutes|TestKnowledgeDiscoveryContract'` to check the serving and API contracts.
-
-## Knowledge API
-
-Public reference retrieval needs no API key or session. It never includes chats,
-notes, saved entries or cached AI answers.
-
-- `GET /api/knowledge/search?q=patience&collection=quran&limit=20` returns
-  `results` with `Kind`, `Title`, `Content` (excerpt), `Role`, `Source` and `URL`.
-  `collection` is optional; `limit` defaults to 20 and is bounded to 1–50.
-- `GET /api/knowledge/resource?path=/quran/2/153` returns `kind`, `source`,
-  an absolute citation `url`, and the full `resource` record. Pass the path from
-  a search result. Arabic, translation, commentary and source metadata remain
-  separate fields where present. Seerah records include page, author and translator.
-
-Collections: `quran`, `hadith`, `names`, `seerah`, `ghazali`, `islamqa`,
-`adhkar`, `salihin`. Search uses keywords, not generated answers. Read the full
-passage before quoting an excerpt; distinguish scripture from biography and
-scholarly interpretation. Invalid input returns 400, missing resources 404.
-The existing `/api/search` retains its account-aware search behaviour.
-
-## Pages
-
-| Route | What it does |
-|-------|-------------|
-| `/` | Public landing page |
-| `/home` | Home — ask questions, prayer times, daily reminder, question of the day |
-| `/search` | Search across all sources and user content |
-| `/chat` | Chat list (Mine / All) |
-| `/chat/{id}` | Chat view with public/private toggle and delete |
-| `/notes` | Notes list (Mine / All) with inline create |
-| `/notes/{id}` | Note view with source links |
-| `/notes/edit/{id}` | Edit note |
-| `/islamqa` | IslamQA index by category |
-| `/islamqa/{slug}` | IslamQA question + answer with prev/next |
-| `/ghazali` | Ghazali index by volume/chapter |
-| `/ghazali/{slug}` | Ghazali section with prev/next |
-| `/adhkar` | Adhkar index by category |
-| `/adhkar/{slug}` | Adhkar detail — Arabic, transliteration, translation, benefits |
-| `/salihin` | Riyad us-Salihin index by book |
-| `/salihin/{number}` | Hadith detail with prev/next (1-1896) |
-| `/arabic` | Arabic vocabulary — search + top 100 most frequent words |
-| `/arabic/{id}` | Word detail — Arabic, transliteration, meaning, frequency |
-| `/quran` | Quran index — 114 chapters |
-| `/quran/{ch}` | Chapter verses |
-| `/quran/{ch}/{v}` | Quran verse — Arabic + English + commentary |
-| `/hadith` | Sahih al-Bukhari index by book |
-| `/hadith/book/{n}` | Hadiths in a Bukhari book |
-| `/hadith/{number}` | Hadith — narrator, English, Arabic |
-| `/names` | 99 Names of Allah |
-| `/stories` | Stories of the Prophets |
-| `/stories/{slug}` | Prophet story — narrative with Quran verse citations |
-| `/names/{number}` | Name of Allah — Arabic, meaning, description |
-| `/profile` | User profile and picture |
-| `/admin` | User management and system configuration |
-
-## Stable URLs
-
-Content URLs are designed to survive dataset reloads:
-
-- **Canonical numbers** where the source provides one — `/quran/2/255`, `/hadith/1`, `/salihin/1`, `/names/1`
-- **Content slugs** for everything else — `/islamqa/can-babies-see-the-angels-7a3fbc`, `/adhkar/supplication-before-sleeping-9e21b3`, `/ghazali/v1-chapter-i-knowledge-p1-b3f8a2`
-
-Slugs are `slugify(title) + "-" + sha1(canonical-content)[:6]`, computed at load time. The same source content always produces the same URL, so saved notes and shared links don't break when datasets are updated.
-
-## AI Tools
-
-The AI has access to these tools during chat, with query reformulation for better FTS recall:
-
-- **search** — Search all sources (user-scoped: own + public content)
-- **reminder** — Quran, Hadith, Names of Allah via semantic search (reminder API)
-- **islamqa** — IslamQA scholarly answers
-- **ghazali** — Ghazali's Ihya Ulum al-Din
-- **adhkar** — Duas and dhikr
-- **salihin** — Riyad us-Salihin
-- **fetch** — Fetch URL content and save to knowledge base
-- **web_search** — Search the web
-- **wikipedia** — Wikipedia lookup
-- **note_add / note_update** — Save and update notes
-
-## Users
-
-- **admin** — full access including user management and system configuration
-- **user** — access to chats, notes, and search
-
-On first run, `ADMIN_EMAILS` seeds the initial admin(s). Anyone can sign up with email/password or Google OAuth — they get the `user` role by default. Content is private by default; users can toggle individual chats and notes to public.
-
-## Installation
-
-### Prerequisites
-
-- Go 1.21+
-- SQLCipher (`sudo apt-get install -y sqlcipher`)
-
-### Setup
-
-```bash
-git clone git@github.com:asim/aslam.git
-cd aslam
-
-mkdir -p ~/.aslam
-openssl rand -base64 32 > ~/.aslam/.key
-chmod 600 ~/.aslam/.key
-
-cat > .env << EOF
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://aslam.org/auth/callback
-ADMIN_EMAILS=your@email.com
-BRAVE_API_KEY=your-brave-api-key
-EOF
-chmod 600 .env
-
+```sh
 go build -o aslam .
 ./aslam
 ```
 
-### Auto-deploy
+Open http://localhost:8000. Configure authentication before exposing the server publicly.
 
-```bash
-sudo cp scripts/aslam.service /etc/systemd/system/aslam.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now aslam
+## Documentation
 
-(crontab -l 2>/dev/null; echo "*/5 * * * * /home/aslam/scripts/deploy.sh >> /home/aslam/deploy.log 2>&1") | crontab -
-```
-
-## Embedded Datasets
-
-| File | Contents |
-|------|----------|
-| `data/islamqa.zip` | 4,200+ IslamQA scholarly Q&As |
-| `data/ghazali.zip` | 1,437 sections of Ihya Ulum al-Din |
-| `data/adhkar.zip` | 97 duas and dhikr |
-| `data/salihin.zip` | 1,217 Riyad us-Salihin hadiths |
-| `data/arabic.zip` | 21,000+ Quranic Arabic vocabulary |
-| `data/sources.zip` | Quran (6,348), Hadith (7,265), Names of Allah (99) |
-| `data/seerah.zip` | The Sealed Nectar, preserving 316 reading pages and chapter bookmarks |
-
-All datasets are embedded in the binary at build time and loaded into SQLite with FTS indexing on first run. Versioned — bump the version constant to force a reload when data changes.
-
-## Purpose
-
-A place to seek, save, and share Islamic knowledge.
-
-The Quran and Hadith are the foundation. Scholarly answers provide context. Classical works deepen understanding. Daily adhkar ground the practice. Arabic opens the door to the original sources. Your notes and reflections build on top. Search ties it all together.
-
-> *"When a man dies, his deeds come to an end except for three: ongoing charity, beneficial knowledge, or a righteous child who prays for him."*
-> — Prophet Muhammad ﷺ (Sahih Muslim)
-
-This is beneficial knowledge, made searchable.
-
----
-
-*An Islamic knowledge base for Muslims.*
-
-## Repository layout
-
-| Path | Responsibility |
-| --- | --- |
-| `main.go` | Entry point; starts the server |
-| `internal/server/` | Startup, routes, handlers, model calls and background workers |
-| `internal/server/html/` | Embedded templates and browser assets |
-| `internal/discovery/` | Discovery handlers, OpenAPI, API catalog and llms.txt |
-| `internal/tools/` | Runtime model tools and external integrations |
-| `internal/seerah/` | Seerah archive reader and page navigation |
-| `db/` | SQLCipher persistence and indexing |
-| `data/` | Embedded reference archives, including seerah.zip |
-| `scripts/seerah/` | PDF extraction and reviewed source corrections |
-| `scripts/` | Deployment, systemd and database administration |
-| `cmd/` | Aslam CLI and tax utilities |
-| `docs/` | Profiling, source provenance and correction reviews |
-
-The runtime database and encryption key live in `~/.aslam/`, outside the repository.
-
-## Traffic and memory bounds
-
-See [request limits and nginx configuration](docs/request-limits.md) for concurrency limits, query cancellation, allowed hosts (`ASLAM_ALLOWED_HOSTS`), and rejecting unrelated domains before proxying.
-
-### Quran chapter metadata
-
-`data/quran_chapters.json` contains the 114 chapter names, Arabic names, English meanings and verse counts from `https://api.quran.com/api/v4/chapters?language=en` (retrieved 2026-10-25). The chapter index decodes this metadata once; reading progress remains specific to the signed-in user.
-
-### Verification email via SMTP relay
-
-Outbound mail is independent of the assistant's Gmail inbox. For Google's
-IP-authorized Workspace relay, configure the service environment:
-
-```sh
-SMTP_HOST=smtp-relay.gmail.com
-SMTP_PORT=587
-SMTP_FROM=noreply@aslam.org
-ALLOW_PASSWORD_SIGNUP=true
-```
-
-In Google Admin, authorize this server's public egress IP, allow senders in your
-domain, and require TLS. Leave `SMTP_USERNAME` and `SMTP_PASSWORD` unset for
-IP authorization. No assistant mailbox or IMAP worker is needed. Restart Aslam
-after updating its environment. Registration requires email verification followed by admin approval. Verification
-links expire after 24 hours. Verified requests expire after 30 days. Approve or
-reject requests in Admin → Email signup requests; approval creates the account
-and sends a notification. Existing accounts and Google signup are unchanged.
-
-For a relay requiring authentication, set both `SMTP_USERNAME` and
-`SMTP_PASSWORD`. Port 587 uses required STARTTLS; port 465 uses implicit TLS.
-Sending has a 30-second deadline. Explicit SMTP settings take precedence over
-legacy `GMAIL_USER` / `GMAIL_APP_PASSWORD` sending, which still works when no
-`SMTP_*` settings are present. Inbox credentials retain their existing purpose.
-
-`ALLOW_PASSWORD_SIGNUP=false` keeps registration closed even with sending
-configured. Missing or incomplete sender configuration also keeps it closed.
-Configuring a sender alone otherwise enables verified email signup; keep the
-flag false while preparing deployment if you are not ready to open signup.
-
-Email signup includes an expiring, single-use addition question and hidden bot
-trap. Attempts are limited to 5 per client IP per hour and 60 total per hour.
-These in-memory limits and challenges reset on restart and apply per server
-process. The arithmetic question deters basic scripts; admin approval is the
-access gate. Unverified and verified pending requests cannot log in or use the
-assistant email allowlist.
-
-When using nginx on the same host, set `proxy_set_header X-Real-IP $remote_addr;`
-so signup limits use client addresses. Only loopback peers are trusted to supply
-this header; nginx must overwrite it, not forward a client-provided value. Keep
-Aslam's backend port private. Without this header, local-proxy requests share
-the same limit. Admin review forms require a same-origin POST.
-
-`ALLOW_PASSWORD_SIGNUP=false` stops new email requests; existing verification
-links and admin approval remain usable. Rejected requests are removed and can
-be resubmitted, subject to signup limits. No existing accounts are deleted.
-
-### AI usage limits
-
-Non-admin accounts can ask five questions per UTC day by default. Admins are exempt
-from both daily limits and do not consume the site allowance; their usage is still tracked. Chat, API and queued
-email/chat share the allowance. Tool follow-ups are included in the question,
-not charged separately; failed initial attempts count. Quotas survive restarts.
-
-Admin shows today's site-wide and per-account question usage and lets admins
-change both limits immediately. The optional site-wide limit defaults to zero
-(unlimited); a zero per-account limit blocks new questions. MODEL_ENABLED=false
-remains an environment emergency stop (restart required).
-
-Each question allows up to five provider calls, each with at most 64 KiB of
-serialized input and 2,048 output tokens. Chat input is limited to 8 KiB and two
-provider calls may run concurrently per process. These are usage limits, not
-currency budgets. Queued budget/size/concurrency denials are not auto-retried.
-A retry of a failed initial attempt counts as another question attempt.
-
-All model requests require a verified conversation owner. API keys cannot bypass
-ownership or quota checks. Public content reading/search and inbox polling do not
-call the model. ANTHROPIC_MODEL selects the model (default claude-sonnet-5).
-
-API integrations: create a key in [Settings → API keys](https://aslam.org/profile/api-keys).
-Use it with the [HTTP API](https://aslam.org/api/docs) or Streamable HTTP MCP at
-`https://aslam.org/mcp`. Public search needs no key. See [OpenAPI](https://aslam.org/openapi.json).
+- [Installation and configuration](docs/installation.md)
+- [Architecture](docs/architecture.md)
+- [API and MCP](docs/api.md)
+- [Sources and reader pages](docs/sources.md)
+- [Operations](docs/operations.md)
+- [All documentation](docs/README.md)
+- [Contributor guidance](AGENTS.md)
