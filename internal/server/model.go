@@ -189,8 +189,12 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 	apiMessages, contextPrompt := buildAPIMessages(messages)
 	fullSystemPrompt += contextPrompt
 
-	// Tool loop - keep calling until we get a final response
-	for i := 0; i < 5; i++ { // At most five provider calls, including tool follow-ups
+	// Tool follow-ups share one question reservation. Continue until answered
+	// or canceled; the daily allowance limits questions, not research steps.
+	for {
+		if err := ctx.Err(); err != nil {
+			return "", toolsUsed, err
+		}
 		result, err := callAnthropic(ctx, apiMessages, fullSystemPrompt)
 		if err != nil {
 			return "", toolsUsed, err
@@ -267,8 +271,6 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 		}
 		return textResponse, toolsUsed, nil
 	}
-
-	return "", toolsUsed, fmt.Errorf("too many tool calls")
 }
 
 func generateResponseStreaming(ctx context.Context, messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
@@ -289,7 +291,10 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 	apiMessages, contextPrompt := buildAPIMessages(messages)
 	fullSystemPrompt += contextPrompt
 
-	for i := 0; i < 5; i++ {
+	for {
+		if err := ctx.Err(); err != nil {
+			return "", toolsUsed, err
+		}
 		result, textSoFar, err := callAnthropicStream(ctx, apiMessages, fullSystemPrompt, onText)
 		if err != nil {
 			return "", toolsUsed, err
@@ -345,7 +350,6 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 		}
 		return textSoFar, toolsUsed, nil
 	}
-	return "", toolsUsed, fmt.Errorf("too many tool calls")
 }
 
 func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, onText func(string)) (*anthropicResponse, string, error) {

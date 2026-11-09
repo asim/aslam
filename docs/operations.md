@@ -89,7 +89,9 @@ change both limits immediately. The optional site-wide limit defaults to zero
 (unlimited); a zero per-account limit blocks new questions. MODEL_ENABLED=false
 remains an environment emergency stop (restart required).
 
-Each question allows up to five provider calls, each with at most 64 KiB of
+Tool follow-ups share the original question reservation and continue until an
+answer is returned or the request is canceled or fails. They do not consume extra
+questions or have a fixed turn limit. Each provider call allows at most 64 KiB of
 serialized input and 2,048 output tokens. Chat input is limited to 8 KiB and two
 provider calls may run concurrently per process. These are usage limits, not
 currency budgets. Queued budget/size/concurrency denials are not auto-retried.
