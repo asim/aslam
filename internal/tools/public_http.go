@@ -62,7 +62,7 @@ func publicHTTPClient() *http.Client {
 			}
 		}
 		// Dial the checked literal; DNS cannot change between validation and connect.
-		return (&net.Dialer{Timeout: 10 * time.Second}).DialContext(ctx, network, net.JoinHostPort(addresses[0].String(), port))
+		return dialValidatedAddresses(ctx, network, port, addresses, (&net.Dialer{Timeout: 2 * time.Second}).DialContext)
 	}
 	return &http.Client{Timeout: 15 * time.Second, Transport: transport, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
@@ -70,4 +70,22 @@ func publicHTTPClient() *http.Client {
 		}
 		return validateFetchURL(req.URL)
 	}}
+}
+
+func dialValidatedAddresses(ctx context.Context, network, port string, addresses []netip.Addr, dial func(context.Context, string, string) (net.Conn, error)) (net.Conn, error) {
+	var lastErr error
+	for _, ip := range addresses {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		conn, err := dial(ctx, network, net.JoinHostPort(ip.String(), port))
+		if err == nil {
+			return conn, nil
+		}
+		lastErr = err
+	}
+	if lastErr == nil {
+		lastErr = fmt.Errorf("no public addresses")
+	}
+	return nil, lastErr
 }

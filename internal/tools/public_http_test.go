@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -33,4 +35,25 @@ func TestFetchRejectsPrivateDestinations(t *testing.T) {
 	if client.CheckRedirect(&http.Request{URL: u}, nil) == nil {
 		t.Fatal("private redirect allowed")
 	}
+}
+
+func TestPublicDialFallsBack(t *testing.T) {
+	addresses := []netip.Addr{netip.MustParseAddr("2001:4860:4860::8888"), netip.MustParseAddr("8.8.8.8")}
+	calls := 0
+	left, right := net.Pipe()
+	defer right.Close()
+	conn, err := dialValidatedAddresses(context.Background(), "tcp", "443", addresses, func(ctx context.Context, network, address string) (net.Conn, error) {
+		calls++
+		if calls == 1 {
+			return nil, fmt.Errorf("unreachable")
+		}
+		if address != "8.8.8.8:443" {
+			t.Fatal(address)
+		}
+		return left, nil
+	})
+	if err != nil || calls != 2 {
+		t.Fatal(calls, err)
+	}
+	conn.Close()
 }

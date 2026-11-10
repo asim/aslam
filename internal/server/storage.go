@@ -17,25 +17,7 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 }
 
 func (s *dbStorage) SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
-	if userID <= 0 {
-		return nil, fmt.Errorf("account identity required")
-	}
-	messages, err := db.SearchMessages(query, userID, false)
-	if err != nil {
-		return nil, err
-	}
-	var results []map[string]interface{}
-	for _, m := range messages {
-		results = append(results, map[string]interface{}{"Kind": "chat", "Title": m["Title"], "Content": m["Content"]})
-	}
-	notes, err := db.SearchNotes(query, userID, false)
-	if err != nil {
-		return nil, err
-	}
-	for _, n := range notes {
-		results = append(results, map[string]interface{}{"Kind": "notes", "Title": n.Title, "Content": n.Content})
-	}
-	return results, nil
+	return db.SearchSaved(query, userID)
 }
 
 // noteStorage implements tools.NoteStorage interface

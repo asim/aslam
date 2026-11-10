@@ -103,3 +103,16 @@ func TestBrowserMutationsRejectCrossOrigin(t *testing.T) {
 		t.Fatal("cross-origin mutation accepted", w.Code)
 	}
 }
+
+func TestSavedSearchNormalizesFTS(t *testing.T) {
+	modelTestContext(t)
+	if _, err := db.AddNoteItem("prayer", "prayer", 1); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{`prayer "`, `prayer (`, `prayer AND`} {
+		results, err := (&dbStorage{}).SearchAll(query, 1)
+		if err != nil || len(results) == 0 {
+			t.Fatal(query, results, err)
+		}
+	}
+}
