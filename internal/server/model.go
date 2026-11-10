@@ -389,10 +389,10 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 	}
 }
 
-func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, onText func(string)) (*anthropicResponse, string, error) {
+func callAnthropicStreamAttempt(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, onText func(string), maxTokens int) (*anthropicResponse, string, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
-		"max_tokens": 2048,
+		"max_tokens": maxTokens,
 		"tools":      chatToolsFor(ctx),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
@@ -574,6 +574,11 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		return nil, fullText.String(), fmt.Errorf("model stream ended before completion")
 	}
 
+	// A token-limited stream may end before the tool block is closed.
+	if stopReason == "max_tokens" && currentToolName != "" {
+		contentBlocks = append(contentBlocks, contentBlock{Type: "tool_use", ID: currentToolID, Name: currentToolName})
+	}
+
 	return &anthropicResponse{
 		Content:    contentBlocks,
 		StopReason: stopReason,
@@ -596,10 +601,10 @@ type contentBlock struct {
 	Input     map[string]interface{} `json:"input,omitempty"`
 }
 
-func callAnthropic(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string) (*anthropicResponse, error) {
+func callAnthropicAttempt(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, maxTokens int) (*anthropicResponse, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
-		"max_tokens": 2048,
+		"max_tokens": maxTokens,
 		"tools":      chatToolsFor(ctx),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
