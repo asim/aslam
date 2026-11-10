@@ -372,7 +372,7 @@
                                 addMessageActions(responseDiv);
                                 if (pinned) scrollToBottom();
                                 sendBtn.disabled = false;
-                            } else if (attempts >= 60) {
+                            } else if (attempts >= 150) {
                                 clearInterval(recover);
                                 statusEl.remove();
                                 responseDiv.remove();

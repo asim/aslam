@@ -90,7 +90,9 @@ change both limits immediately. The optional site-wide limit defaults to zero
 remains an environment emergency stop (restart required).
 
 Tool follow-ups share the original question reservation and continue until an
-answer is returned or the request is canceled or fails. They do not consume extra
+answer is returned or generation times out or fails. Accepted web questions
+continue after a browser disconnect and save their answer for recovery, within
+the original five-minute server deadline. They do not consume extra
 questions or have a fixed turn limit. Each provider call allows at most 64 KiB of
 serialized input and 2,048 output tokens. Chat input is limited to 8 KiB and two
 provider calls may run concurrently per process. These are usage limits, not

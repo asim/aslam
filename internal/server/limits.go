@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const chatRequestTimeout = 5 * time.Minute
+
 // Separate pools keep public crawling from consuming every application slot.
 // Admission never waits: a queue here would retain request goroutines and data.
 func limitConcurrency(next http.Handler, slots chan struct{}) http.Handler {
@@ -42,7 +44,7 @@ func requestLimits(next http.Handler) http.Handler {
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		timeout := 15 * time.Second
 		if r.URL.Path == "/api/chat/send" || r.URL.Path == "/chat/send" {
-			timeout = 5 * time.Minute
+			timeout = chatRequestTimeout
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), timeout)
 		defer cancel()

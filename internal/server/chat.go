@@ -1,15 +1,27 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"aslam/db"
 )
+
+// Accepted questions survive a browser disconnect so the saved answer can be
+// recovered by /api/chat/latest. Retain the original server deadline and values.
+func chatGenerationContext(request context.Context) (context.Context, context.CancelFunc) {
+	deadline := time.Now().Add(chatRequestTimeout)
+	if original, ok := request.Deadline(); ok && original.Before(deadline) {
+		deadline = original
+	}
+	return context.WithDeadline(context.WithoutCancel(request), deadline)
+}
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
@@ -164,7 +176,9 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	messages, _ := db.GetMessages(convID)
 
 	// Generate AI response
-	response, toolsUsed, err := generateResponseWithProgressContext(r.Context(), messages, convID, nil)
+	ctx, cancel := chatGenerationContext(r.Context())
+	defer cancel()
+	response, toolsUsed, err := generateResponseWithProgressContext(ctx, messages, convID, nil)
 	if err != nil {
 		// Save error as assistant message
 		db.AddMessage(convID, "assistant", "Error: "+err.Error())
@@ -276,14 +290,18 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, toolsUsed, err := generateResponseStreaming(r.Context(), messages, req.ConversationID, func(text string) {
-		fmt.Fprint(w, text)
-		flusher.Flush()
-	})
+	sendText := func(text string) {
+		if r.Context().Err() == nil {
+			fmt.Fprint(w, text)
+			flusher.Flush()
+		}
+	}
+	ctx, cancel := chatGenerationContext(r.Context())
+	defer cancel()
+	response, toolsUsed, err := generateResponseStreaming(ctx, messages, req.ConversationID, sendText)
 	if err != nil {
 		response = "Error: " + err.Error()
-		fmt.Fprint(w, response)
-		flusher.Flush()
+		sendText(response)
 	} else {
 		// Strip tool markers before saving
 		response = regexp.MustCompile(`\n?!tool:\w+\n?`).ReplaceAllString(response, "")
@@ -292,8 +310,7 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 		// Send sources footer through the stream too
 		sourcesFooter := formatSourcesFooter(toolsUsed)
 		if sourcesFooter != "" {
-			fmt.Fprint(w, sourcesFooter)
-			flusher.Flush()
+			sendText(sourcesFooter)
 		}
 		response = response + sourcesFooter
 	}
