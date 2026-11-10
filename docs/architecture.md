@@ -35,7 +35,7 @@ Published-reference search is separate from account-aware search. The knowledge 
 
 Chat streams text to the browser/API; it is not an SSE protocol. Email threads map Message-ID/References to conversations through `email_threads`. Background tasks use the same ownership and usage checks. New channels should adapt this flow rather than introduce a second model path; each channel still needs its own authorization and delivery tests.
 
-Model tools are registered in `internal/tools/` and wired to persistence by the server's storage adapters. MCP is a separate, retrieval-only tool surface; it does not expose model execution or personal account actions.
+Model tools are registered in `internal/tools/` and wired to persistence by the server's storage adapters. Chat and MCP share the knowledge API handlers for `collections`, `search`, `contents`, `browse` and `read`, including full passages, attribution and pagination. Chat keeps personal recall in `search_saved` and uses the reference tools for cited summaries. MCP remains retrieval-only and does not expose model execution or personal account actions.
 
 ## Accounts and trust
 

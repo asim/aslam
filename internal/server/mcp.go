@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,12 +64,24 @@ func newMCPHandler() http.Handler {
 // Adapt the existing local JSON handlers, without a loopback HTTP request or
 // forwarding credentials. HTTP errors become MCP tool errors, not successes.
 func mcpKnowledge(ctx context.Context, handler http.HandlerFunc, values url.Values) *mcp.CallToolResult {
+	text, err := callKnowledge(ctx, handler, values)
+	return &mcp.CallToolResult{IsError: err != nil, Content: []mcp.Content{&mcp.TextContent{Text: text}}}
+}
+
+// Shared in-process adapter for chat and MCP; never forwards account credentials.
+func callKnowledge(ctx context.Context, handler http.HandlerFunc, values url.Values) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	req := (&http.Request{Method: http.MethodGet, URL: &url.URL{RawQuery: values.Encode()}, Header: make(http.Header)}).WithContext(ctx)
 	response := &knowledgeResponse{header: make(http.Header), status: 200}
 	handler(response, req)
-	return &mcp.CallToolResult{IsError: response.status >= 400, Content: []mcp.Content{&mcp.TextContent{Text: response.body.String()}}}
+	if response.status >= 400 {
+		return response.body.String(), fmt.Errorf("knowledge request failed (%d): %s", response.status, response.body.String())
+	}
+	return response.body.String(), nil
 }
 
 type knowledgeResponse struct {
