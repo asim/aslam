@@ -160,12 +160,6 @@ func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set user context
-	session := getSession(r)
-	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: convID}
-	}
-
 	// Save user message
 	if err := db.AddMessage(convID, "user", userMessage); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -254,12 +248,6 @@ func handleAPISendMessage(w http.ResponseWriter, r *http.Request) {
 	// Only the owner may append questions, including when the chat is public.
 	if !canSendChatMessage(w, r, req.ConversationID) {
 		return
-	}
-
-	// Set user context
-	session := getSession(r)
-	if session != nil {
-		currentUserContext = &UserContext{Email: session.Email, Name: session.Name, ConversationID: req.ConversationID}
 	}
 
 	// Save user message

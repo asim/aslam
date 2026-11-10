@@ -25,8 +25,8 @@ func TestChatAnswerSavedAfterDisconnect(t *testing.T) {
 			}
 			original, disconnect := context.WithCancel(context.Background())
 			defer disconnect()
-			oldTransport, oldKey, oldUser := http.DefaultTransport, anthropicKey, currentUserContext
-			t.Cleanup(func() { http.DefaultTransport = oldTransport; anthropicKey = oldKey; currentUserContext = oldUser })
+			oldTransport, oldKey := http.DefaultTransport, anthropicKey
+			t.Cleanup(func() { http.DefaultTransport = oldTransport; anthropicKey = oldKey })
 			anthropicKey = "test-key"
 			calls := 0
 			http.DefaultTransport = cancelTransport(func(r *http.Request) (*http.Response, error) {

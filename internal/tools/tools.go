@@ -1,10 +1,9 @@
 package tools
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"log"
-	"time"
 )
 
 // Storage interface for saving/retrieving knowledge
@@ -19,18 +18,24 @@ type NoteStorage interface {
 	AddNoteItem(title, content string, userID int64) (int64, error)
 	SearchNotes(query string, userID int64) ([]map[string]interface{}, error)
 	GetNoteItem(id int64) (map[string]interface{}, error)
-	UpdateNoteItem(id int64, updates map[string]interface{}) error
+	UpdateNoteItem(id, userID int64, updates map[string]interface{}) error
 }
 
 var store Storage
 var noteStore NoteStorage
 
-// getCurrentUserID returns the current user's ID for tool calls
-var getCurrentUserID func() int64
+type Identity struct {
+	UserID, ConversationID int64
+	Admin                  bool
+}
+type identityKey struct{}
 
-// SetCurrentUserIDGetter sets the function to get the current user ID
-func SetCurrentUserIDGetter(fn func() int64) {
-	getCurrentUserID = fn
+func WithIdentity(ctx context.Context, identity Identity) context.Context {
+	return context.WithValue(ctx, identityKey{}, identity)
+}
+func IdentityFrom(ctx context.Context) Identity {
+	value, _ := ctx.Value(identityKey{}).(Identity)
+	return value
 }
 
 // SetStorage sets the storage backend
@@ -86,7 +91,7 @@ func SetIntegrationChecker(checker IntegrationChecker) {
 }
 
 // EmailThreadCallback is called when an email is sent to create thread mapping
-type EmailThreadCallback func(messageID string, to, subject string)
+type EmailThreadCallback func(ctx context.Context, messageID string, to, subject string)
 
 var onEmailSent EmailThreadCallback
 
@@ -315,11 +320,28 @@ func GetTools() []ToolDefinition {
 
 // ExecuteTool runs a tool and returns the result
 func ExecuteTool(name string, input map[string]interface{}) (string, error) {
+	return ExecuteToolContext(context.Background(), name, input)
+}
+
+func ExecuteToolContext(ctx context.Context, name string, input map[string]interface{}) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	switch name {
+	case "search", "note_add", "note_update":
+		if IdentityFrom(ctx).UserID <= 0 {
+			return "", fmt.Errorf("account identity required")
+		}
+	case "email_check", "email_send":
+		if !IdentityFrom(ctx).Admin {
+			return "", fmt.Errorf("administrator access required for server email")
+		}
+	}
 	switch name {
 	case "fetch":
 		return executeFetchURL(input)
 	case "search":
-		return executeSearch(input)
+		return executeSearch(ctx, input)
 	case "reminder":
 		return executeIslamicSearch(input)
 	case "wikipedia":
@@ -329,11 +351,11 @@ func ExecuteTool(name string, input map[string]interface{}) (string, error) {
 	case "email_check":
 		return executeEmailCheck(input)
 	case "email_send":
-		return executeEmailSend(input)
+		return executeEmailSend(ctx, input)
 	case "note_add":
-		return executeNoteAdd(input)
+		return executeNoteAdd(ctx, input)
 	case "note_update":
-		return executeNoteUpdate(input)
+		return executeNoteUpdate(ctx, input)
 	case "islamqa":
 		return executeIslamQA(input)
 	case "ghazali":
@@ -386,34 +408,15 @@ func executeFetchURL(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("url is required")
 	}
 
-	// Check if we already have this URL in memory
-	if store != nil {
-		if existing, err := store.GetEntryByTitle("url", url); err == nil {
-			content, _ := existing["Content"].(string)
-			createdAt, _ := existing["CreatedAt"].(time.Time)
-			return fmt.Sprintf("[From memory, fetched %s]\n\n%s", createdAt.Format("2006-01-02"), content), nil
-		}
-	}
-
-	// Fetch the URL
 	content, err := FetchURL(url)
 	if err != nil {
 		return "", err
 	}
 
-	// Save to memory
-	if store != nil {
-		metadata, _ := json.Marshal(map[string]interface{}{
-			"url":        url,
-			"fetched_at": time.Now().Format(time.RFC3339),
-		})
-		store.SaveEntry("url", url, content, string(metadata))
-	}
-
 	return content, nil
 }
 
-func executeSearch(input map[string]interface{}) (string, error) {
+func executeSearch(ctx context.Context, input map[string]interface{}) (string, error) {
 	query, _ := input["query"].(string)
 	if query == "" {
 		return "", fmt.Errorf("query is required")
@@ -423,10 +426,7 @@ func executeSearch(input map[string]interface{}) (string, error) {
 		return "Search not available", nil
 	}
 
-	var userID int64
-	if getCurrentUserID != nil {
-		userID = getCurrentUserID()
-	}
+	userID := IdentityFrom(ctx).UserID
 
 	results, err := store.SearchAll(query, userID)
 	if err != nil {
@@ -486,7 +486,7 @@ func executeEmailCheck(input map[string]interface{}) (string, error) {
 	return output, nil
 }
 
-func executeEmailSend(input map[string]interface{}) (string, error) {
+func executeEmailSend(ctx context.Context, input map[string]interface{}) (string, error) {
 	to, _ := input["to"].(string)
 	subject, _ := input["subject"].(string)
 	body, _ := input["body"].(string)
@@ -502,13 +502,13 @@ func executeEmailSend(input map[string]interface{}) (string, error) {
 
 	// Notify callback to create thread mapping
 	if onEmailSent != nil {
-		onEmailSent(msgID, to, subject)
+		onEmailSent(ctx, msgID, to, subject)
 	}
 
 	return fmt.Sprintf("Email sent to %s with subject: %s", to, subject), nil
 }
 
-func executeNoteAdd(input map[string]interface{}) (string, error) {
+func executeNoteAdd(ctx context.Context, input map[string]interface{}) (string, error) {
 	if noteStore == nil {
 		return "", fmt.Errorf("note storage not available")
 	}
@@ -520,10 +520,7 @@ func executeNoteAdd(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("title is required")
 	}
 
-	var userID int64
-	if getCurrentUserID != nil {
-		userID = getCurrentUserID()
-	}
+	userID := IdentityFrom(ctx).UserID
 
 	id, err := noteStore.AddNoteItem(title, content, userID)
 	if err != nil {
@@ -533,7 +530,7 @@ func executeNoteAdd(input map[string]interface{}) (string, error) {
 	return fmt.Sprintf("Added note: '%s' (ID: %d)", title, id), nil
 }
 
-func executeNoteSearch(input map[string]interface{}) (string, error) {
+func executeNoteSearch(ctx context.Context, input map[string]interface{}) (string, error) {
 	if noteStore == nil {
 		return "", fmt.Errorf("note storage not available")
 	}
@@ -543,10 +540,7 @@ func executeNoteSearch(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("query is required")
 	}
 
-	var userID int64
-	if getCurrentUserID != nil {
-		userID = getCurrentUserID()
-	}
+	userID := IdentityFrom(ctx).UserID
 
 	items, err := noteStore.SearchNotes(query, userID)
 	if err != nil {
@@ -572,7 +566,7 @@ func executeNoteSearch(input map[string]interface{}) (string, error) {
 	return result, nil
 }
 
-func executeNoteUpdate(input map[string]interface{}) (string, error) {
+func executeNoteUpdate(ctx context.Context, input map[string]interface{}) (string, error) {
 	if noteStore == nil {
 		return "", fmt.Errorf("note storage not available")
 	}
@@ -589,6 +583,10 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("item not found: %w", err)
 	}
 
+	if owner, ok := existing["UserID"].(int64); !ok || owner != IdentityFrom(ctx).UserID {
+		return "", fmt.Errorf("note access denied")
+	}
+
 	// Build updates
 	updates := make(map[string]interface{})
 	if v, ok := input["title"].(string); ok && v != "" {
@@ -602,7 +600,7 @@ func executeNoteUpdate(input map[string]interface{}) (string, error) {
 		return "No updates provided", nil
 	}
 
-	err = noteStore.UpdateNoteItem(id, updates)
+	err = noteStore.UpdateNoteItem(id, IdentityFrom(ctx).UserID, updates)
 	if err != nil {
 		return "", err
 	}

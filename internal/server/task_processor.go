@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -123,8 +124,9 @@ func processEmailTask(task db.PendingTask) error {
 		json.Unmarshal([]byte(task.Metadata), &meta)
 	}
 
-	// Set user context from email sender
-	currentUserContext = &UserContext{Email: meta.From, Name: "", ConversationID: task.ConversationID}
+	if owner := db.GetConversationOwner(task.ConversationID); owner == 0 || owner != db.GetUserID(strings.ToLower(meta.From)) {
+		return fmt.Errorf("email task owner mismatch")
+	}
 
 	// Get conversation messages
 	messages, err := db.GetMessages(task.ConversationID)

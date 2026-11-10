@@ -2,6 +2,7 @@ package server
 
 import (
 	"aslam/db"
+	"fmt"
 )
 
 // dbStorage implements tools.Storage interface
@@ -16,7 +17,7 @@ func (s *dbStorage) GetEntryByTitle(entryType, title string) (map[string]interfa
 }
 
 func (s *dbStorage) SearchAll(query string, userID int64) ([]map[string]interface{}, error) {
-	return db.SearchAll(query, userID, false, true)
+	return db.SearchSaved(query, userID)
 }
 
 // noteStorage implements tools.NoteStorage interface
@@ -42,7 +43,7 @@ func (v *noteStorage) GetNoteItem(id int64) (map[string]interface{}, error) {
 	return noteItemToMap(item), nil
 }
 
-func (v *noteStorage) UpdateNoteItem(id int64, updates map[string]interface{}) error {
+func (v *noteStorage) UpdateNoteItem(id, userID int64, updates map[string]interface{}) error {
 	// Get current item, apply updates
 	item, err := db.GetNoteItem(id)
 	if err != nil {
@@ -59,12 +60,21 @@ func (v *noteStorage) UpdateNoteItem(id int64, updates map[string]interface{}) e
 		content = val
 	}
 
-	return db.UpdateNoteItem(id, title, content)
+	result, err := db.DB.Exec("UPDATE notes_v2 SET title=?,content=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?", title, content, id, userID)
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err == nil && n != 1 {
+		return fmt.Errorf("note access denied")
+	}
+	return err
 }
 
 func noteItemToMap(item *db.NoteItem) map[string]interface{} {
 	return map[string]interface{}{
 		"ID":      item.ID,
+		"UserID":  item.UserID,
 		"Title":   item.Title,
 		"Content": item.Content,
 	}
@@ -75,6 +85,7 @@ func noteItemsToMaps(items []db.NoteItem) []map[string]interface{} {
 	for i, item := range items {
 		result[i] = map[string]interface{}{
 			"ID":      item.ID,
+			"UserID":  item.UserID,
 			"Title":   item.Title,
 			"Content": item.Content,
 		}

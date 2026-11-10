@@ -1141,7 +1141,7 @@ func searchAllContext(ctx context.Context, query string, userID int64, isAdmin, 
 
 	// Entries (remembered facts, fetched URLs). Unowned and unscoped, so they
 	// are only ever shown to signed-in users.
-	if !knowledgeOnly && includeUserContent {
+	if !knowledgeOnly && includeUserContent && isAdmin {
 		if entries, err := SearchEntriesContext(ctx, query); err == nil && includeUserContent {
 			for _, e := range entries {
 				createdAt, _ := e["CreatedAt"].(time.Time)
@@ -1188,8 +1188,8 @@ func searchAllContext(ctx context.Context, query string, userID int64, isAdmin, 
 		return results[:limit], nil
 	}
 
-	// Searches results (cached Quran/Hadith/Names of Allah from reminder API)
-	if !knowledgeOnly {
+	// Legacy cached answers have no ownership; keep them admin-only.
+	if !knowledgeOnly && isAdmin {
 		if remResults, err := SearchSearchesContext(ctx, query); err == nil {
 			for _, r := range remResults {
 				question, _ := r["Question"].(string)
@@ -1489,13 +1489,12 @@ func CreateOAuthState(state string) error {
 }
 
 func ValidateOAuthState(state string) bool {
-	var s string
-	err := DB.QueryRow(`SELECT state FROM oauth_states WHERE state = ? AND expires_at > CURRENT_TIMESTAMP`, state).Scan(&s)
+	result, err := DB.Exec(`DELETE FROM oauth_states WHERE state=? AND expires_at>CURRENT_TIMESTAMP`, state)
 	if err != nil {
 		return false
 	}
-	DB.Exec(`DELETE FROM oauth_states WHERE state = ?`, state)
-	return true
+	n, err := result.RowsAffected()
+	return err == nil && n == 1
 }
 
 // Entry functions

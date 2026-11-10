@@ -49,6 +49,7 @@ func isLoggedIn(r *http.Request) bool {
 
 func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			accountAPI(handler, false).ServeHTTP(w, r)
 			return
@@ -56,44 +57,6 @@ func requireAuth(handler http.HandlerFunc) http.HandlerFunc {
 		// Redirect www to non-www
 		if r.Host == "www.aslam.org" {
 			http.Redirect(w, r, "https://aslam.org"+r.URL.Path, http.StatusMovedPermanently)
-			return
-		}
-
-		// Check if auth is configured
-		if googleClientID == "" {
-			// No auth configured, allow all
-			handler(w, r)
-			return
-		}
-
-		// Check API key (header)
-		if apiKey != "" && r.Header.Get("X-API-Key") == apiKey {
-			handler(w, r)
-			return
-		}
-
-		// Check dev token (query param or header)
-		if devToken != "" {
-			if r.URL.Query().Get("dev") == devToken || r.Header.Get("X-Dev-Token") == devToken {
-				handler(w, r)
-				return
-			}
-		}
-
-		// Accept session token from URL (OAuth redirect into PWA)
-		if authToken := r.URL.Query().Get("auth"); authToken != "" {
-			http.SetCookie(w, &http.Cookie{
-				Name:     "session",
-				Value:    authToken,
-				Path:     "/",
-				Domain:   "aslam.org",
-				HttpOnly: true,
-				Secure:   true,
-				SameSite: http.SameSiteLaxMode,
-				MaxAge:   30 * 24 * 60 * 60,
-				Expires:  time.Now().Add(30 * 24 * time.Hour),
-			})
-			http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
@@ -209,6 +172,10 @@ func handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLoginPost(w http.ResponseWriter, r *http.Request) {
+	if !allowLoginAttempt(r) {
+		http.Error(w, "Too many login attempts; try again shortly", 429)
+		return
+	}
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	password := r.FormValue("password")
 
@@ -460,10 +427,15 @@ func handleVerify(w http.ResponseWriter, r *http.Request) {
 
 func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	queryState := r.URL.Query().Get("state")
+	cookie, err := r.Cookie("oauth_state")
+	if err != nil || queryState == "" || cookie.Value != queryState {
+		http.Error(w, "Invalid OAuth state", 400)
+		return
+	}
 
 	// Verify state exists in database (survives restarts)
 	if !db.ValidateOAuthState(queryState) {
-		log.Printf("OAuth callback: state not found in db: %s", queryState)
+		log.Print("OAuth callback: invalid or expired state")
 		http.Error(w, "Invalid or expired state. Try logging in again.", 400)
 		return
 	}
@@ -483,7 +455,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Exchange code for token
-	tokenResp, err := http.PostForm("https://oauth2.googleapis.com/token", url.Values{
+	tokenResp, err := (&http.Client{Timeout: 15 * time.Second}).PostForm("https://oauth2.googleapis.com/token", url.Values{
 		"client_id":     {googleClientID},
 		"client_secret": {googleClientSecret},
 		"code":          {code},
@@ -508,7 +480,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	// Get user info
 	userReq, _ := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	userReq.Header.Set("Authorization", "Bearer "+tokenData.AccessToken)
-	userResp, err := http.DefaultClient.Do(userReq)
+	userResp, err := (&http.Client{Timeout: 15 * time.Second}).Do(userReq)
 	if err != nil {
 		http.Error(w, "Failed to get user info", 500)
 		return
@@ -516,15 +488,20 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	defer userResp.Body.Close()
 
 	var userInfo struct {
-		Email   string `json:"email"`
-		Name    string `json:"name"`
-		Picture string `json:"picture"`
+		Email    string `json:"email"`
+		Name     string `json:"name"`
+		Picture  string `json:"picture"`
+		Verified bool   `json:"verified_email"`
 	}
 	if err := json.NewDecoder(userResp.Body).Decode(&userInfo); err != nil {
 		http.Error(w, "Failed to parse user info", 500)
 		return
 	}
 
+	if userResp.StatusCode != http.StatusOK || !userInfo.Verified || userInfo.Email == "" {
+		http.Error(w, "Verified Google email required", 403)
+		return
+	}
 	email := strings.ToLower(userInfo.Email)
 
 	// Auto-create user if they don't exist (open registration via Google)
@@ -544,7 +521,10 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Create session
 	token := createSession(email, userInfo.Name)
-	log.Printf("Created session token: %s... (len=%d)", token[:min(10, len(token))], len(token))
+	if token == "" {
+		http.Error(w, "Session unavailable", 503)
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    token,
@@ -558,7 +538,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("User logged in: %s (%s)", userInfo.Name, email)
-	http.Redirect(w, r, "/home?auth="+url.QueryEscape(token), http.StatusSeeOther)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {

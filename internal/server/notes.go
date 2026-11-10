@@ -136,11 +136,7 @@ func handleNoteAdd(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "id": id})
 		return
 	}
-	referer := r.Header.Get("Referer")
-	if referer == "" {
-		referer = "/notes"
-	}
-	http.Redirect(w, r, referer, http.StatusSeeOther)
+	http.Redirect(w, r, "/notes", http.StatusSeeOther)
 }
 
 func handleNoteEdit(w http.ResponseWriter, r *http.Request) {
