@@ -50,43 +50,14 @@ func handleKnowledgeSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	results := []map[string]interface{}{}
 	if q != "" {
-		var found []map[string]interface{}
 		var err error
-		if collection != "arabic" && collection != "roots" && collection != "reading" && collection != "stories" {
-			found, err = db.SearchKnowledgeContext(r.Context(), q, collection, limit)
-		}
-		if err == nil {
-			for _, kind := range []string{"arabic", "roots", "reading", "stories"} {
-				if collection != "" && collection != kind {
-					continue
-				}
-				extra, e := db.BrowseKnowledge(r.Context(), kind, "", q, 0, limit)
-				if e != nil {
-					err = e
-					break
-				}
-				for _, item := range extra {
-					item["Kind"] = kind
-					found = append(found, item)
-				}
-			}
-		}
+		results, err = searchReferenceCollections(r.Context(), q, collection, limit)
 		if err != nil {
 			jsonError(w, "knowledge search unavailable", 500)
 			return
 		}
-		for _, item := range found {
-			kind, _ := item["Kind"].(string)
-			if knowledgeCollections[kind] == "" || (collection != "" && collection != kind) {
-				continue
-			}
-			item["Source"] = knowledgeCollections[kind]
-			results = append(results, item)
-			if len(results) == limit {
-				break
-			}
-		}
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"results": results})
 }

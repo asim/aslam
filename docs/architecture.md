@@ -60,3 +60,13 @@ Account API keys are stored as hashes and inherit account permissions. Keys cann
 | `docs/` | Architecture, setup, operations and source provenance |
 
 For operational constraints and diagnostics, see [request limits](request-limits.md) and [memory profiling](memory-profiling.md).
+
+## Answer continuity
+
+Reference search queries each collection before interleaving results ranked by keyword matches in titles and excerpts. Targeted collection searches remain available. Long passages use lossless character pagination; chat requests text pages without duplicate HTML.
+
+Model requests retain the current question and recent tool exchanges within 64 KiB. Older conversation turns are omitted first, followed by explicit source excerpts and older complete exchanges when necessary. Stored messages and source data are not modified by request packing. The model can reread any omitted passage using character offsets.
+
+Tool evidence is stored separately from visible messages, with the most recent 40 results retained per conversation (up to 32 KiB per stored result). Follow-ups receive bounded excerpts from the latest 12 results as untrusted data. Conversation deletion removes this evidence. Citation footers use deduplicated reference titles and URLs rather than tool arguments.
+
+A provider response stopped at its output-token limit is continued within the same question reservation and server deadline. Interrupted or error streams are not treated as completed answers.
