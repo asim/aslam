@@ -3,20 +3,28 @@ if ('serviceWorker' in navigator) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Linkify URLs + YouTube embeds
+    // Only transform text nodes: never rebuild HTML from source text or attributes.
     document.querySelectorAll('.linkify, .note-content, .daily-text, .description').forEach(function(el) {
         if (el.dataset.linked) return;
         el.dataset.linked = '1';
-        el.innerHTML = el.innerHTML.replace(
-            /(https?:\/\/[^\s<]+)/g,
-            function(url) {
-                var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]+)/);
-                if (m) {
-                    return '<div style="position:relative;padding-bottom:56.25%;height:0;margin:8px 0;"><iframe src="https://www.youtube.com/embed/' + m[1] + '" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>';
-                }
-                return '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        while (walker.nextNode()) {
+            if (!walker.currentNode.parentElement.closest('a,script,style')) nodes.push(walker.currentNode);
+        }
+        nodes.forEach(function(node) {
+            const text = node.textContent;
+            const pattern = /https?:\/\/[^\s<>"']+/g;
+            const fragment = document.createDocumentFragment();
+            let end = 0;
+            for (const match of text.matchAll(pattern)) {
+                fragment.append(document.createTextNode(text.slice(end, match.index)));
+                const a = document.createElement('a');
+                a.href = match[0]; a.textContent = match[0]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                fragment.append(a); end = match.index + match[0].length;
             }
-        );
+            if (end) { fragment.append(document.createTextNode(text.slice(end))); node.replaceWith(fragment); }
+        });
     });
 
     // Relative time

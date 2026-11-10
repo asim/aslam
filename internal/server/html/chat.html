@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>{{.Conversation.Title}} - Aslam</title>
     {{template "style"}}
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/marked.js?v=18.2.0"></script>
+    <script src="/purify.min.js?v=3.4.17"></script>
 </head>
 <body>
     <div class="app">
@@ -225,14 +226,19 @@
             // Render markdown in new message
             const md = div.querySelector('.markdown');
             if (md && typeof marked !== 'undefined') {
-                md.innerHTML = marked.parse(md.textContent);
+                md.innerHTML = safeMarkdown(md.textContent);
                 md.dataset.rendered = 'true';
             }
             if (!isTyping) addMessageActions(div);
             return div;
         }
 
-        function escapeHtml(text) {
+        function safeMarkdown(text) {
+ if (typeof DOMPurify === "undefined") return escapeHtml(text);
+ return DOMPurify.sanitize(marked.parse(text), {USE_PROFILES: {html: true}, FORBID_TAGS: ["img", "style", "form", "input", "button", "iframe"], FORBID_ATTR: ["style"]});
+ }
+
+ function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
@@ -312,7 +318,7 @@
                         const pinned = isNearBottom();
                         const displayText = fullText.replace(/\n?!tool:\w+\n?/g, '').trim();
                         if (typeof marked !== 'undefined') {
-                            contentEl.innerHTML = marked.parse(displayText);
+                            contentEl.innerHTML = safeMarkdown(displayText);
                         } else {
                             contentEl.textContent = displayText;
                         }
@@ -369,7 +375,7 @@
                                 statusEl.remove();
                                 responseDiv.classList.remove('typing');
                                 if (typeof marked !== 'undefined') {
-                                    contentEl.innerHTML = marked.parse(d.content);
+                                    contentEl.innerHTML = safeMarkdown(d.content);
                                 } else {
                                     contentEl.textContent = d.content;
                                 }
@@ -424,7 +430,7 @@
         function renderMarkdown() {
             document.querySelectorAll('.markdown').forEach(el => {
                 if (!el.dataset.rendered) {
-                    el.innerHTML = marked.parse(el.textContent);
+                    el.innerHTML = safeMarkdown(el.textContent);
                     // Remove <p> wrappers inside <li> to reduce whitespace
                     el.querySelectorAll('li > p:first-child').forEach(p => {
                         p.replaceWith(...p.childNodes);

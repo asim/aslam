@@ -66,9 +66,9 @@ func executeChatTool(ctx context.Context, name string, input map[string]interfac
 	case "browse":
 		handler = handleKnowledgeBrowse
 	case "search_saved":
-		return tools.ExecuteTool("search", input)
+		return tools.ExecuteToolContext(ctx, "search", input)
 	default:
-		return tools.ExecuteTool(name, input)
+		return tools.ExecuteToolContext(ctx, name, input)
 	}
 	values := url.Values{}
 	for key, value := range input {
@@ -78,4 +78,15 @@ func executeChatTool(ctx context.Context, name string, input map[string]interfac
 		values.Set("text_limit", "12000")
 	}
 	return callKnowledge(ctx, handler, values)
+}
+
+func chatToolsFor(ctx context.Context) []tools.ToolDefinition {
+	var out []tools.ToolDefinition
+	for _, tool := range chatTools() {
+		if (tool.Name == "email_check" || tool.Name == "email_send") && !tools.IdentityFrom(ctx).Admin {
+			continue
+		}
+		out = append(out, tool)
+	}
+	return out
 }

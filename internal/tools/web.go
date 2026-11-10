@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"golang.org/x/net/html"
 )
@@ -18,13 +17,14 @@ func FetchURL(url string) (string, error) {
 		url = "https://" + url
 	}
 
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
+	client := publicHTTPClient()
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	if err := validateFetchURL(req.URL); err != nil {
+		return "", err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Aslam/1.0)")
 

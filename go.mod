@@ -1,6 +1,6 @@
 module aslam
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/emersion/go-imap v1.2.1
@@ -8,8 +8,8 @@ require (
 	github.com/hablullah/go-prayer v1.1.1
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/mutecomm/go-sqlcipher/v4 v4.4.2
-	golang.org/x/crypto v0.51.0
-	golang.org/x/net v0.53.0
+	golang.org/x/crypto v0.58.0
+	golang.org/x/net v0.62.0
 )
 
 require (
@@ -21,8 +21,8 @@ require (
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 )

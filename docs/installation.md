@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Use Go 1.25 or newer, allowing Go to select a newer toolchain when required by dependencies. [go.mod](../go.mod) is authoritative. A C compiler and CGO are required by the SQLCipher driver. The `sqlcipher` command-line program is useful for database administration; it is separate from the application's Go driver.
+Use Go 1.26.10 or newer, allowing Go to select a newer toolchain when required by dependencies. [go.mod](../go.mod) is authoritative. A C compiler and CGO are required by the SQLCipher driver. The `sqlcipher` command-line program is useful for database administration; it is separate from the application's Go driver.
 
 ## Local setup
 
@@ -47,11 +47,11 @@ The app reads `.env` from its working directory. Existing process environment va
 | `MODEL_ENABLED` | Set to `false` to disable model calls after restart |
 | `LATITUDE`, `LONGITUDE`, `TIMEZONE` | Default prayer location and timezone |
 
-See [operations](operations.md) for `SMTP_*`, `GMAIL_*`, inbound-email authentication and model limits. For application integrations, use [account API keys](api.md), not the legacy `API_KEY` or `DEV_TOKEN` bypass settings.
+See [operations](operations.md) for `SMTP_*`, `GMAIL_*`, inbound-email authentication and model limits. For application integrations, use [account API keys](api.md), not the removed legacy `API_KEY` or `DEV_TOKEN` bypass settings.
 
 ## Authentication and public hosting
 
-Configure Google OAuth and an initial administrator before exposing the service. Without `GOOGLE_CLIENT_ID`, some browser authentication middleware permits local development access; disabling password signup does not close that bypass. Keep development instances private.
+Configure Google OAuth or verified email/password accounts and an initial administrator before exposing the service. Account routes always require a verified session; leaving OAuth unset does not disable authentication.
 
 Email/password registration requires a configured sender, address verification and admin approval. `ALLOW_PASSWORD_SIGNUP=false` closes new requests. It does not delete accounts or stop approval of already pending requests.
 

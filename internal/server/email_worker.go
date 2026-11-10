@@ -305,6 +305,9 @@ func getOrCreateConversation(threadID, subject, sender string) (int64, error) {
 	// Check if thread exists
 	thread, err := db.GetEmailThread(threadID)
 	if err == nil {
+		if owner := db.GetConversationOwner(thread.ConversationID); owner == 0 || owner != db.GetUserID(strings.ToLower(sender)) {
+			return 0, fmt.Errorf("email thread belongs to another account")
+		}
 		return thread.ConversationID, nil
 	}
 

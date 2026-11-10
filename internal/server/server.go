@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"html/template"
 	"log"
@@ -174,6 +175,8 @@ func Run() {
 	http.HandleFunc("/icon-512.png", handleStatic("icon-512.png", "image/png"))
 	http.HandleFunc("/fonts/arabic.otf", handleStatic("arabic.otf", "font/otf"))
 	http.HandleFunc("/app.css", handleStatic("app.css", "text/css"))
+	http.HandleFunc("/marked.js", handleStatic("marked.js", "application/javascript"))
+	http.HandleFunc("/purify.min.js", handleStatic("purify.min.js", "application/javascript"))
 	http.HandleFunc("/app.js", handleStatic("app.js", "application/javascript"))
 
 	// Public landing page
@@ -211,8 +214,8 @@ func Run() {
 	http.HandleFunc("/api/knowledge/browse", requireAuth(handleKnowledgeBrowse))
 	http.HandleFunc("/api/knowledge/contents", requireAuth(handleKnowledgeContents))
 	http.HandleFunc("/search", optionalAuth(handleSearch))
-	http.HandleFunc("/entries", requireAuth(handleEntries))
-	http.HandleFunc("/entries/", requireAuth(handleEntryView))
+	http.HandleFunc("/entries", requireAuth(requireAdmin(handleEntries)))
+	http.HandleFunc("/entries/", requireAuth(requireAdmin(handleEntryView)))
 	http.HandleFunc("/islamqa", optionalAuth(handleIslamQAIndex))
 	http.HandleFunc("/islamqa/", optionalAuth(handleIslamQAView))
 	http.HandleFunc("/seerah", optionalAuth(handleSeerahIndex))
@@ -264,12 +267,6 @@ func Run() {
 	// Set up tools storage and integration checker
 	tools.SetStorage(&dbStorage{})
 	tools.SetNoteStorage(&noteStorage{})
-	tools.SetCurrentUserIDGetter(func() int64 {
-		if currentUserContext != nil && currentUserContext.Email != "" {
-			return db.GetUserID(currentUserContext.Email)
-		}
-		return 0
-	})
 	tools.SetIntegrationChecker(func(name string) bool {
 		switch name {
 		case "brave_search":
@@ -282,11 +279,10 @@ func Run() {
 	})
 
 	// When an email is sent from chat, create thread mapping so replies go to same conversation
-	tools.SetEmailSentCallback(func(messageID, to, subject string) {
-		if currentUserContext != nil && currentUserContext.ConversationID > 0 {
-			// Create email thread pointing to current conversation
-			db.CreateEmailThread(messageID, currentUserContext.ConversationID, messageID)
-			log.Printf("Created email thread %s -> conversation %d", messageID, currentUserContext.ConversationID)
+	tools.SetEmailSentCallback(func(ctx context.Context, messageID, to, subject string) {
+		identity := tools.IdentityFrom(ctx)
+		if identity.ConversationID > 0 {
+			db.CreateEmailThread(messageID, identity.ConversationID, messageID)
 		}
 	})
 

@@ -91,7 +91,10 @@
             const path = match[1];
             const label = path.slice(1);
             const rest = text.replace(match[0], '').trim();
-            el.innerHTML = '<a class="source-link" href="' + path + '">' + label + '</a>' + (rest ? '<br>' + rest : '');
+            const link = document.createElement("a");
+            link.className = "source-link"; link.href = path; link.textContent = label;
+            el.replaceChildren(link);
+            if (rest) { el.append(document.createElement("br"), document.createTextNode(rest)); }
         }
     });
     </script>

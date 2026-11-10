@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"aslam/db"
+	"aslam/internal/tools"
 )
 
 var systemPromptTemplate = `You are an Islamic knowledge assistant. Your purpose is to help Muslims seek, understand, and save Islamic knowledge from authentic sources.
@@ -99,7 +100,21 @@ type UserContext struct {
 	ConversationID int64
 }
 
-var currentUserContext *UserContext
+func modelIdentity(ctx context.Context, convID int64) (context.Context, *UserContext, error) {
+	conv, err := db.GetConversationContext(ctx, convID)
+	if err != nil {
+		return ctx, nil, err
+	}
+	user, err := db.GetUserByIDContext(ctx, conv.UserID)
+	if err != nil {
+		return ctx, nil, err
+	}
+	if !user.Verified {
+		return ctx, nil, fmt.Errorf("active conversation owner required")
+	}
+	ctx = tools.WithIdentity(ctx, tools.Identity{UserID: user.ID, ConversationID: convID, Admin: user.Role == "admin"})
+	return ctx, &UserContext{Email: user.Email, Name: user.Name, ConversationID: convID}, nil
+}
 
 // ToolUsage tracks a single tool call and its result
 type ToolUsage struct {
@@ -164,12 +179,20 @@ func generateResponse(messages []db.Message, convID int64) (string, []ToolUsage,
 }
 
 func generateResponseWithProgress(messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
-	return generateResponseWithProgressContext(context.Background(), messages, convID, onTool)
+	ctx, cancel := context.WithTimeout(context.Background(), chatRequestTimeout)
+	defer cancel()
+	return generateResponseWithProgressContext(ctx, messages, convID, onTool)
 }
 
 func generateResponseWithProgressContext(ctx context.Context, messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
 	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
+	var currentUserContext *UserContext
+	var identityErr error
+	ctx, currentUserContext, identityErr = modelIdentity(ctx, convID)
+	if identityErr != nil {
+		return "", nil, identityErr
+	}
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
 	}
@@ -216,7 +239,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 						return "", toolsUsed, err
 					}
 					inputJSON, _ := json.Marshal(block.Input)
-					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
+					log.Printf("Tool call: %s", block.Name)
 					if onTool != nil {
 						onTool(block.Name)
 					}
@@ -276,6 +299,12 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 func generateResponseStreaming(ctx context.Context, messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
 	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
+	var currentUserContext *UserContext
+	var identityErr error
+	ctx, currentUserContext, identityErr = modelIdentity(ctx, convID)
+	if identityErr != nil {
+		return "", nil, identityErr
+	}
 	if anthropicKey == "" {
 		return "", nil, fmt.Errorf("ANTHROPIC_API_KEY not set")
 	}
@@ -314,7 +343,7 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 						return "", toolsUsed, err
 					}
 					inputJSON, _ := json.Marshal(block.Input)
-					log.Printf("Tool call: %s(%v)", block.Name, block.Input)
+					log.Printf("Tool call: %s", block.Name)
 					if onText != nil {
 						onText("\n!tool:" + block.Name + "\n")
 					}
@@ -357,7 +386,7 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
 		"max_tokens": 2048,
-		"tools":      chatTools(),
+		"tools":      chatToolsFor(ctx),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
 		"stream":     true,
@@ -545,7 +574,7 @@ func callAnthropic(ctx context.Context, apiMessages []map[string]interface{}, sy
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
 		"max_tokens": 2048,
-		"tools":      chatTools(),
+		"tools":      chatToolsFor(ctx),
 		"system":     sysPrompt,
 		"messages":   apiMessages,
 	}

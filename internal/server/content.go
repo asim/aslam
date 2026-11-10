@@ -149,7 +149,7 @@ func handleStoriesView(w http.ResponseWriter, r *http.Request) {
 				Verses:  verses,
 			})
 		}
-		narrative := strings.ReplaceAll(rs.Narrative, "\n\n", "</p><p>")
+		narrative := strings.ReplaceAll(template.HTMLEscapeString(rs.Narrative), "\n\n", "</p><p>")
 		narrative = "<p>" + narrative + "</p>"
 		sections = append(sections, StorySection{
 			Narrative: template.HTML(narrative),
