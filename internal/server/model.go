@@ -363,7 +363,10 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		"stream":     true,
 	}
 
-	jsonBody, _ := json.Marshal(reqBody)
+	jsonBody, packErr := prepareModelBody(reqBody)
+	if packErr != nil {
+		return nil, "", packErr
+	}
 	release, err := reserveModelRequest(ctx, len(jsonBody))
 	if err != nil {
 		return nil, "", err
@@ -547,7 +550,10 @@ func callAnthropic(ctx context.Context, apiMessages []map[string]interface{}, sy
 		"messages":   apiMessages,
 	}
 
-	jsonBody, _ := json.Marshal(reqBody)
+	jsonBody, packErr := prepareModelBody(reqBody)
+	if packErr != nil {
+		return nil, packErr
+	}
 	release, err := reserveModelRequest(ctx, len(jsonBody))
 	if err != nil {
 		return nil, err

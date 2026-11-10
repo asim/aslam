@@ -30,10 +30,21 @@ func newMCPHandler() http.Handler {
 		return mcpKnowledge(ctx, handleKnowledgeSearch, values), nil, nil
 	})
 	mcp.AddTool(server, &mcp.Tool{Name: "read", Description: "Read a full public reference passage using a URL path returned by search, such as /quran/2/153 or /seerah/page/10. Returns source attribution and citation URL. No external URLs or personal content.", Annotations: annotations}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct {
-		Path   string `json:"path" jsonschema:"Relative reference path returned by search"`
-		Offset int    `json:"offset,omitempty" jsonschema:"Root forms page offset"`
+		Path       string `json:"path" jsonschema:"Relative reference path returned by search"`
+		Offset     int    `json:"offset,omitempty" jsonschema:"Root forms page offset"`
+		TextOffset int    `json:"text_offset,omitempty"`
+		TextLimit  int    `json:"text_limit,omitempty"`
+		TextField  string `json:"text_field,omitempty"`
 	}) (*mcp.CallToolResult, any, error) {
-		return mcpKnowledge(ctx, handleKnowledgeResource, url.Values{"path": {in.Path}, "offset": {strconv.Itoa(in.Offset)}}), nil, nil
+		v := url.Values{"path": {in.Path}, "offset": {strconv.Itoa(in.Offset)}}
+		if in.TextLimit != 0 || in.TextOffset != 0 || in.TextField != "" {
+			v.Set("text_offset", strconv.Itoa(in.TextOffset))
+			v.Set("text_field", in.TextField)
+			if in.TextLimit != 0 {
+				v.Set("text_limit", strconv.Itoa(in.TextLimit))
+			}
+		}
+		return mcpKnowledge(ctx, handleKnowledgeResource, v), nil, nil
 	})
 	mcp.AddTool(server, &mcp.Tool{Name: "collections", Description: "List available knowledge collections.", Annotations: annotations}, func(ctx context.Context, _ *mcp.CallToolRequest, in struct{}) (*mcp.CallToolResult, any, error) {
 		return mcpKnowledge(ctx, handleKnowledgeCollections, nil), nil, nil

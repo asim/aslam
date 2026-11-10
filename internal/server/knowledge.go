@@ -189,7 +189,16 @@ func handleKnowledgeResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"kind": kind, "source": knowledgeCollections[kind], "url": "https://aslam.org" + path, "resource": item})
+	item, page, pageErr := paginateKnowledgeText(item, r.URL.Query())
+	if pageErr != nil {
+		jsonError(w, pageErr.Error(), 400)
+		return
+	}
+	response := map[string]interface{}{"kind": kind, "source": knowledgeCollections[kind], "url": "https://aslam.org" + path, "resource": item}
+	if page != nil {
+		response["text_page"] = page
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func apiPage(r *http.Request) (int, int, error) {
