@@ -17,7 +17,7 @@ func chatTools() []tools.ToolDefinition {
 		switch tool.Name {
 		case "search":
 			tool.Name = "search_saved"
-			tool.Description = "Search saved notes, chats and cached content visible to the current user. These may contain personal or model-generated text; use search/read for published reference sources."
+			tool.Description = "Search notes and chats visible to the current user. These may contain personal or model-generated text; use search/read for published reference sources."
 		case "islamqa", "ghazali", "adhkar", "salihin":
 			continue
 		}

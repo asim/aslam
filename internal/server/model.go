@@ -69,26 +69,6 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
-func formatSourcesFooter(toolsUsed []ToolUsage) string {
-	if len(toolsUsed) == 0 {
-		return ""
-	}
-
-	seen := make(map[string]bool)
-	var sources strings.Builder
-	sources.WriteString("\n\n---\n**Sources:**\n")
-	for _, tool := range toolsUsed {
-		key := tool.Name + ":" + tool.Input
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		sources.WriteString(fmt.Sprintf("- %s: `%s`\n", tool.Name, tool.Input))
-	}
-
-	return sources.String()
-}
-
 func formatResponseWithSources(response string, toolsUsed []ToolUsage) string {
 	return response + formatSourcesFooter(toolsUsed)
 }
@@ -118,9 +98,11 @@ func modelIdentity(ctx context.Context, convID int64) (context.Context, *UserCon
 
 // ToolUsage tracks a single tool call and its result
 type ToolUsage struct {
-	Name   string
-	Input  string
-	Output string
+	Name      string
+	Input     string
+	Output    string
+	Citations []Citation
+	Failed    bool
 }
 
 // buildAPIMessages converts stored conversation messages into the message
@@ -187,6 +169,7 @@ func generateResponseWithProgress(messages []db.Message, convID int64, onTool fu
 func generateResponseWithProgressContext(ctx context.Context, messages []db.Message, convID int64, onTool func(string)) (string, []ToolUsage, error) {
 	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
+	var answerParts strings.Builder
 	var currentUserContext *UserContext
 	var identityErr error
 	ctx, currentUserContext, identityErr = modelIdentity(ctx, convID)
@@ -209,6 +192,10 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 
 	// Build messages for API
 	apiMessages, contextPrompt := buildAPIMessages(messages)
+	apiMessages, evidenceErr := addPriorEvidence(ctx, apiMessages, convID)
+	if evidenceErr != nil {
+		return "", toolsUsed, evidenceErr
+	}
 	fullSystemPrompt += contextPrompt
 
 	// Tool follow-ups share one question reservation. Continue until answered
@@ -232,7 +219,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 
 			// Process tool calls and build tool results
 			var toolResults []map[string]interface{}
-			var contextLines []string
+
 			for _, block := range result.Content {
 				if block.Type == "tool_use" {
 					if err := ctx.Err(); err != nil {
@@ -250,9 +237,10 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 
 					// Track tool usage
 					toolsUsed = append(toolsUsed, ToolUsage{
-						Name:   block.Name,
-						Input:  string(inputJSON),
-						Output: truncateString(toolResult, 500),
+						Name:      block.Name,
+						Input:     string(inputJSON),
+						Output:    truncateString(toolResult, 500),
+						Citations: toolCitations(toolResult), Failed: err != nil,
 					})
 
 					toolResults = append(toolResults, map[string]interface{}{
@@ -262,7 +250,11 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 						"content":     toolResult,
 					})
 
-					contextLines = append(contextLines, fmt.Sprintf("[%s(%s): %s]", block.Name, string(inputJSON), truncateString(toolResult, 1000)))
+					if convID > 0 {
+						if err := db.SaveToolEvidence(ctx, convID, block.Name, string(inputJSON), excerpt(toolResult, 32000)); err != nil {
+							return "", toolsUsed, fmt.Errorf("save tool evidence: %w", err)
+						}
+					}
 				}
 			}
 
@@ -272,10 +264,6 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 				"content": toolResults,
 			})
 
-			// Save a text summary so the AI can reference it in follow-up turns
-			if convID > 0 && len(contextLines) > 0 {
-				db.AddMessage(convID, "context", strings.Join(contextLines, "\n"))
-			}
 			continue
 		}
 
@@ -283,14 +271,19 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 		var textResponse string
 		for _, block := range result.Content {
 			if block.Type == "text" {
-				textResponse = block.Text
-				break
+				textResponse += block.Text
 			}
 		}
 
-		// If no text but we had tool calls that succeeded, return a default message
+		if result.StopReason == "max_tokens" {
+			answerParts.WriteString(textResponse)
+			apiMessages = append(apiMessages, map[string]interface{}{"role": "assistant", "content": result.Content}, map[string]interface{}{"role": "user", "content": continueAnswer})
+			continue
+		}
+		textResponse = answerParts.String() + textResponse
+		// An empty provider response is not a completed answer.
 		if textResponse == "" {
-			return "Done.", toolsUsed, nil
+			return "", toolsUsed, fmt.Errorf("model returned no answer")
 		}
 		return textResponse, toolsUsed, nil
 	}
@@ -299,6 +292,7 @@ func generateResponseWithProgressContext(ctx context.Context, messages []db.Mess
 func generateResponseStreaming(ctx context.Context, messages []db.Message, convID int64, onText func(string)) (string, []ToolUsage, error) {
 	ctx = context.WithValue(ctx, modelConversationKey{}, &modelQuery{conversationID: convID})
 	var toolsUsed []ToolUsage
+	var answerParts strings.Builder
 	var currentUserContext *UserContext
 	var identityErr error
 	ctx, currentUserContext, identityErr = modelIdentity(ctx, convID)
@@ -318,6 +312,10 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 	}
 
 	apiMessages, contextPrompt := buildAPIMessages(messages)
+	apiMessages, evidenceErr := addPriorEvidence(ctx, apiMessages, convID)
+	if evidenceErr != nil {
+		return "", toolsUsed, evidenceErr
+	}
 	fullSystemPrompt += contextPrompt
 
 	for {
@@ -336,7 +334,7 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 			})
 
 			var toolResults []map[string]interface{}
-			var contextLines []string
+
 			for _, block := range result.Content {
 				if block.Type == "tool_use" {
 					if err := ctx.Err(); err != nil {
@@ -352,9 +350,10 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 						toolResult = fmt.Sprintf("Error: %v", err)
 					}
 					toolsUsed = append(toolsUsed, ToolUsage{
-						Name:   block.Name,
-						Input:  string(inputJSON),
-						Output: truncateString(toolResult, 500),
+						Name:      block.Name,
+						Input:     string(inputJSON),
+						Output:    truncateString(toolResult, 500),
+						Citations: toolCitations(toolResult), Failed: err != nil,
 					})
 					toolResults = append(toolResults, map[string]interface{}{
 						"type":        "tool_result",
@@ -362,21 +361,29 @@ func generateResponseStreaming(ctx context.Context, messages []db.Message, convI
 						"is_error":    err != nil,
 						"content":     toolResult,
 					})
-					contextLines = append(contextLines, fmt.Sprintf("[%s(%s): %s]", block.Name, string(inputJSON), truncateString(toolResult, 1000)))
+					if convID > 0 {
+						if err := db.SaveToolEvidence(ctx, convID, block.Name, string(inputJSON), excerpt(toolResult, 32000)); err != nil {
+							return "", toolsUsed, fmt.Errorf("save tool evidence: %w", err)
+						}
+					}
 				}
 			}
 			apiMessages = append(apiMessages, map[string]interface{}{
 				"role":    "user",
 				"content": toolResults,
 			})
-			if convID > 0 && len(contextLines) > 0 {
-				db.AddMessage(convID, "context", strings.Join(contextLines, "\n"))
-			}
+
 			continue
 		}
 
+		if result.StopReason == "max_tokens" {
+			answerParts.WriteString(textSoFar)
+			apiMessages = append(apiMessages, map[string]interface{}{"role": "assistant", "content": result.Content}, map[string]interface{}{"role": "user", "content": continueAnswer})
+			continue
+		}
+		textSoFar = answerParts.String() + textSoFar
 		if textSoFar == "" {
-			return "Done.", toolsUsed, nil
+			return "", toolsUsed, fmt.Errorf("model returned no answer")
 		}
 		return textSoFar, toolsUsed, nil
 	}
@@ -421,6 +428,7 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 
 	// Parse SSE stream from Anthropic
 	var fullText strings.Builder
+	var currentText strings.Builder
 	var contentBlocks []contentBlock
 	var currentToolInput strings.Builder
 	var currentThinking strings.Builder
@@ -429,6 +437,7 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 	stopReason := ""
 
 	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 4096), 1<<20)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -440,8 +449,11 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		}
 
 		var event struct {
-			Type         string `json:"type"`
-			Index        int    `json:"index"`
+			Type  string `json:"type"`
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+			Index        int `json:"index"`
 			ContentBlock struct {
 				Type      string          `json:"type"`
 				ID        string          `json:"id"`
@@ -469,9 +481,18 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		}
 
 		switch event.Type {
+		case "error":
+			return nil, fullText.String(), fmt.Errorf("model stream failed: %s", event.Error.Message)
 		case "content_block_start":
 			currentBlockType = event.ContentBlock.Type
 			switch currentBlockType {
+			case "text":
+				currentText.Reset()
+				currentText.WriteString(event.ContentBlock.Text)
+				fullText.WriteString(event.ContentBlock.Text)
+				if onText != nil && event.ContentBlock.Text != "" {
+					onText(event.ContentBlock.Text)
+				}
 			case "tool_use":
 				currentToolID = event.ContentBlock.ID
 				currentToolName = event.ContentBlock.Name
@@ -487,6 +508,7 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 		case "content_block_delta":
 			if event.Delta.Type == "text_delta" && event.Delta.Text != "" {
 				fullText.WriteString(event.Delta.Text)
+				currentText.WriteString(event.Delta.Text)
 				if onText != nil {
 					onText(event.Delta.Text)
 				}
@@ -524,10 +546,10 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 					Data: &data,
 				})
 			case "text":
-				if fullText.Len() > 0 {
+				if currentText.Len() > 0 {
 					contentBlocks = append(contentBlocks, contentBlock{
 						Type: "text",
-						Text: fullText.String(),
+						Text: currentText.String(),
 					})
 				}
 			}
@@ -546,6 +568,10 @@ func callAnthropicStream(ctx context.Context, apiMessages []map[string]interface
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fullText.String(), fmt.Errorf("read model stream: %w", err)
+	}
+
+	if stopReason == "" {
+		return nil, fullText.String(), fmt.Errorf("model stream ended before completion")
 	}
 
 	return &anthropicResponse{

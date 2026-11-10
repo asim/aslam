@@ -58,7 +58,11 @@ func TestToolFollowupsDoNotConsumeQuestions(t *testing.T) {
 							}
 							body += "data: " + string(data) + "\n\n"
 						}
-						event(map[string]interface{}{"type": "content_block_start", "content_block": block})
+						startBlock := block
+						if startBlock.Type == "text" {
+							startBlock.Text = ""
+						}
+						event(map[string]interface{}{"type": "content_block_start", "content_block": startBlock})
 						if reason == "tool_use" {
 							event(map[string]interface{}{"type": "content_block_delta", "delta": map[string]string{"type": "input_json_delta", "partial_json": "{\"query\":\"patience\"}"}})
 						} else {

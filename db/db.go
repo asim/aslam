@@ -871,6 +871,9 @@ func Migrate() error {
 	if err := initTafsir(); err != nil {
 		return err
 	}
+	if err := initToolEvidence(); err != nil {
+		return err
+	}
 	return initArabicLearning()
 }
 

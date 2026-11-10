@@ -64,7 +64,7 @@ func TestModelStreamInterruptedAfterText(t *testing.T) {
 	base := modelTestContext(t)
 	old := http.DefaultTransport
 	defer func() { http.DefaultTransport = old }()
-	prefix := "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"partial answer\"}}\n\n"
+	prefix := "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"partial answer\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n"
 	for _, tc := range []struct {
 		name    string
 		readErr error

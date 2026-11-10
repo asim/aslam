@@ -94,7 +94,9 @@ answer is returned or generation times out or fails. Accepted web questions
 continue after a browser disconnect and save their answer for recovery, within
 the original five-minute server deadline. They do not consume extra
 questions or have a fixed turn limit. Each provider call allows at most 64 KiB of
-serialized input and 2,048 output tokens. Chat input is limited to 8 KiB and two
+serialized input and 2,048 output tokens. Requests pack recent context into that
+budget; longer source texts are paginated. Output-limit continuations share the
+question reservation and original deadline. Chat input is limited to 8 KiB and two
 provider calls may run concurrently per process. These are usage limits, not
 currency budgets. Queued budget/size/concurrency denials are not auto-retried.
 A retry of a failed initial attempt counts as another question attempt.

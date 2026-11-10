@@ -89,3 +89,16 @@ END;
 -- Indexes for conversations
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at);
+
+-- Private retrieved evidence for conversation follow-ups (not rendered messages).
+CREATE TABLE IF NOT EXISTS tool_evidence (
+ id INTEGER PRIMARY KEY,
+ conversation_id INTEGER NOT NULL,
+ tool TEXT NOT NULL,
+ input TEXT NOT NULL,
+ output TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS tool_evidence_conversation ON tool_evidence(conversation_id,id);
+CREATE TRIGGER IF NOT EXISTS tool_evidence_delete AFTER DELETE ON conversations
+BEGIN DELETE FROM tool_evidence WHERE conversation_id=old.id; END;
