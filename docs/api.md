@@ -30,6 +30,8 @@ Use `/api/knowledge/collections` to discover collections, `contents?collection=.
 
 Collections include Quran, Bukhari, Names, Tafsir, Seerah, Ghazali, IslamQA, adhkar, Riyad us-Salihin, Arabic words, roots, reading passages and stories. Use the returned resource paths rather than constructing slugs.
 
+For long resources, `read` and the HTTP resource endpoint accept `text_limit` (1–12,000 characters), `text_offset` and `text_field`. Follow `text_page.next` until null; concatenating pages reproduces the selected field exactly. Chat defaults to 12,000-character pages without duplicate HTML.
+
 Read a full passage before quoting. Preserve source attribution and keep scripture, translation, biography and commentary distinct. Invalid inputs return 400; missing or inaccessible resources return 404. See OpenAPI for the full error contract.
 
 ## Account actions

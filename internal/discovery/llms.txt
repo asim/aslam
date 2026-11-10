@@ -65,3 +65,5 @@ HTTP errors: 400 invalid parameters, 401 missing/invalid credentials, 403 denied
 405 unsupported method, 413 oversized request, 500 retrieval failure, 503 busy/unavailable.
 Retry 503 with backoff. MCP shares the public search concurrency pool and returns tool errors on
 retrieval failures. MCP and knowledge retrieval never call a model.
+
+Long passage reading: use text_limit (1–12000), text_offset and optional text_field on resource/read. Follow text_page.next until null; pages concatenate losslessly. Chat reads text pages without duplicate HTML.

@@ -3,7 +3,7 @@
   "info": {
     "title": "Aslam API",
     "version": "2.0.0",
-    "description": "Knowledge browsing, retrieval and account APIs. Create an account key in Settings \u2192 API keys; send Authorization: Bearer YOUR_KEY. Search stays public. Existing signed-in browser sessions also work on HTTP account endpoints. MCP requires a key. Keys inherit the account permissions and question limits. Administrative and sign-in operations are not integration APIs."
+    "description": "Knowledge browsing, retrieval and account APIs. Create an account key in Settings → API keys; send Authorization: Bearer YOUR_KEY. Search stays public. Existing signed-in browser sessions also work on HTTP account endpoints. MCP requires a key. Keys inherit the account permissions and question limits. Administrative and sign-in operations are not integration APIs."
   },
   "servers": [
     {
@@ -49,7 +49,7 @@
                 "hadith",
                 "names",
                 "seerah",
-          "tafsir",
+                "tafsir",
                 "ghazali",
                 "islamqa",
                 "adhkar",
@@ -140,6 +140,33 @@
             "description": "Root forms only; increments of 50, maximum 100000.",
             "schema": {
               "type": "integer"
+            }
+          },
+          {
+            "name": "text_offset",
+            "in": "query",
+            "required": false,
+            "description": "Unicode character offset for a passage page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "text_limit",
+            "in": "query",
+            "required": false,
+            "description": "Characters per page (1 to 12000); enables plain-text pagination",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "text_field",
+            "in": "query",
+            "required": false,
+            "description": "String field from text_page.fields",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1276,7 +1303,7 @@
                       "hadith",
                       "names",
                       "seerah",
-          "tafsir",
+                      "tafsir",
                       "ghazali",
                       "islamqa",
                       "adhkar",
