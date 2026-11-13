@@ -601,6 +601,23 @@ type contentBlock struct {
 	Input     map[string]interface{} `json:"input,omitempty"`
 }
 
+// MarshalJSON preserves the required input object on tool-use blocks, including
+// no-argument tools. Other block types must not acquire a tool-only field.
+func (b contentBlock) MarshalJSON() ([]byte, error) {
+	type plain contentBlock
+	if b.Type != "tool_use" {
+		return json.Marshal(plain(b))
+	}
+	input := b.Input
+	if input == nil {
+		input = map[string]interface{}{}
+	}
+	return json.Marshal(struct {
+		plain
+		Input map[string]interface{} `json:"input"`
+	}{plain: plain(b), Input: input})
+}
+
 func callAnthropicAttempt(ctx context.Context, apiMessages []map[string]interface{}, sysPrompt string, maxTokens int) (*anthropicResponse, error) {
 	reqBody := map[string]interface{}{
 		"model":      anthropicModel,
