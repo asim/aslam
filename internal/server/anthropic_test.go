@@ -56,3 +56,36 @@ func TestContentBlockPreservesThinkingFields(t *testing.T) {
 		t.Errorf("redacted data = %v, want encrypted-value", got)
 	}
 }
+
+func TestToolInputSerialization(t *testing.T) {
+	for _, raw := range []string{
+		`{"type":"tool_use","id":"tool-1","name":"collections","input":{}}`,
+		`{"type":"tool_use","id":"tool-1","name":"collections","input":null}`,
+		`{"type":"tool_use","id":"tool-1","name":"search","input":{"query":"patience"}}`,
+		`{"type":"text","text":"Answer"}`,
+	} {
+		var block contentBlock
+		if err := json.Unmarshal([]byte(raw), &block); err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(block)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(encoded, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if block.Type == "tool_use" {
+			var input map[string]interface{}
+			if err := json.Unmarshal(fields["input"], &input); err != nil || input == nil {
+				t.Fatalf("required object absent: %s", encoded)
+			}
+			if block.Name == "search" && input["query"] != "patience" {
+				t.Fatal("lost arguments")
+			}
+		} else if _, ok := fields["input"]; ok {
+			t.Fatalf("tool field on text: %s", encoded)
+		}
+	}
+}

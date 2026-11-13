@@ -40,6 +40,23 @@ func TestToolFollowupsDoNotConsumeQuestions(t *testing.T) {
 					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 						t.Fatal(err)
 					}
+					// Validate the actual packed follow-up body, not just the model struct.
+					if calls > 1 {
+						var assistant struct {
+							Content []map[string]interface{} `json:"content"`
+						}
+						if err := json.Unmarshal(request.Messages[len(request.Messages)-2], &assistant); err != nil {
+							t.Fatal(err)
+						}
+						for _, block := range assistant.Content {
+							if block["type"] == "tool_use" {
+								input, ok := block["input"].(map[string]interface{})
+								if !ok || len(input) != 0 {
+									t.Fatalf("missing empty input object: %v", block)
+								}
+							}
+						}
+					}
 					if len(request.Messages) != 1+2*(calls-1) {
 						t.Fatalf("lost tool history: %d messages", len(request.Messages))
 					}
@@ -47,7 +64,7 @@ func TestToolFollowupsDoNotConsumeQuestions(t *testing.T) {
 					block := contentBlock{Type: "text", Text: "Answer from the available sources."}
 					if calls <= 6 {
 						reason = "tool_use"
-						block = contentBlock{Type: "tool_use", ID: fmt.Sprintf("tool-%d", calls), Name: "test_lookup", Input: map[string]interface{}{"query": "patience"}}
+						block = contentBlock{Type: "tool_use", ID: fmt.Sprintf("tool-%d", calls), Name: "test_lookup", Input: map[string]interface{}{}}
 					}
 					var body string
 					if stream {
@@ -64,7 +81,7 @@ func TestToolFollowupsDoNotConsumeQuestions(t *testing.T) {
 						}
 						event(map[string]interface{}{"type": "content_block_start", "content_block": startBlock})
 						if reason == "tool_use" {
-							event(map[string]interface{}{"type": "content_block_delta", "delta": map[string]string{"type": "input_json_delta", "partial_json": "{\"query\":\"patience\"}"}})
+							event(map[string]interface{}{"type": "content_block_delta", "delta": map[string]string{"type": "input_json_delta", "partial_json": "{}"}})
 						} else {
 							event(map[string]interface{}{"type": "content_block_delta", "delta": map[string]string{"type": "text_delta", "text": block.Text}})
 						}
